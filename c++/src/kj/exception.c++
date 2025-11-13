@@ -58,13 +58,6 @@
 #include <cxxabi.h>
 #endif
 
-// Use KJ_HAS_BACKTRACE; KJ_HAS_BACKTRACE is for backwards compat only.
-#if !defined(KJ_USE_BACKTRACE)
-#if defined(KJ_HAS_BACKTRACE) && ((KJ_HAS_BACKTRACE + 0) == 1)
-#define KJ_USE_BACKTRACE 1
-#endif
-#endif
-
 #ifndef KJ_USE_BACKTRACE
 #if (__linux__ && __GLIBC__ && !__UCLIBC__) || __APPLE__
 #define KJ_USE_BACKTRACE 1
@@ -72,7 +65,7 @@
 #endif
 
 #if KJ_USE_BACKTRACE
-# include <execinfo.h>
+#include <execinfo.h>
 #endif
 
 #if _WIN32 || __CYGWIN__
