@@ -58,8 +58,13 @@
 #include <cxxabi.h>
 #endif
 
+#ifndef KJ_USE_BACKTRACE
 #if (__linux__ && __GLIBC__ && !__UCLIBC__) || __APPLE__
-#define KJ_HAS_BACKTRACE 1
+#define KJ_USE_BACKTRACE 1
+#endif
+#endif
+
+#if KJ_USE_BACKTRACE
 #include <execinfo.h>
 #endif
 
@@ -236,7 +241,7 @@ ArrayPtr<void* const> getStackTrace(ArrayPtr<void*> space, uint ignoreCount) {
   CONTEXT context;
   RtlCaptureContext(&context);
   return getStackTrace(space, ignoreCount, GetCurrentThread(), context);
-#elif KJ_HAS_BACKTRACE
+#elif KJ_USE_BACKTRACE
   size_t size = backtrace(space.begin(), space.size());
   for (auto& addr: space.slice(0, size)) {
     // The addresses produced by backtrace() are return addresses, which means they point to the
