@@ -213,7 +213,9 @@ set(prefix "${CMAKE_INSTALL_PREFIX}")
 set(exec_prefix "") # not needed since we use absolute paths in libdir and includedir
 set(libdir "${CMAKE_INSTALL_FULL_LIBDIR}")
 set(includedir "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
-set(PTHREAD_CFLAGS "-pthread")
+if(NOT MSVC)
+  set(PTHREAD_CFLAGS "-pthread")
+endif()
 set(STDLIB_FLAG)  # TODO: Unsupported
 set(CAPNP_PKG_CONFIG_FILES
   pkgconfig/kj.pc
@@ -240,8 +242,10 @@ foreach(pcfile ${CAPNP_PKG_CONFIG_FILES})
 endforeach()
 
 unset(STDLIB_FLAG)
-unset(PTHREAD_CFLAGS)
 unset(includedir)
 unset(libdir)
 unset(exec_prefix)
 unset(prefix)
+if(NOT MSVC)
+  unset(PTHREAD_CFLAGS)
+endif()
