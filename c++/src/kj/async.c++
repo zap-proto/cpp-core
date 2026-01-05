@@ -182,10 +182,7 @@ public:
 
   bool fired = false;
 
-  Maybe<Own<_::Event>> fire() override {
-    fired = true;
-    return kj::none;
-  }
+  void fire() override { fired = true; }
 
   void traceEvent(_::TraceBuilder& builder) override {
     node->tracePromise(builder, true);
@@ -315,7 +312,7 @@ public:
   }
 
 protected:
-  Maybe<Own<Event>> fire() override {
+  void fire() override {
     // Get the result.
     _::ExceptionOr<_::Void> result;
     node->get(result);
@@ -328,7 +325,7 @@ protected:
     }
 
     // Remove from the task list. Do this before calling taskFailed(), so that taskFailed() can
-    // safely call clear().
+    // safely call clear(). Will be destroyed on scope exit.
     auto self = pop();
 
     // We'll also process onEmpty() now, just in case `taskFailed()` actually destroys the whole
@@ -351,8 +348,6 @@ protected:
         taskSet.errorHandler.taskFailed(kj::mv(e));
       })();
     }
-
-    return Own<Event>(mv(self));
   }
 
   void traceEvent(_::TraceBuilder& builder) override {
@@ -1118,34 +1113,11 @@ void XThreadEvent::setDisconnected() {
       "Executor's event loop exited before cross-thread event could complete"));
 }
 
-class XThreadEvent::DelayedDoneHack: public Disposer {
-  // Crazy hack: In fire(), we want to call done() if the event is finished. But done() signals
-  // the requesting thread to wake up and possibly delete the XThreadEvent. But the caller (the
-  // EventLoop) still has to set `event->firing = false` after `fire()` returns, so this would be
-  // a race condition use-after-free.
-  //
-  // It just so happens, though, that fire() is allowed to return an optional `Own<Event>` to drop,
-  // and the caller drops that pointer immediately after setting event->firing = false. So we
-  // return a pointer whose disposer calls done().
-  //
-  // It's not quite as much of a hack as it seems: The whole reason fire() returns an Own<Event> is
-  // so that the event can delete itself, but do so after the caller sets event->firing = false.
-  // It just happens to be that in this case, the event isn't deleting itself, but rather releasing
-  // itself back to the other thread.
-
-protected:
-  void disposeImpl(void* pointer) const override {
-    reinterpret_cast<XThreadEvent*>(pointer)->done();
-  }
-};
-
-Maybe<Own<Event>> XThreadEvent::fire() {
-  static constexpr DelayedDoneHack DISPOSER {};
-
+void XThreadEvent::fire() {
   KJ_IF_SOME(n, promiseNode) {
     n->get(result);
     promiseNode = kj::none;  // make sure to destroy in the thread that created it
-    return Own<Event>(this, DISPOSER);
+    done(); // possible deletes this
   } else {
     KJ_IF_SOME(exception, kj::runCatchingExceptions([&]() {
       promiseNode = execute();
@@ -1155,11 +1127,9 @@ Maybe<Own<Event>> XThreadEvent::fire() {
     KJ_IF_SOME(n, promiseNode) {
       n->onReady(this);
     } else {
-      return Own<Event>(this, DISPOSER);
+      done(); // possible deletes this
     }
   }
-
-  return kj::none;
 }
 
 void XThreadEvent::traceEvent(TraceBuilder& builder) {
@@ -1654,11 +1624,10 @@ void FiberBase::cancel() {
   }
 }
 
-Maybe<Own<Event>> FiberBase::fire() {
+void FiberBase::fire() {
   KJ_ASSERT(state == WAITING);
   state = RUNNING;
   stack->switchToFiber();
-  return kj::none;
 }
 
 void FiberStack::switchToFiber() {
@@ -1836,11 +1805,10 @@ bool EventLoop::turn() {
     event->next = nullptr;
     event->prev = nullptr;
 
-    Maybe<Own<_::Event>> eventToDestroy;
     {
       currentlyFiring = event;
       KJ_DEFER(currentlyFiring = nullptr);
-      eventToDestroy = event->fire();
+      event->fire();
     }
 
     depthFirstInsertPoint = &head;
@@ -2565,7 +2533,7 @@ ForkHubBase::ForkHubBase(OwnPromiseNode&& innerParam, ExceptionOrValue& resultRe
   inner->onReady(this);
 }
 
-Maybe<Own<Event>> ForkHubBase::fire() {
+void ForkHubBase::fire() {
   // Dependency is ready.  Fetch its result and then delete the node.
   inner->get(resultRef);
   KJ_IF_SOME(exception, kj::runCatchingExceptions([this]() {
@@ -2583,8 +2551,6 @@ Maybe<Own<Event>> ForkHubBase::fire() {
 
   // Indicate that the list is no longer active.
   tailBranch = nullptr;
-
-  return kj::none;
 }
 
 void ForkHubBase::traceEvent(TraceBuilder& builder) {
@@ -2647,7 +2613,7 @@ void ChainPromiseNode::tracePromise(TraceBuilder& builder, bool stopAtNextEvent)
   inner->tracePromise(builder, stopAtNextEvent);
 }
 
-Maybe<Own<Event>> ChainPromiseNode::fire() {
+void ChainPromiseNode::fire() {
   KJ_REQUIRE(state != STEP2);
 
   static_assert(sizeof(Promise<int>) == sizeof(PromiseBase),
@@ -2679,23 +2645,18 @@ Maybe<Own<Event>> ChainPromiseNode::fire() {
   state = STEP2;
 
   if (selfPtr != nullptr) {
-    // Hey, we can shorten the chain here.
+    // Hey, we can shorten the chain here. Will be destroyed on scope exit.
     auto chain = selfPtr->downcast<ChainPromiseNode>();
     *selfPtr = kj::mv(inner);
     selfPtr->get()->setSelfPointer(selfPtr);
     if (onReadyEvent != nullptr) {
       selfPtr->get()->onReady(onReadyEvent);
     }
-
-    // Return our self-pointer so that the caller takes care of deleting it.
-    return Own<Event>(kj::Own<ChainPromiseNode>(kj::mv(chain)));
   } else {
     inner->setSelfPointer(&inner);
     if (onReadyEvent != nullptr) {
       inner->onReady(onReadyEvent);
     }
-
-    return kj::none;
   }
 }
 
@@ -2768,7 +2729,7 @@ bool ExclusiveJoinPromiseNode::Branch::get(ExceptionOrValue& output) {
   }
 }
 
-Maybe<Own<Event>> ExclusiveJoinPromiseNode::Branch::fire() {
+void ExclusiveJoinPromiseNode::Branch::fire() {
   if (dependency) {
     // Cancel the branch that didn't return first.  Ignore exceptions caused by cancellation.
     if (this == &joinNode.left) {
@@ -2782,7 +2743,6 @@ Maybe<Own<Event>> ExclusiveJoinPromiseNode::Branch::fire() {
     // The other branch already fired, and this branch was canceled. It's possible for both
     // branches to fire if both were armed simultaneously.
   }
-  return kj::none;
 }
 
 void ExclusiveJoinPromiseNode::Branch::traceEvent(TraceBuilder& builder) {
@@ -2861,7 +2821,7 @@ ArrayJoinPromiseNodeBase::Branch::Branch(
 
 ArrayJoinPromiseNodeBase::Branch::~Branch() noexcept(false) {}
 
-Maybe<Own<Event>> ArrayJoinPromiseNodeBase::Branch::fire() {
+void ArrayJoinPromiseNodeBase::Branch::fire() {
   if (--joinNode.countLeft == 0 && !joinNode.armed) {
     joinNode.onReadyEvent.arm();
     joinNode.armed = true;
@@ -2875,8 +2835,6 @@ Maybe<Own<Event>> ArrayJoinPromiseNodeBase::Branch::fire() {
       joinNode.armed = true;
     }
   }
-
-  return kj::none;
 }
 
 void ArrayJoinPromiseNodeBase::Branch::traceEvent(TraceBuilder& builder) {
@@ -2950,11 +2908,11 @@ RaceSuccessfulPromiseNodeBase::Branch::Branch(
 
 RaceSuccessfulPromiseNodeBase::Branch::~Branch() noexcept(false) {}
 
-Maybe<Own<Event>> RaceSuccessfulPromiseNodeBase::Branch::fire() {
+void RaceSuccessfulPromiseNodeBase::Branch::fire() {
   if (parent.armed) {
     // the parent node has already received the value, no need to bother with
     // anything
-    return kj::none;
+    return;
   }
 
   auto count = --parent.countLeft;
@@ -2976,8 +2934,6 @@ Maybe<Own<Event>> RaceSuccessfulPromiseNodeBase::Branch::fire() {
     parent.armed = true;
     parent.onReadyEvent.arm();
   }
-
-  return kj::none;
 }
 
 void RaceSuccessfulPromiseNodeBase::Branch::traceEvent(TraceBuilder &builder) {
@@ -3098,7 +3054,7 @@ void EagerPromiseNodeBase::traceEvent(TraceBuilder& builder) {
   onReadyEvent.traceEvent(builder);
 }
 
-Maybe<Own<Event>> EagerPromiseNodeBase::fire() {
+void EagerPromiseNodeBase::fire() {
   dependency->get(resultRef);
   KJ_IF_SOME(exception, kj::runCatchingExceptions([this]() {
     dependency = nullptr;
@@ -3107,7 +3063,6 @@ Maybe<Own<Event>> EagerPromiseNodeBase::fire() {
   }
 
   onReadyEvent.arm();
-  return kj::none;
 }
 
 // -------------------------------------------------------------------
@@ -3221,7 +3176,7 @@ void CoroutineBase::tracePromise(TraceBuilder& builder, bool stopAtNextEvent) {
   builder.add(GetFunctorStartAddress<>::apply(coroutine));
 };
 
-Maybe<Own<Event>> CoroutineBase::fire() {
+void CoroutineBase::fire() {
   // Call PromiseAwaiter::await_resume() and proceed with the coroutine. Note that this will not
   // destroy the coroutine if control flows off the end of it, because we return suspend_always()
   // from final_suspend().
@@ -3232,8 +3187,6 @@ Maybe<Own<Event>> CoroutineBase::fire() {
   // try-catch block, so we have no choice but to resume and throw later.
 
   coroutine.resume();
-
-  return kj::none;
 }
 
 void CoroutineBase::traceEvent(TraceBuilder& builder) {
