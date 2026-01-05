@@ -1838,8 +1838,6 @@ bool EventLoop::turn() {
 
     Maybe<Own<_::Event>> eventToDestroy;
     {
-      event->firing = true;
-      KJ_DEFER(event->firing = false);
       currentlyFiring = event;
       KJ_DEFER(currentlyFiring = nullptr);
       eventToDestroy = event->fire();
@@ -2178,11 +2176,7 @@ Event::~Event() noexcept {  // intentionally noexcept
   // any instructions, it just blocks compiler optimizations.
   std::atomic_signal_fence(std::memory_order_acq_rel);
 
-  disarm();
-
-  // If this fails, we'll abort due to `noexcept`. That's good because otherwise we're likely to
-  // be in a use-after-free situation.
-  KJ_REQUIRE(!firing, "Promise callback destroyed itself.");
+  disarm();  
 }
 
 void Event::armDepthFirst() {

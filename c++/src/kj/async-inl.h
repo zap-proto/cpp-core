@@ -217,7 +217,6 @@ private:
   EventLoop& loop;
   Event* next;
   Event** prev;
-  bool firing = false;
 
   static constexpr uint MAGIC_LIVE_VALUE = 0x1e366381u;
   uint live = MAGIC_LIVE_VALUE;
