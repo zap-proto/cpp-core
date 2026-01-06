@@ -210,9 +210,14 @@ protected:
   virtual void fire() = 0;
   // Fire the event. Possibly deletes itself.
 
+  void detachFromLoop();
+  // Detach this event from its loop. After calling this, the event will not access the loop
+  // anymore. This is used by XThreadEvent when the target event loop has been destroyed before
+  // the XThreadEvent itself is destroyed.
+
 private:
   friend class kj::EventLoop;
-  EventLoop& loop;
+  Maybe<EventLoop&> loop;
   Event* next;
   Event** prev;
 
