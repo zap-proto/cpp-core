@@ -916,6 +916,9 @@ void XThreadEvent::ensureDoneOrCanceled() {
       // Target event loop is already dead, so we know it's already working on transitioning all
       // events to the DONE state. We can just wait.
       lock.wait([&](auto&) { return state == DONE; });
+      // The target loop is destroyed, so we must detach from it to prevent ~Event() from accessing
+      // invalid memory.
+      detachFromLoop();
       return;
     }
 
@@ -1031,6 +1034,14 @@ void XThreadEvent::ensureDoneOrCanceled() {
         // Became done while we waited for lock. Nothing to do.
         break;
     }
+  }
+
+  // Check if the target loop is still alive. If not, we need to detach from it to prevent
+  // ~Event() from accessing invalid memory. We need to check this even if state was already DONE
+  // when we entered, because the loop could have been destroyed and transitioned us to DONE.
+  auto lock = targetExecutor->impl->state.lockExclusive();
+  if (lock->loop == kj::none) {
+    detachFromLoop();
   }
 
   KJ_IF_SOME(e, replyExecutor) {
@@ -2128,12 +2139,18 @@ void detach(kj::Promise<void>&& promise) {
 }
 
 Event::Event(SourceLocation location)
-    : loop(currentEventLoop()), next(nullptr), prev(nullptr), location(location) {}
+    : loop(&currentEventLoop()), next(nullptr), prev(nullptr), location(location) {}
 
 Event::Event(kj::EventLoop& loop, SourceLocation location)
-    : loop(loop), next(nullptr), prev(nullptr), location(location) {}
+    : loop(&loop), next(nullptr), prev(nullptr), location(location) {}
 
 Event::~Event() noexcept {  // intentionally noexcept
+  KJ_IF_SOME(loop, this->loop) {
+    if (loop.currentlyFiring == this) {
+      loop.currentlyFiring = nullptr;
+    }
+  }
+
   live = 0;
 
   // Prevent compiler from eliding this store above. This line probably isn't needed because there
@@ -2148,6 +2165,7 @@ Event::~Event() noexcept {  // intentionally noexcept
 }
 
 void Event::armDepthFirst() {
+  auto& loop = KJ_ASSERT_NONNULL(this->loop, "No event loop associated");
   KJ_REQUIRE(threadLocalEventLoop == &loop || threadLocalEventLoop == nullptr,
              "Event armed from different thread than it was created in.  You must use "
              "Executor to queue events cross-thread.", threadLocalEventLoop, &loop);
@@ -2179,6 +2197,7 @@ void Event::armDepthFirst() {
 }
 
 void Event::armBreadthFirst() {
+  auto& loop = KJ_ASSERT_NONNULL(this->loop, "No event loop associated");
   KJ_REQUIRE(threadLocalEventLoop == &loop || threadLocalEventLoop == nullptr,
              "Event armed from different thread than it was created in.  You must use "
              "Executor to queue events cross-thread.", threadLocalEventLoop, &loop);
@@ -2207,6 +2226,7 @@ void Event::armBreadthFirst() {
 }
 
 void Event::armLast() {
+  auto& loop = KJ_ASSERT_NONNULL(this->loop, "No event loop associated");
   KJ_REQUIRE(threadLocalEventLoop == &loop || threadLocalEventLoop == nullptr,
              "Event armed from different thread than it was created in.  You must use "
              "Executor to queue events cross-thread.", threadLocalEventLoop, &loop);
@@ -2236,6 +2256,7 @@ void Event::armLast() {
 }
 
 void Event::armWhenWouldSleep() {
+  auto& loop = KJ_ASSERT_NONNULL(this->loop, "No event loop associated");
   KJ_REQUIRE(threadLocalEventLoop == &loop || threadLocalEventLoop == nullptr,
              "Event armed from different thread than it was created in.  You must use "
              "Executor to queue events cross-thread.", threadLocalEventLoop, &loop);
@@ -2262,11 +2283,14 @@ void Event::armWhenWouldSleep() {
 }
 
 bool Event::isNext() {
+  auto& loop = KJ_ASSERT_NONNULL(this->loop, "No event loop associated");
   return loop.running && loop.head == this;
 }
 
 void Event::disarm() noexcept {
   if (prev != nullptr) {
+    auto& loop = KJ_ASSERT_NONNULL(this->loop, "No event loop associated");
+
     if (threadLocalEventLoop != &loop && threadLocalEventLoop != nullptr) {
       // This will crash because the method is `noexcept`. That's good because otherwise we're
       // likely going to segfault later.
@@ -2295,6 +2319,10 @@ void Event::disarm() noexcept {
     prev = nullptr;
     next = nullptr;
   }
+}
+
+void Event::detachFromLoop() {
+  loop = kj::none;
 }
 
 String Event::traceEvent() {
