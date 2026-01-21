@@ -2151,8 +2151,6 @@ Event::~Event() noexcept {  // intentionally noexcept
     }
   }
 
-  live = 0;
-
   // Prevent compiler from eliding this store above. This line probably isn't needed because there
   // are complex calls later in this destructor, and the compiler probably can't prove that they
   // won't come back and examine `live`, so it won't elide the write anyway. However, an
@@ -2169,12 +2167,6 @@ void Event::armDepthFirst() {
   KJ_REQUIRE(threadLocalEventLoop == &loop || threadLocalEventLoop == nullptr,
              "Event armed from different thread than it was created in.  You must use "
              "Executor to queue events cross-thread.", threadLocalEventLoop, &loop);
-  if (live != MAGIC_LIVE_VALUE) {
-    ([this]() noexcept {
-      KJ_FAIL_ASSERT("tried to arm Event after it was destroyed", location);
-    })();
-  }
-
   if (prev == nullptr) {
     next = *loop.depthFirstInsertPoint;
     prev = loop.depthFirstInsertPoint;
@@ -2201,12 +2193,6 @@ void Event::armBreadthFirst() {
   KJ_REQUIRE(threadLocalEventLoop == &loop || threadLocalEventLoop == nullptr,
              "Event armed from different thread than it was created in.  You must use "
              "Executor to queue events cross-thread.", threadLocalEventLoop, &loop);
-  if (live != MAGIC_LIVE_VALUE) {
-    ([this]() noexcept {
-      KJ_FAIL_ASSERT("tried to arm Event after it was destroyed", location);
-    })();
-  }
-
   if (prev == nullptr) {
     next = *loop.breadthFirstInsertPoint;
     prev = loop.breadthFirstInsertPoint;
@@ -2230,12 +2216,6 @@ void Event::armLast() {
   KJ_REQUIRE(threadLocalEventLoop == &loop || threadLocalEventLoop == nullptr,
              "Event armed from different thread than it was created in.  You must use "
              "Executor to queue events cross-thread.", threadLocalEventLoop, &loop);
-  if (live != MAGIC_LIVE_VALUE) {
-    ([this]() noexcept {
-      KJ_FAIL_ASSERT("tried to arm Event after it was destroyed", location);
-    })();
-  }
-
   if (prev == nullptr) {
     next = *loop.breadthFirstInsertPoint;
     prev = loop.breadthFirstInsertPoint;
@@ -2260,12 +2240,6 @@ void Event::armWhenWouldSleep() {
   KJ_REQUIRE(threadLocalEventLoop == &loop || threadLocalEventLoop == nullptr,
              "Event armed from different thread than it was created in.  You must use "
              "Executor to queue events cross-thread.", threadLocalEventLoop, &loop);
-  if (live != MAGIC_LIVE_VALUE) {
-    ([this]() noexcept {
-      KJ_FAIL_ASSERT("tried to arm Event after it was destroyed", location);
-    })();
-  }
-
   if (prev == nullptr) {
     next = loop.wouldSleepHead;
     prev = &loop.wouldSleepHead;
