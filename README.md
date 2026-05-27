@@ -1,3 +1,6 @@
+
+> **Docs:** [ZAP C++ core codec](https://zap-proto.dev/docs/sdks/cpp) · part of the [ZAP Protocol](https://zap-proto.io)
+
 **THIS IS THE V2 DEVELOPMENT BRANCH**
 
 On this branch, we may make breaking changes to the API at any time. Do not use this branch if you want stability. If you want "1.0 plus bug fixes", use the `master` branch.
