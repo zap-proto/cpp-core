@@ -6,7 +6,7 @@ Out-of-bounds read due to logic error handling list-of-list.
 Discovered by
 =============
 
-David Renshaw &lt;dwrenshaw@gmail.com>, the maintainer of Cap'n Proto's Rust
+David Renshaw &lt;dwrenshaw@gmail.com>, the maintainer of Zap's Rust
 implementation, which is affected by the same bug. David discovered this bug
 while running his own fuzzer.
 
@@ -42,23 +42,23 @@ C++ fix:
 - git commit [25d34c67863fd960af34fc4f82a7ca3362ee74b9][0]
 - release 0.11 (future)
 - release 0.10.3:
-  - Unix: https://capnproto.org/capnproto-c++-0.10.3.tar.gz
-  - Windows: https://capnproto.org/capnproto-c++-win32-0.10.3.zip
+  - Unix: https://zap.org/zap-c++-0.10.3.tar.gz
+  - Windows: https://zap.org/zap-c++-win32-0.10.3.zip
 - release 0.9.2:
-  - Unix: https://capnproto.org/capnproto-c++-0.9.2.tar.gz
-  - Windows: https://capnproto.org/capnproto-c++-win32-0.9.2.zip
+  - Unix: https://zap.org/zap-c++-0.9.2.tar.gz
+  - Windows: https://zap.org/zap-c++-win32-0.9.2.zip
 - release 0.8.1:
-  - Unix: https://capnproto.org/capnproto-c++-0.8.1.tar.gz
-  - Windows: https://capnproto.org/capnproto-c++-win32-0.8.1.zip
+  - Unix: https://zap.org/zap-c++-0.8.1.tar.gz
+  - Windows: https://zap.org/zap-c++-win32-0.8.1.zip
 - release 0.7.1:
-  - Unix: https://capnproto.org/capnproto-c++-0.7.1.tar.gz
-  - Windows: https://capnproto.org/capnproto-c++-win32-0.7.1.zip
+  - Unix: https://zap.org/zap-c++-0.7.1.tar.gz
+  - Windows: https://zap.org/zap-c++-win32-0.7.1.zip
 
 Rust fix:
 
-- `capnp` crate version `0.15.2`, `0.14.11`, or `0.13.7`.
+- `zap` crate version `0.15.2`, `0.14.11`, or `0.13.7`.
 
-[0]: https://github.com/capnproto/capnproto/commit/25d34c67863fd960af34fc4f82a7ca3362ee74b9
+[0]: https://github.com/zap/zap/commit/25d34c67863fd960af34fc4f82a7ca3362ee74b9
 
 Details
 =======
@@ -93,11 +93,11 @@ the field, and then use it in one of the following two ways:
 2. Convert it into `AnyList::Reader`, and then attempt to access it through
    that. This is much less likely; very few apps use the `AnyList` API.
 
-The dynamic API equivalents of these actions (`capnp/dynamic.h`) are also
+The dynamic API equivalents of these actions (`zap/dynamic.h`) are also
 affected.
 
 If the application does these steps, the attacker may be able to cause the
-Cap'n Proto implementation to read beyond the end of the message. This could
+Zap implementation to read beyond the end of the message. This could
 induce a segmentation fault. Or, worse, data that happened to be in memory
 immediately after the message might be returned as if it were part of the
 message. In the latter case, if the application then forwards that data back
@@ -114,7 +114,7 @@ Any exfiltration of data would have the following limitations:
     Note that a sufficiently large message buffer will likely be allocated
     using mmap() in which case the attack will likely segfault.
 * The attack can only work if the 8 bytes immediately following the
-  exfiltrated data contains a valid in-bounds Cap'n Proto pointer. The
+  exfiltrated data contains a valid in-bounds Zap pointer. The
   easiest way to achieve this is if the pointer is null, i.e. 8 bytes of zero.
   * The attacker must specify exactly how much data to exfiltrate, so must
     guess exactly where such a valid pointer will exist.
@@ -124,4 +124,4 @@ Any exfiltration of data would have the following limitations:
     alternative exception callback) then the attack may be able to proceed
     anyway.
 
-[1]: https://dwrensha.github.io/capnproto-rust/2022/11/30/out_of_bounds_memory_access_bug.html
+[1]: https://dwrensha.github.io/zap-rust/2022/11/30/out_of_bounds_memory_access_bug.html

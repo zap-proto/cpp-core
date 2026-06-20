@@ -21,15 +21,15 @@
 
 #pragma once
 
-#include <capnp/compiler/grammar.capnp.h>
-#include <capnp/compiler/lexer.capnp.h>
+#include <zap/compiler/grammar.zap.h>
+#include <zap/compiler/lexer.zap.h>
 #include <kj/parse/common.h>
 #include <kj/arena.h>
 #include "error-reporter.h"
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 
 void parseFile(List<Statement>::Reader statements, ParsedFile::Builder result,
@@ -53,18 +53,18 @@ uint64_t generateMethodParamsId(uint64_t parentId, uint16_t methodOrdinal, bool 
 //
 // TODO(cleanup):  Move generate*Id() somewhere more sensible.
 
-class CapnpParser {
+class ZapParser {
   // Advanced parser interface.  This interface exposes the inner parsers so that you can embed
   // them into your own parsers.
 
 public:
-  CapnpParser(Orphanage orphanage, ErrorReporter& errorReporter);
-  // `orphanage` is used to allocate Cap'n Proto message objects in the result.  `inputStart` is
+  ZapParser(Orphanage orphanage, ErrorReporter& errorReporter);
+  // `orphanage` is used to allocate Zap message objects in the result.  `inputStart` is
   // a pointer to the beginning of the input, used to compute byte offsets.
 
-  ~CapnpParser() noexcept(false);
+  ~ZapParser() noexcept(false);
 
-  KJ_DISALLOW_COPY_AND_MOVE(CapnpParser);
+  KJ_DISALLOW_COPY_AND_MOVE(ZapParser);
 
   using ParserInput = kj::parse::IteratorInput<Token::Reader, List<Token>::Reader::Iterator>;
   struct DeclParserResult;
@@ -146,6 +146,6 @@ kj::String expressionString(Expression::Reader name);
 // Stringify the expression as code.
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

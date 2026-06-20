@@ -20,21 +20,21 @@
 // THE SOFTWARE.
 
 #pragma once
-// Bridges from KJ streams to Cap'n Proto ByteStream RPC protocol.
+// Bridges from KJ streams to Zap ByteStream RPC protocol.
 
-#include <capnp/compat/byte-stream.capnp.h>
+#include <zap/compat/byte-stream.zap.h>
 #include <kj/async-io.h>
 #include <kj/compat/http.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 class ExplicitEndOutputStream: public kj::AsyncOutputStream {
   // HACK: KJ's AsyncOutputStream has a known serious design flaw in that EOF is signaled by
   //   destroying the stream object rather than by calling an explicit `end()` method. This causes
   //   some serious problems when signaling EOF requires doing additional I/O, such as when
-  //   wrapping a capnp ByteStream where `end()` is an RPC call.
+  //   wrapping a zap ByteStream where `end()` is an RPC call.
   //
   //   When it really must, the ByteStream implementation will honor the KJ convention by starting
   //   the RPC in its destructor and detach()ing the promise. But, this has lots of negative side
@@ -42,11 +42,11 @@ class ExplicitEndOutputStream: public kj::AsyncOutputStream {
   //
   //   In lieu of an actual deep refactoring of KJ, ByteStreamFactory allows its caller to
   //   explicily specify when it is able to promise that it will make an explicit `end()` call.
-  //   capnpToKjExplicitEnd() returns an ExplicitEndOutputStream, which expect to receive an
+  //   zapToKjExplicitEnd() returns an ExplicitEndOutputStream, which expect to receive an
   //   `end()` call on clean EOF, and treats destruction without `end()` as an abort. This is used
-  //   in particular within http-over-capnp to improve behavior somewhat.
+  //   in particular within http-over-zap to improve behavior somewhat.
   //
-  //   Additionally, if `kjToCapnp()` is given an `ExplicitEndOutputStream`, and the application
+  //   Additionally, if `kjToZap()` is given an `ExplicitEndOutputStream`, and the application
   //   is built with RTTI enabled, then its `end()` method will be used when appropriate.
 public:
   virtual kj::Promise<void> end() = 0;
@@ -63,22 +63,22 @@ class ByteStreamFactory {
   // between RPC ByteStreams and KJ streams.
 
 public:
-  capnp::ByteStream::Client kjToCapnp(kj::Own<kj::AsyncOutputStream> kjStream);
-  capnp::ByteStream::Client kjToCapnp(
+  zap::ByteStream::Client kjToZap(kj::Own<kj::AsyncOutputStream> kjStream);
+  zap::ByteStream::Client kjToZap(
       kj::Own<kj::AsyncOutputStream> kjStream, kj::Maybe<kj::Own<kj::TlsStarterCallback>> tlsStarter);
-  kj::Own<kj::AsyncOutputStream> capnpToKj(capnp::ByteStream::Client capnpStream);
+  kj::Own<kj::AsyncOutputStream> zapToKj(zap::ByteStream::Client zapStream);
 
-  kj::Own<ExplicitEndOutputStream> capnpToKjExplicitEnd(capnp::ByteStream::Client capnpStream);
+  kj::Own<ExplicitEndOutputStream> zapToKjExplicitEnd(zap::ByteStream::Client zapStream);
 
 private:
-  CapabilityServerSet<capnp::ByteStream> streamSet;
+  CapabilityServerSet<zap::ByteStream> streamSet;
 
   class StreamServerBase;
   class SubstreamImpl;
-  class CapnpToKjStreamAdapter;
-  class KjToCapnpStreamAdapter;
+  class ZapToKjStreamAdapter;
+  class KjToZapStreamAdapter;
 };
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

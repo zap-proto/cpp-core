@@ -31,13 +31,13 @@ Fixed in
 
 - git commit [26bcceda72372211063d62aab7e45665faa83633][0]
 - release 0.5.1.1:
-  - Unix: https://capnproto.org/capnproto-c++-0.5.1.1.tar.gz
-  - Windows: https://capnproto.org/capnproto-c++-win32-0.5.1.1.zip
+  - Unix: https://zap.org/zap-c++-0.5.1.1.tar.gz
+  - Windows: https://zap.org/zap-c++-win32-0.5.1.1.zip
 - release 0.4.1.1:
-  - Unix: https://capnproto.org/capnproto-c++-0.4.1.1.tar.gz
+  - Unix: https://zap.org/zap-c++-0.4.1.1.tar.gz
 - release 0.6 (future)
 
-[0]: https://github.com/capnproto/capnproto/commit/26bcceda72372211063d62aab7e45665faa83633
+[0]: https://github.com/zap/zap/commit/26bcceda72372211063d62aab7e45665faa83633
 
 Details
 =======
@@ -48,7 +48,7 @@ often shown to be wrong, you should not rely on the accuracy of this
 section for the safety of your service. Please update your library.*
 
 A `Text` pointer, when non-null, must point to a NUL-terminated string, meaning
-it must have a size of at least 1. Under most circumstances, Cap'n Proto will
+it must have a size of at least 1. Under most circumstances, Zap will
 reject zero-size text objects. However, if an application performs the
 following sequence, they may hit a code path that was missing a check:
 
@@ -59,7 +59,7 @@ following sequence, they may hit a code path that was missing a check:
    obtaining a `Text::Builder` for the *copy*.
 
 In this case, the `Text::Builder` will appear to point at a string with size
-2^32-1, starting at a location within the Cap'n Proto message.
+2^32-1, starting at a location within the Zap message.
 
 The `Text::Builder` is writable. If the application decided to overwrite the
 text in-place, it could overwrite arbitrary memory in the next 4GB of virtual
@@ -98,13 +98,13 @@ This problem was discovered through preventative measures implemented after
 the security problem discussed in the [previous advisory][1]. Specifically, this
 problem was found by using template metaprogramming to implement integer
 bounds analysis in order to effectively "prove" that there are no integer
-overflows in the core pointer validation code (capnp/layout.c++).
+overflows in the core pointer validation code (zap/layout.c++).
 Tentatively, I believe that this analysis exhaustively covers this file.
 The instrumentation has not been merged into master yet as it requires some
-cleanup, but [check the Cap'n Proto blog for an in-depth discussion][2].
+cleanup, but [check the Zap blog for an in-depth discussion][2].
 
-This problem is also caught by capnp/fuzz-test.c++, which *has* been
+This problem is also caught by zap/fuzz-test.c++, which *has* been
 merged into master but likely doesn't have as broad coverage.
 
-[1]: https://github.com/capnproto/capnproto/tree/master/security-advisories/2015-03-02-0-c++-integer-overflow.md
-[2]: https://capnproto.org/news/2015-03-02-security-advisory-and-integer-overflow-protection.html
+[1]: https://github.com/zap/zap/tree/master/security-advisories/2015-03-02-0-c++-integer-overflow.md
+[2]: https://zap.org/news/2015-03-02-security-advisory-and-integer-overflow-protection.html

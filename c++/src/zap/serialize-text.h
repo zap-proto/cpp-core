@@ -26,14 +26,14 @@
 #include "orphan.h"
 #include "schema.h"
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 class TextCodec {
-  // Reads and writes Cap'n Proto objects in a plain text format (as used in the schema
+  // Reads and writes Zap objects in a plain text format (as used in the schema
   // language for constants, and read/written by the 'decode' and 'encode' commands of
-  // the capnp tool).
+  // the zap tool).
   //
   // This format is useful for debugging or human input, but it is not a robust alternative
   // to the binary format. Changes to a schema's types or names that are permitted in a
@@ -41,9 +41,9 @@ class TextCodec {
   //
   // Note that definitions or references (to constants, other fields, or files) are not
   // permitted in this format. To evaluate declarations with the full expressiveness of the
-  // schema language, see `capnp::SchemaParser`.
+  // schema language, see `zap::SchemaParser`.
   //
-  // Requires linking with the capnpc library.
+  // Requires linking with the zapc library.
 
 public:
   TextCodec();
@@ -56,11 +56,11 @@ public:
   template <typename T>
   kj::String encode(T&& value) const;
   kj::String encode(DynamicValue::Reader value) const;
-  // Encode any Cap'n Proto value.
+  // Encode any Zap value.
 
   template <typename T>
   Orphan<T> decode(kj::StringPtr input, Orphanage orphanage) const;
-  // Decode a text message into a Cap'n Proto object of type T, allocated in the given
+  // Decode a text message into a Zap object of type T, allocated in the given
   // orphanage. Any errors parsing the input or assigning the fields of T are thrown as
   // exceptions.
 
@@ -88,6 +88,6 @@ inline Orphan<T> TextCodec::decode(kj::StringPtr input, Orphanage orphanage) con
   return decode(input, Type::from<T>(), orphanage).template releaseAs<T>();
 }
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

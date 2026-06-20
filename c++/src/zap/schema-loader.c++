@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define CAPNP_PRIVATE
+#define ZAP_PRIVATE
 #include "schema-loader.h"
 #include "message.h"
 #include "arena.h"
@@ -29,13 +29,13 @@
 #include <kj/vector.h>
 #include <algorithm>
 #include <kj/map.h>
-#include <capnp/stream.capnp.h>
+#include <zap/stream.zap.h>
 
 #if _MSC_VER && !defined(__clang__)
 #include <atomic>
 #endif
 
-namespace capnp {
+namespace zap {
 
 namespace {
 
@@ -1018,7 +1018,7 @@ private:
         return;
     }
 
-    // We assume unknown types (from newer versions of Cap'n Proto?) are equivalent.
+    // We assume unknown types (from newer versions of Zap?) are equivalent.
   }
 
   void checkUpgradeToStruct(const schema::Type::Reader& type, uint64_t structTypeId,
@@ -1726,7 +1726,7 @@ void SchemaLoader::Impl::makeDep(_::RawBrandedSchema::Binding& result,
     schema::Brand::Reader brand, kj::StringPtr scopeName,
     kj::Maybe<kj::ArrayPtr<const _::RawBrandedSchema::Scope>> brandBindings) {
   const _::RawSchema* schema;
-  if (typeId == capnp::typeId<StreamResult>()) {
+  if (typeId == zap::typeId<StreamResult>()) {
     // StreamResult is a very special type that is used to mark when a method is declared as
     // streaming ("foo @0 () -> stream;"). We like to auto-load it if we see it as someone's
     // dependency.
@@ -2265,4 +2265,4 @@ void SchemaLoader::loadNative(const _::RawSchema* nativeSchema) {
   impl.lockExclusive()->get()->loadNative(nativeSchema);
 }
 
-}  // namespace capnp
+}  // namespace zap

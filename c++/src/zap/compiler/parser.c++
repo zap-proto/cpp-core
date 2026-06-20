@@ -25,7 +25,7 @@
 
 #include "parser.h"
 #include "type-id.h"
-#include <capnp/dynamic.h>
+#include <zap/dynamic.h>
 #include <kj/debug.h>
 #include <kj/io.h>
 #include <kj/encoding.h>
@@ -43,7 +43,7 @@
 #include <kj/windows-sanity.h>
 #endif
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 
 uint64_t generateRandomId() {
@@ -70,7 +70,7 @@ uint64_t generateRandomId() {
 
 void parseFile(List<Statement>::Reader statements, ParsedFile::Builder result,
                ErrorReporter& errorReporter, bool requiresId) {
-  CapnpParser parser(Orphanage::getForMessageContaining(result), errorReporter);
+  ZapParser parser(Orphanage::getForMessageContaining(result), errorReporter);
 
   kj::Vector<Orphan<Declaration>> decls(statements.size());
   kj::Vector<Orphan<Declaration::AnnotationApplication>> annotations;
@@ -255,13 +255,13 @@ public:
       : itemParser(p::sequence(kj::fwd<ItemParser>(itemParser), p::endOfInput)),
         errorReporter(errorReporter) {}
 
-  Located<kj::Array<kj::Maybe<p::OutputType<ItemParser, CapnpParser::ParserInput>>>> operator()(
+  Located<kj::Array<kj::Maybe<p::OutputType<ItemParser, ZapParser::ParserInput>>>> operator()(
       Located<List<List<Token>>::Reader>&& items) const {
-    auto result = kj::heapArray<kj::Maybe<p::OutputType<ItemParser, CapnpParser::ParserInput>>>(
+    auto result = kj::heapArray<kj::Maybe<p::OutputType<ItemParser, ZapParser::ParserInput>>>(
         items.value.size());
     for (uint i = 0; i < items.value.size(); i++) {
       auto item = items.value[i];
-      CapnpParser::ParserInput input(item.begin(), item.end());
+      ZapParser::ParserInput input(item.begin(), item.end());
       result[i] = itemParser(input);
       if (result[i] == kj::none) {
         // Parsing failed.  Report an error.
@@ -283,7 +283,7 @@ public:
         }
       }
     }
-    return Located<kj::Array<kj::Maybe<p::OutputType<ItemParser, CapnpParser::ParserInput>>>>(
+    return Located<kj::Array<kj::Maybe<p::OutputType<ItemParser, ZapParser::ParserInput>>>>(
         kj::mv(result), items.startByte, items.endByte);
   }
 
@@ -379,7 +379,7 @@ void initLocation(kj::parse::Span<typename List<Token>::Reader::Iterator> locati
 
 // =======================================================================================
 
-CapnpParser::CapnpParser(Orphanage orphanageParam, ErrorReporter& errorReporterParam)
+ZapParser::ZapParser(Orphanage orphanageParam, ErrorReporter& errorReporterParam)
     : orphanage(orphanageParam), errorReporter(errorReporterParam) {
   auto& tupleElement = arena.copy(p::transform(
       p::sequence(p::optional(p::sequence(identifier, op("="))), parsers.expression),
@@ -615,7 +615,7 @@ CapnpParser::CapnpParser(Orphanage orphanageParam, ErrorReporter& errorReporterP
       [this](Located<uint64_t>&& value) {
         if (value.value < (1ull << 63)) {
           errorReporter.addError(value.startByte, value.endByte,
-              "Invalid ID.  Please generate a new one with 'capnpc -i'.");
+              "Invalid ID.  Please generate a new one with 'zapc -i'.");
         }
         return value.asProto<LocatedInteger>(orphanage);
       }));
@@ -768,7 +768,7 @@ CapnpParser::CapnpParser(Orphanage orphanageParam, ErrorReporter& errorReporterP
                  -> DeclParserResult {
         if (missingExclamation) {
           errorReporter.addErrorOn(KJ_ASSERT_NONNULL(ordinal).getReader(),
-              "As of Cap'n Proto v0.3, it is no longer necessary to assign numbers to "
+              "As of Zap v0.3, it is no longer necessary to assign numbers to "
               "unions. However, removing the number will break binary compatibility. "
               "If this is an old protocol and you need to retain compatibility, please "
               "add an exclamation point after the number to indicate that it is really "
@@ -778,7 +778,7 @@ CapnpParser::CapnpParser(Orphanage orphanageParam, ErrorReporter& errorReporterP
         }
         if (missingColon) {
           errorReporter.addErrorOn(KJ_ASSERT_NONNULL(ordinal).getReader(),
-              "As of Cap'n Proto v0.3, the 'union' keyword should be prefixed with a colon "
+              "As of Zap v0.3, the 'union' keyword should be prefixed with a colon "
               "for named unions, e.g. `foo :union {`.");
         }
 
@@ -1029,9 +1029,9 @@ CapnpParser::CapnpParser(Orphanage orphanageParam, ErrorReporter& errorReporterP
       parsers.methodDecl, parsers.genericDecl));
 }
 
-CapnpParser::~CapnpParser() noexcept(false) {}
+ZapParser::~ZapParser() noexcept(false) {}
 
-kj::Maybe<Orphan<Declaration>> CapnpParser::parseStatement(
+kj::Maybe<Orphan<Declaration>> ZapParser::parseStatement(
     Statement::Reader statement, const DeclParser& parser) {
   auto fullParser = p::sequence(parser, p::endOfInput);
 
@@ -1184,4 +1184,4 @@ kj::String expressionString(Expression::Reader name) {
 }
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap

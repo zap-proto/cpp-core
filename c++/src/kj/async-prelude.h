@@ -38,7 +38,7 @@
 #include <experimental/coroutine>
 #define KJ_COROUTINE_STD_NAMESPACE std::experimental
 #else
-#error "Cap'n Proto requires support for C++20 coroutines. Support for the Coroutines TS will suffice."
+#error "Zap requires support for C++20 coroutines. Support for the Coroutines TS will suffice."
 #endif
 
 KJ_BEGIN_HEADER
@@ -77,8 +77,8 @@ Reduced reducePromiseType(T*, bool);
 template <typename T>
 using ReducePromises = decltype(reducePromiseType((T*)nullptr, false));
 // Like ChainPromises, but also takes into account whether T has a method `reducePromise` that
-// reduces Promise<T> to something else. In particular this allows Promise<capnp::RemotePromise<U>>
-// to reduce to capnp::RemotePromise<U>.
+// reduces Promise<T> to something else. In particular this allows Promise<zap::RemotePromise<U>>
+// to reduce to zap::RemotePromise<U>.
 
 template <typename T> struct UnwrapPromise_;
 template <typename T> struct UnwrapPromise_<Promise<T>> { typedef T Type; };

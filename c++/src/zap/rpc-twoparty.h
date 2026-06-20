@@ -22,15 +22,15 @@
 #pragma once
 
 #include "rpc.h"
-#include <capnp/message.h>
+#include <zap/message.h>
 #include <kj/async-io.h>
-#include <capnp/serialize-async.h>
-#include <capnp/rpc-twoparty.capnp.h>
+#include <zap/serialize-async.h>
+#include <zap/rpc-twoparty.zap.h>
 #include <kj/one-of.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 namespace rpc {
   namespace twoparty {
@@ -262,6 +262,6 @@ private:
   RpcSystem<rpc::twoparty::VatId> rpcSystem;
 };
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

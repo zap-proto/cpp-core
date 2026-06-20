@@ -21,7 +21,6 @@
 
 #include "desugar.h"
 #include <kj/vector.h>
-#include <kj/debug.h>
 
 namespace zap {
 namespace compiler {
@@ -38,15 +37,34 @@ inline bool isIdentChar(char c) {
 }
 inline bool isDigit(char c) { return c >= '0' && c <= '9'; }
 
-// Number of leading indentation characters. Both ' ' (space) and '\t' (tab) count as
-// one indentation unit each — consistent with the Go and TypeScript desugarers, which
-// treat a tab as a single indent column. Counting tabs is required so a tab-indented
-// body nests under its header (indent > header) rather than collapsing to indent 0,
-// which would orphan every member at file scope. [audit: C3]
+// Number of leading indentation CHARACTERS (each ' ' or '\t' counts as one). This is the
+// raw column span of the indent prefix; it is used only to SLICE the leading whitespace for
+// re-emission and to choose the close-brace column, so emitted output preserves the source's
+// exact indent bytes. Nesting decisions use indentWidth() instead. [audit: C3]
 size_t leadingIndent(kj::ArrayPtr<const char> line) {
   size_t n = 0;
   while (n < line.size() && (line[n] == ' ' || line[n] == '\t')) ++n;
   return n;
+}
+
+// Tab stop used when expanding tabs to columns for nesting comparisons. A power of two so a
+// tab always advances to the next multiple of kTabWidth.
+constexpr size_t kTabWidth = 8;
+
+// Visual indentation WIDTH in columns, expanding each '\t' to the next kTabWidth stop and
+// each ' ' to one column. Nesting (which block a line belongs to) is decided on this width,
+// not the raw character count, so a space-indented header and a tab-indented body — in either
+// order — compare correctly instead of orphaning the body when one tab (1 char) tested as
+// shallower than several spaces. This is the one canonical measure of "how deep" a line is.
+// [audit: mixed space/tab indentation]
+size_t indentWidth(kj::ArrayPtr<const char> line) {
+  size_t col = 0;
+  for (size_t i = 0; i < line.size(); ++i) {
+    if (line[i] == ' ') ++col;
+    else if (line[i] == '\t') col += kTabWidth - (col % kTabWidth);
+    else break;
+  }
+  return col;
 }
 
 // Trim trailing whitespace (space, tab, \r) — returns a sub-slice.
@@ -154,38 +172,61 @@ size_t identLen(kj::ArrayPtr<const char> t) {
   return i;
 }
 
-// Cap'n Proto ordinals are 16-bit; the parser rejects any ordinal >= 65536
-// (see parser.c++: "Ordinals cannot be greater than 65535."). The desugar must
-// not emit, nor silently wrap into, an out-of-range ordinal — so it both parses
-// without overflow and validates the range here, at the boundary. [audit: H1]
+// ZAP ordinals are 16-bit; the parser is the single authority that REJECTS an out-of-range
+// ordinal — `parsers.ordinal` reports "Ordinals cannot be greater than 65535." at the exact
+// source span for any value >= 65536 (parser.c++). The desugar therefore does NOT re-validate
+// (no duplicated policy, no throw across the un-tried call sites): it emits the field — including
+// an out-of-range explicit `@N` — verbatim, and the parser produces the clean file:line:col
+// diagnostic. The desugar's ONE remaining ordinal duty is to advance the per-scope auto-ordinal
+// counter WITHOUT wrapping a uint32, so a huge literal can never silently roll the next member's
+// ordinal back into the valid range. [audit: H1 / graceful failure]
 constexpr uint32_t kMaxOrdinal = 65535;
 
-// Find explicit `@<digits>` ordinal token (outside strings). Returns true + value.
-// The digit accumulation is overflow-guarded (clamped at kMaxOrdinal + 1 so an
-// astronomically long literal like @99999999999999999999 can never wrap a uint32
-// back into the valid range), and an out-of-range ordinal throws rather than being
-// emitted as bogus brace source the parser would silently miscount. [audit: H1]
-bool explicitOrdinal(kj::ArrayPtr<const char> t, uint32_t& outVal) {
+// The span of a member line where an ORDINAL may legally appear: from just after the leading
+// name to the first ':' (type) or '(' (method params / type brand) — whichever comes first.
+// An '@N' anywhere else (e.g. a generic/brand argument inside a TYPE, `b :Bar(@7)`, or a
+// method's parameter list) is NOT this member's ordinal and must be ignored. This is the
+// single authority for "where the ordinal can be". [audit: ordinal inside type]
+kj::ArrayPtr<const char> ordinalSpan(kj::ArrayPtr<const char> t) {
+  size_t nameLen = identLen(t);
+  if (nameLen == 0) return t.first(0);  // no name → no ordinal position
+  size_t end = nameLen;
   bool inStr = false;
-  for (size_t i = 0; i < t.size(); ++i) {
-    char c = t[i];
+  while (end < t.size()) {
+    char c = t[end];
+    if (c == '"') { inStr = !inStr; ++end; continue; }
+    if (!inStr && (c == ':' || c == '(')) break;
+    ++end;
+  }
+  return t.slice(nameLen, end);
+}
+
+// Detect an explicit `@<digits>` ordinal in ORDINAL POSITION (after the name, before the
+// type/params), outside strings. Returns true if present and reports, via `outClamped`, the
+// value CLAMPED to kMaxOrdinal + 1 (= 65536). Clamping (not exact capture) is deliberate: the
+// only consumer is the counter advance, which must not wrap, and any value >= 65536 is rejected
+// downstream by the parser regardless of its exact magnitude — so an astronomically long literal
+// (@99999999999999999999) maps to the same 65536 sentinel without overflowing a uint32. The
+// field text itself is emitted verbatim by the caller, so the parser still sees (and rejects) the
+// original digits. [audit: H1, ordinal-inside-type]
+bool explicitOrdinal(kj::ArrayPtr<const char> t, uint32_t& outClamped) {
+  auto span = ordinalSpan(t);
+  bool inStr = false;
+  for (size_t i = 0; i < span.size(); ++i) {
+    char c = span[i];
     if (c == '"') { inStr = !inStr; continue; }
     if (c == '@' && !inStr) {
       size_t j = i + 1;
       uint32_t v = 0;
-      bool overflow = false;
-      while (j < t.size() && isDigit(t[j])) {
-        if (!overflow) {
-          v = v * 10 + (uint32_t)(t[j] - '0');
-          if (v > kMaxOrdinal) overflow = true;  // clamp; exact value no longer needed
+      while (j < span.size() && isDigit(span[j])) {
+        if (v <= kMaxOrdinal) {
+          v = v * 10 + (uint32_t)(span[j] - '0');
+          if (v > kMaxOrdinal) v = kMaxOrdinal + 1;  // clamp; saturates, never wraps
         }
         ++j;
       }
       if (j > i + 1) {
-        KJ_REQUIRE(!overflow && v <= kMaxOrdinal,
-            "ZAP whitespace desugar: ordinal out of range (must be 0..65535)",
-            kj::heapString(t.begin(), t.size()));
-        outVal = v;
+        outClamped = v;
         return true;
       }
     }
@@ -193,21 +234,13 @@ bool explicitOrdinal(kj::ArrayPtr<const char> t, uint32_t& outVal) {
   return false;
 }
 
-// Advance the per-scope ordinal counter past an explicit ordinal N, guarding the
-// N+1 increment so a field declared `@65535` does not wrap `next` to 0 and silently
-// reassign @0 to the following member. N is already validated <= kMaxOrdinal. The
-// successor may legitimately reach kMaxOrdinal + 1 (= 65536); if a subsequent field
-// then needs an auto ordinal it is rejected by validateAutoOrdinal below. [audit: H1]
-void advanceNext(uint32_t& next, uint32_t explicitN) {
-  next = explicitN + 1;  // <= 65536; never wraps a uint32
-}
-
-// An auto-assigned ordinal must also be in range. This fires when a scope already
-// holds 65536 members or the counter was pushed to 65536 by an explicit `@65535`. [audit: H1]
-void validateAutoOrdinal(uint32_t n, kj::ArrayPtr<const char> t) {
-  KJ_REQUIRE(n <= kMaxOrdinal,
-      "ZAP whitespace desugar: auto-assigned ordinal out of range (must be 0..65535)",
-      kj::heapString(t.begin(), t.size()));
+// Advance the per-scope ordinal counter past an explicit ordinal, saturating so a field
+// declared `@65535` (or any out-of-range/huge literal, already clamped to 65536) cannot wrap
+// `next` and silently reassign a low ordinal to the following member. The successor may reach
+// kMaxOrdinal + 1; a subsequent auto field then emits an out-of-range ordinal that the parser
+// rejects. [audit: H1]
+void advanceNext(uint32_t& next, uint32_t explicitClamped) {
+  next = (explicitClamped >= kMaxOrdinal + 1) ? kMaxOrdinal + 1 : explicitClamped + 1;
 }
 
 // ---- output buffer helpers --------------------------------------------------
@@ -237,6 +270,64 @@ kj::ArrayPtr<const char> restAfterFirstWord(kj::ArrayPtr<const char> t) {
   return trim(t.slice(firstWord(t).size(), t.size()));
 }
 
+// A nested NON-FIELD declaration that may appear inside a struct/interface body: `using`,
+// `const`, or `annotation`. These carry their own statement terminator (';') and take NO
+// positional ordinal, so they must be passed through verbatim — never rewritten into a
+// `name @n :Type` field. Detected by the leading keyword followed by a word boundary, so a
+// field genuinely named `using`/`const`/`annotation` (followed by a type, not its decl
+// syntax) is not misread. [audit: nested using/const/annotation]
+bool isNestedDecl(kj::ArrayPtr<const char> t) {
+  auto w = firstWord(t);
+  // `const`/`using`/`annotation` as a field NAME would be `const :Type` / `using Type` —
+  // the keyword's own declaration syntax is `using <Id> = ...`, `const <Id> :T = ...`,
+  // `annotation <Id> (...) :T`, i.e. keyword + an identifier name. A field named after the
+  // keyword is disambiguated exactly as in classifyHeader/emitField: a ':' or trailing '@N'
+  // right after the name. Here we require keyword + identifier with neither, which is only
+  // ever the declaration form.
+  if (!(equals(w, "using") || equals(w, "const") || equals(w, "annotation"))) return false;
+  auto rest = restAfterFirstWord(t);
+  auto name = firstWord(rest);
+  if (!isIdent(name)) return false;
+  auto afterName = trim(rest.slice(name.size(), rest.size()));
+  // Field forms that happen to start with the keyword: `using Type` (name `using`, type
+  // `Type`) has afterName empty AND would be a header otherwise — but `using <Id>` decl is
+  // distinguished because a real `using` decl always continues with '=' (alias) and `const`
+  // with ':' or '=', and `annotation` with '('. A bare `keyword Ident` with nothing after is
+  // the ambiguous case; treat it as a FIELD named after the keyword (matches emitField/H4),
+  // not a declaration, so `using Foo` (field `using` of type `Foo`) stays a field.
+  if (afterName.size() == 0) return false;
+  char c = afterName[0];
+  if (equals(w, "using"))      return c == '=';
+  if (equals(w, "const"))      return c == ':' || c == '=';
+  /* annotation */             return c == '(' || c == ':';
+}
+
+// True if `s` is a type NAME optionally followed by a generic parameter list: `<Id>` or
+// `<Id>(...)` with balanced parens, and nothing after the ')'. This is the name shape of a
+// generic struct/interface declaration header (`struct Map(Key, Value)`, `interface Cap(T)`).
+// A trailing field marker (`struct :group`, `enum UInt8 @0`) is NOT this shape, so it is not
+// mistaken for a header. [audit: generic struct/interface header]
+bool isNameWithOptionalParams(kj::ArrayPtr<const char> s) {
+  size_t nameLen = identLen(s);
+  if (nameLen == 0) return false;
+  auto after = trim(s.slice(nameLen, s.size()));
+  if (after.size() == 0) return true;          // bare `<Id>`
+  if (after[0] != '(') return false;           // anything else after the name → not a header
+  // Balanced-paren scan to the matching ')'. Parameter lists do not nest in ZAP, but scan
+  // depth-aware to be safe; require the ')' to be the final non-space token.
+  int depth = 0;
+  for (size_t i = 0; i < after.size(); ++i) {
+    char c = after[i];
+    if (c == '(') ++depth;
+    else if (c == ')') {
+      if (--depth == 0) {
+        return trim(after.slice(i + 1, after.size())).size() == 0;  // nothing after ')'
+      }
+    }
+  }
+  return false;  // unbalanced
+}
+
 HeaderKind classifyHeader(kj::ArrayPtr<const char> t) {
   // A braceless header is keyword + the keyword's own name shape + end-of-line — NOT a
   // `name type` field line whose name merely happens to be a keyword (e.g. `union Int8`,
@@ -246,16 +337,19 @@ HeaderKind classifyHeader(kj::ArrayPtr<const char> t) {
   auto w = firstWord(t);
   auto rest = restAfterFirstWord(t);
 
-  // struct/enum: keyword + exactly one identifier, nothing after.
-  if (equals(w, "struct") && isIdent(rest)) return HeaderKind::STRUCT;
+  // struct: keyword + an identifier, optionally with a generic parameter list `(K, V)`.
+  if (equals(w, "struct") && isNameWithOptionalParams(rest)) return HeaderKind::STRUCT;
+  // enum: keyword + exactly one identifier (enums are never generic), nothing after.
   if (equals(w, "enum") && isIdent(rest)) return HeaderKind::ENUM;
 
-  // interface: keyword + one identifier, optionally followed by an `extends(...)` clause.
+  // interface: keyword + one identifier, optionally followed by a generic parameter list `(T)`
+  // and/or an `extends(...)` clause. The name ends at the first non-identifier char (so
+  // `Cap(T)` splits into name `Cap` + `(T)`), unlike firstWord which only splits on spaces.
   if (equals(w, "interface")) {
-    auto name = firstWord(rest);
-    if (isIdent(name)) {
-      auto afterName = trim(rest.slice(name.size(), rest.size()));
-      if (afterName.size() == 0 || startsWith(afterName, "extends")) {
+    size_t nameLen = identLen(rest);
+    if (nameLen > 0) {
+      auto afterName = trim(rest.slice(nameLen, rest.size()));
+      if (afterName.size() == 0 || afterName[0] == '(' || startsWith(afterName, "extends")) {
         return HeaderKind::INTERFACE;
       }
     }
@@ -284,9 +378,9 @@ HeaderKind classifyHeader(kj::ArrayPtr<const char> t) {
 
 // `name Type` -> `name @n :Type`; explicit @N preserved (counter jumps to N+1).
 void emitField(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& next) {
-  uint32_t explicitN;
-  if (explicitOrdinal(t, explicitN)) {
-    advanceNext(next, explicitN);
+  uint32_t explicitClamped;
+  if (explicitOrdinal(t, explicitClamped)) {
+    advanceNext(next, explicitClamped);
     put(out, t);
     return;
   }
@@ -295,7 +389,6 @@ void emitField(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& next
   auto name = t.first(nameLen);
   auto rest = trim(t.slice(nameLen, t.size()));
   uint32_t n = next++;
-  validateAutoOrdinal(n, t);
   put(out, name);
   put(out, " @");
   putUInt(out, n);
@@ -314,9 +407,9 @@ void emitField(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& next
 
 // enum value 'name' -> 'name @n'; explicit @N preserved.
 void emitEnumValue(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& next) {
-  uint32_t explicitN;
-  if (explicitOrdinal(t, explicitN)) {
-    advanceNext(next, explicitN);
+  uint32_t explicitClamped;
+  if (explicitOrdinal(t, explicitClamped)) {
+    advanceNext(next, explicitClamped);
     put(out, t);
     return;
   }
@@ -325,7 +418,6 @@ void emitEnumValue(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& 
   auto name = t.first(nameLen);
   auto rest = trim(t.slice(nameLen, t.size()));
   uint32_t n = next++;
-  validateAutoOrdinal(n, t);
   put(out, name);
   put(out, " @");
   putUInt(out, n);
@@ -334,9 +426,9 @@ void emitEnumValue(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& 
 
 // interface method 'foo (params) -> (results)' -> 'foo @n (params) -> (results)'.
 void emitMethod(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& next) {
-  uint32_t explicitN;
-  if (explicitOrdinal(t, explicitN)) {
-    advanceNext(next, explicitN);
+  uint32_t explicitClamped;
+  if (explicitOrdinal(t, explicitClamped)) {
+    advanceNext(next, explicitClamped);
     put(out, t);
     return;
   }
@@ -345,7 +437,6 @@ void emitMethod(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& nex
   auto name = t.first(nameLen);
   auto rest = trim(t.slice(nameLen, t.size()));
   uint32_t n = next++;
-  validateAutoOrdinal(n, t);
   put(out, name);
   put(out, " @");
   putUInt(out, n);
@@ -357,7 +448,10 @@ void emitMethod(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& nex
 enum class FrameKind { STRUCT_LIKE, ENUM, INTERFACE, FILE };
 
 struct Frame {
-  size_t indent;
+  size_t indent;  // raw leading-char count of the header — used only to slice/emit the close
+                  // brace at the header's exact column (preserves source indent bytes).
+  size_t width;   // expanded indent WIDTH (tabs → columns) of the header — the value dedent
+                  // compares against, so tab/space mixes nest correctly. [audit: mixed indent]
   FrameKind kind;
   size_t ord;  // index into ords[], or SIZE_MAX
 };
@@ -395,7 +489,7 @@ kj::Array<char> desugar(kj::ArrayPtr<const char> input) {
   kj::Vector<char> out(input.size() + input.size() / 8 + 16);
   kj::Vector<uint32_t> ords;
   kj::Vector<Frame> frames;
-  frames.add(Frame { 0, FrameKind::FILE, SIZE_MAX });
+  frames.add(Frame { 0, 0, FrameKind::FILE, SIZE_MAX });
   int verbatimDepth = 0;
 
   // Transparent lines (blank / full-line comment) buffered since the last non-transparent
@@ -429,7 +523,8 @@ kj::Array<char> desugar(kj::ArrayPtr<const char> input) {
       }
     }
     auto content = raw.first(contentEnd);
-    size_t indent = leadingIndent(content);
+    size_t indent = leadingIndent(content);        // raw chars (for slicing / close column)
+    size_t indentCols = indentWidth(content);      // expanded columns (for nesting) [audit]
     auto trimmed = rtrim(content.slice(indent, content.size()));
 
     // Transparent lines: blank or full-line comment — no structure. Buffer it.
@@ -446,11 +541,13 @@ kj::Array<char> desugar(kj::ArrayPtr<const char> input) {
       continue;
     }
 
-    // Dedent: close whitespace frames whose indent >= current indent.
+    // Dedent: close whitespace frames whose indent width >= current indent width. The
+    // comparison is on expanded columns so a tab-indented body and a space-indented header
+    // (in either order) nest/close correctly instead of orphaning fields. [audit: mixed indent]
     while (frames.size() > 1) {
       Frame& top = frames[frames.size() - 1];
       if (top.kind == FrameKind::FILE) break;
-      if (indent <= top.indent) {
+      if (indentCols <= top.width) {
         size_t fi = top.indent;
         frames.removeLast();
         emitClose(out, fi);
@@ -499,7 +596,7 @@ kj::Array<char> desugar(kj::ArrayPtr<const char> input) {
         default:                    fk = FrameKind::STRUCT_LIKE; break;
       }
 
-      // Ordinal ownership (Cap'n Proto): union/group members — named or anonymous —
+      // Ordinal ownership (ZAP): union/group members — named or anonymous —
       // share the enclosing struct's ordinal sequence. Only struct/interface/enum
       // introduce a fresh ordinal space.
       size_t ord;
@@ -515,7 +612,7 @@ kj::Array<char> desugar(kj::ArrayPtr<const char> input) {
           ord = ords.size() - 1;
         }
       }
-      frames.add(Frame { indent, fk, ord });
+      frames.add(Frame { indent, indentCols, fk, ord });
     } else {
       put(out, leadingWs);
       // Split off any trailing comment FIRST so the synthesized ';' terminator lands on the
@@ -532,11 +629,20 @@ kj::Array<char> desugar(kj::ArrayPtr<const char> input) {
       // top-level decls (const/using/@id/annotation) carry their own terminator: pass through.
       bool terminate = (parentKind != FrameKind::FILE);
       size_t before = out.size();
-      switch (parentKind) {
-        case FrameKind::ENUM:        emitEnumValue(out, code, ords[parentOrd]); break;
-        case FrameKind::INTERFACE:   emitMethod(out, code, ords[parentOrd]); break;
-        case FrameKind::STRUCT_LIKE: emitField(out, code, ords[parentOrd]); break;
-        case FrameKind::FILE:        put(out, code); break;
+      // A nested declaration (`using`/`const`/`annotation`) inside a struct/interface body
+      // is NOT a field: it carries no positional ordinal and its own ';' terminator, so it
+      // passes through verbatim. The `terminate` block below adds the ';' if the source
+      // omitted it (the newline was the terminator), matching field handling. [audit: nested
+      // using/const/annotation]
+      if (terminate && isNestedDecl(code)) {
+        put(out, code);
+      } else {
+        switch (parentKind) {
+          case FrameKind::ENUM:        emitEnumValue(out, code, ords[parentOrd]); break;
+          case FrameKind::INTERFACE:   emitMethod(out, code, ords[parentOrd]); break;
+          case FrameKind::STRUCT_LIKE: emitField(out, code, ords[parentOrd]); break;
+          case FrameKind::FILE:        put(out, code); break;
+        }
       }
       if (terminate) {
         // Add ';' only if the emitted code isn't already terminated — never double it.

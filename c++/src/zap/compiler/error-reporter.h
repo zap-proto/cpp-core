@@ -21,19 +21,19 @@
 
 #pragma once
 
-#include <capnp/common.h>
+#include <zap/common.h>
 #include <kj/string.h>
 #include <kj/vector.h>
 #include <kj/one-of.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
 namespace kj {
   class ReadableDirectory;
   class PathPtr;
 }
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 
 struct Resolution {
@@ -61,7 +61,7 @@ public:
   template <typename T>
   inline void addErrorOn(T&& decl, kj::StringPtr message) {
     // Works for any `T` that defines `getStartByte()` and `getEndByte()` methods, which many
-    // of the Cap'n Proto types defined in `grammar.capnp` do.
+    // of the Zap types defined in `grammar.zap` do.
 
     addError(decl.getStartByte(), decl.getEndByte(), message);
   }
@@ -115,6 +115,6 @@ private:
 };
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

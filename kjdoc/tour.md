@@ -451,9 +451,9 @@ KJ_IF_SOME(e, maybeException) {
 
 ### Supporting `-fno-exceptions`
 
-_NOTE: In KJ / Cap'n Proto v2.0, support for `-fno-exceptions` has been removed, making this section somewhat obsolete. However, instances of recovery blocks still appear in the codebase, and they may still be relevant in the case of destructors, where they protect against throwing during unwind. Recovery blocks appearing anywhere other than destructors or code called from destructors can safely be deleted._
+_NOTE: In KJ / Zap v2.0, support for `-fno-exceptions` has been removed, making this section somewhat obsolete. However, instances of recovery blocks still appear in the codebase, and they may still be relevant in the case of destructors, where they protect against throwing during unwind. Recovery blocks appearing anywhere other than destructors or code called from destructors can safely be deleted._
 
-KJ strongly recommends using C++ exceptions. However, exceptions are controversial, and many C++ applications are compiled with exceptions disabled. Some KJ-based libraries (especially Cap'n Proto) would like to accommodate such users. To that end, KJ's exception and assertion infrastructure is designed to degrade gracefully when compiled without exception support. In this case, exceptions are split into two types:
+KJ strongly recommends using C++ exceptions. However, exceptions are controversial, and many C++ applications are compiled with exceptions disabled. Some KJ-based libraries (especially Zap) would like to accommodate such users. To that end, KJ's exception and assertion infrastructure is designed to degrade gracefully when compiled without exception support. In this case, exceptions are split into two types:
 
 * Fatal exceptions, when compiled with `-fno-exceptions`, will terminate the program when thrown.
 * Recoverable exceptions, when compiled with `-fno-exceptions`, will be recorded on the side. Control flow then continues normally, possibly using a dummy value or skipping code which cannot execute. Later, the application can check if an exception has been raised and handle it.

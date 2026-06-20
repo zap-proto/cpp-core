@@ -25,15 +25,15 @@
 #include <kj/string.h>
 #include <kj/filesystem.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 class ParsedSchema;
 class SchemaFile;
 
 class SchemaParser {
-  // Parses `.capnp` files to produce `Schema` objects.
+  // Parses `.zap` files to produce `Schema` objects.
   //
   // This class is thread-safe, hence all its methods are const.
 
@@ -72,13 +72,13 @@ public:
   //     auto fs = kj::newDiskFilesystem();
   //     SchemaParser parser;
   //     auto schema = parser.parseFromDirectory(fs->getCurrent(),
-  //         kj::Path::parse("foo/bar.capnp"), nullptr);
+  //         kj::Path::parse("foo/bar.zap"), nullptr);
   //
   // Hint: To use in-memory data rather than real disk, you can use kj::newInMemoryDirectory(),
   //   write the files you want, then pass it to SchemaParser. Example:
   //
   //     auto dir = kj::newInMemoryDirectory(kj::nullClock());
-  //     auto path = kj::Path::parse("foo/bar.capnp");
+  //     auto path = kj::Path::parse("foo/bar.zap");
   //     dir->openFile(path, kj::WriteMode::CREATE | kj::WriteMode::CREATE_PARENT)
   //        ->writeAll("struct Foo {}");
   //     auto schema = parser.parseFromDirectory(*dir, path, nullptr);
@@ -89,8 +89,8 @@ public:
   //
   //     auto fs = kj::newDiskFilesystem();
   //     auto dir = kj::newInMemoryDirectory(kj::nullClock());
-  //     auto fakePath = kj::Path::parse("foo/bar.capnp");
-  //     auto realPath = kj::Path::parse("path/to/some/file.capnp");
+  //     auto fakePath = kj::Path::parse("foo/bar.zap");
+  //     auto realPath = kj::Path::parse("path/to/some/file.zap");
   //     dir->transfer(fakePath, kj::WriteMode::CREATE | kj::WriteMode::CREATE_PARENT,
   //                   fs->getCurrent(), realPath, kj::TransferMode::LINK);
   //     auto schema = parser.parseFromDirectory(*dir, fakePath, nullptr);
@@ -100,7 +100,7 @@ public:
 
   ParsedSchema parseDiskFile(kj::StringPtr displayName, kj::StringPtr diskPath,
                              kj::ArrayPtr<const kj::StringPtr> importPath) const
-      CAPNP_DEPRECATED("Use parseFromDirectory() instead.");
+      ZAP_DEPRECATED("Use parseFromDirectory() instead.");
   // Creates a private kj::Filesystem and uses it to parse files from the real disk.
   //
   // DO NOT USE in new code. Use parseFromDirectory() instead.
@@ -111,7 +111,7 @@ public:
   // particular directory, or even set up a dummy filesystem where other files are not visible.
 
   void setDiskFilesystem(kj::Filesystem& fs)
-      CAPNP_DEPRECATED("Use parseFromDirectory() instead.");
+      ZAP_DEPRECATED("Use parseFromDirectory() instead.");
   // Call before calling parseDiskFile() to choose an alternative disk filesystem implementation.
   // This exists mostly for testing purposes; new code should use parseFromDirectory() instead.
   //
@@ -147,7 +147,7 @@ public:
   }
 
   void setFileIdsRequired(bool value) { fileIdsRequired = value; }
-  // By befault, capnp files must declare a file-level type ID (like `@0xbe702824338d3f7f;`).
+  // By befault, zap files must declare a file-level type ID (like `@0xbe702824338d3f7f;`).
   // Use `setFileIdsReqired(false)` to lift this requirement.
   //
   // If no ID is specified, a random one will be assigned. This will cause all types declared in
@@ -156,9 +156,9 @@ public:
   // types. In particular, this means that you will not be able to use any interface types in the
   // file for RPC, since the RPC protocol uses type IDs to identify methods.
   //
-  // Setting this false is particularly useful when using Cap'n Proto as a config format. Typically
+  // Setting this false is particularly useful when using Zap as a config format. Typically
   // type IDs are irrelevant for config files, and the requirement to specify one is cumbersome.
-  // For this reason, `capnp eval` does not require type ID to be present.
+  // For this reason, `zap eval` does not require type ID to be present.
 
 private:
   struct Impl;
@@ -237,7 +237,7 @@ class SchemaFile {
   // `SchemaFile::newDiskFile()`.
 
 public:
-  // Note: Cap'n Proto 0.6.x and below had classes FileReader and DiskFileReader and a method
+  // Note: Zap 0.6.x and below had classes FileReader and DiskFileReader and a method
   //   newDiskFile() defined here. These were removed when SchemaParser was transitioned to use the
   //   KJ filesystem API. You should be able to get the same effect by subclassing
   //   kj::ReadableDirectory, or using kj::newInMemoryDirectory().
@@ -287,6 +287,6 @@ private:
   class DiskSchemaFile;
 };
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

@@ -31,13 +31,13 @@ Fixed in
 
 - git commit [80149744bdafa3ad4eedc83f8ab675e27baee868][0]
 - release 0.5.1.2:
-  - Unix: https://capnproto.org/capnproto-c++-0.5.1.2.tar.gz
-  - Windows: https://capnproto.org/capnproto-c++-win32-0.5.1.2.zip
+  - Unix: https://zap.org/zap-c++-0.5.1.2.tar.gz
+  - Windows: https://zap.org/zap-c++-win32-0.5.1.2.zip
 - release 0.4.1.1:
-  - Unix: https://capnproto.org/capnproto-c++-0.4.1.2.tar.gz
+  - Unix: https://zap.org/zap-c++-0.4.1.2.tar.gz
 - release 0.6 (future)
 
-[0]: https://github.com/capnproto/capnproto/commit/80149744bdafa3ad4eedc83f8ab675e27baee868
+[0]: https://github.com/zap/zap/commit/80149744bdafa3ad4eedc83f8ab675e27baee868
 
 Details
 =======
@@ -55,7 +55,7 @@ loop that doesn't call any application code. Only CPU time is possibly
 consumed, not RAM or other resources. However, it is still possible to create
 significant delays for the receiver with a specially-crafted message.
 
-[1]: https://github.com/capnproto/capnproto/blob/master/security-advisories/2015-03-02-2-all-cpu-amplification.md
+[1]: https://github.com/zap/zap/blob/master/security-advisories/2015-03-02-2-all-cpu-amplification.md
 
 Preventative measures
 =====================

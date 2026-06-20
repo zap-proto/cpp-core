@@ -24,7 +24,7 @@
 #include <kj/compat/gtest.h>
 #include "test-util.h"
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -265,7 +265,7 @@ TEST(Any, AnyStructListCapInSchema) {
     checkList(root.getAnyListField().as<List<int>>(), {123, 456, 789});
   }
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
   // This portion of the test relies on a Client, not present in lite-mode.
   {
     kj::EventLoop loop;
@@ -436,4 +436,4 @@ KJ_TEST("Truncating non-null pointer fields does not preserve equality") {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

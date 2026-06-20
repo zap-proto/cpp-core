@@ -38,7 +38,7 @@ bool isWhitespaceSchema(kj::ArrayPtr<const char> input);
 
 kj::Array<char> desugar(kj::ArrayPtr<const char> input);
 // Source preprocessor: rewrite ZAP whitespace-significant schema syntax into the
-// equivalent brace/Cap'n-Proto syntax that the existing lexer/parser already accepts.
+// equivalent brace syntax that the existing lexer/parser already accepts.
 // Runs BEFORE the lexer so the proven brace front-end is untouched.
 //
 // Rules:
@@ -54,7 +54,7 @@ kj::Array<char> desugar(kj::ArrayPtr<const char> input);
 //    returns to <= I. Nesting recurses.
 //  * Whitespace-mode fields `name Type` become `name @<n> :Type`, where <n> is the next
 //    positional ordinal of the enclosing struct (a per-struct counter advanced in source
-//    order across fields AND union/group members, per Cap'n Proto). Explicit `@N` and/or
+//    order across fields AND union/group members). Explicit `@N` and/or
 //    `:Type` are preserved. Enum value `name` becomes `name @<n>`. Interface methods
 //    keep/auto-assign `@N (params) -> (results)`.
 //  * Output is valid brace source the existing parser already accepts. Brace input is

@@ -25,7 +25,7 @@
 # generate code that functions, leaving it up to the application to implement flow control
 # manually.
 
-$import "/capnp/c++.capnp".namespace("capnp");
+$import "/zap/c++.zap".namespace("zap");
 
 struct StreamResult @0x995f9a3377c0b16e {
   # Empty struct that serves as the return type for "streaming" methods.
@@ -36,7 +36,7 @@ struct StreamResult @0x995f9a3377c0b16e {
   #
   # Is equivalent to:
   #
-  #     write @0 (bytes :Data) -> import "/capnp/stream.capnp".StreamResult;
+  #     write @0 (bytes :Data) -> import "/zap/stream.zap".StreamResult;
   #
   # However, implementations that recognize streaming will elide the reference to StreamResult
   # and instead give write() a different signature appropriate for streaming.

@@ -67,7 +67,7 @@ public:
 
     // IF YOU ADD A NEW VALUE:
     // - Update the stringifier.
-    // - Update Cap'n Proto's RPC protocol's Exception.Type enum.
+    // - Update Zap's RPC protocol's Exception.Type enum.
   };
 
   Exception(Type type, const char* file, int line, String description = nullptr) noexcept;
@@ -150,13 +150,13 @@ public:
   // and transmitted over RPC.
   //
   // Every type of detail must have a unique ID, which is a 64-bit integer. It's suggested that
-  // you use `capnp id` to generate these.
+  // you use `zap id` to generate these.
   //
   // It is expected that exceptions will rarely have more than one or two details, so the
   // implementation uses a flat array with O(n) lookup.
   //
   // The main use case for details is to be able to tunnel exceptions of a different type through
-  // KJ / Cap'n Proto. In particular, Cloudflare Workers commonly has to convert a JavaScript
+  // KJ / Zap. In particular, Cloudflare Workers commonly has to convert a JavaScript
   // exception to KJ and back. The exception is serialized using V8 serialization.
 
   bool isMovedAway() const { return storage == nullptr; }

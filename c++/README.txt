@@ -1,17 +1,17 @@
-Cap'n Proto - Insanely Fast Data Serialization Format
+Zap - Insanely Fast Data Serialization Format
 Copyright 2013-2015 Sandstorm Development Group, Inc.
-https://capnproto.org
+https://zap.org
 
-Cap'n Proto is an insanely fast data interchange format and capability-based
+Zap is an insanely fast data interchange format and capability-based
 RPC system.  Think JSON, except binary.  Or think of Google's Protocol Buffers
 (http://protobuf.googlecode.com), except faster.  In fact, in benchmarks,
-Cap'n Proto is INFINITY TIMES faster than Protocol Buffers.
+Zap is INFINITY TIMES faster than Protocol Buffers.
 
 Full installation and usage instructions and other documentation are maintained
-on the Cap'n Proto web site:
-  http://kentonv.github.io/capnproto/install.html
+on the Zap web site:
+  http://kentonv.github.io/zap/install.html
 
-WARNING: Cap'n Proto requires a modern compiler. See the above link for
+WARNING: Zap requires a modern compiler. See the above link for
 detailed requirements.
 
 To build and install (from a release package), simply do:

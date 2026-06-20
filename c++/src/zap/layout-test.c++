@@ -19,13 +19,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define CAPNP_PRIVATE
+#define ZAP_PRIVATE
 #include "layout.h"
 #include "message.h"
 #include "arena.h"
 #include <kj/compat/gtest.h>
 
-#if CAPNP_DEBUG_TYPES
+#if ZAP_DEBUG_TYPES
 namespace kj {
   template <typename T, typename U>
   String KJ_STRINGIFY(kj::Quantity<T, U> value) {
@@ -45,7 +45,7 @@ namespace kj {
 }
 #endif
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -411,4 +411,4 @@ TEST(WireFormat, NanPatching) {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

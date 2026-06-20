@@ -23,19 +23,19 @@
 
 #include <kj/debug.h>
 
-#include <capnp/message.h>
+#include <zap/message.h>
 #include "schema.h"
 #include "pretty-print.h"
-#include "compiler/lexer.capnp.h"
+#include "compiler/lexer.zap.h"
 #include "compiler/lexer.h"
 #include "compiler/node-translator.h"
 #include "compiler/parser.h"
 
-namespace capnp {
+namespace zap {
 
 namespace {
 
-class ThrowingErrorReporter final: public capnp::compiler::ErrorReporter {
+class ThrowingErrorReporter final: public zap::compiler::ErrorReporter {
   // Throws all errors as assertion failures.
 public:
   ThrowingErrorReporter(kj::StringPtr input): input(input) {}
@@ -52,7 +52,7 @@ public:
     }
 
     kj::throwRecoverableException(kj::Exception(
-      kj::Exception::Type::FAILED, "(capnp text input)", line,
+      kj::Exception::Type::FAILED, "(zap text input)", line,
       kj::str(startByte - lineStart, "-", endByte - lineStart, ": ", message)
     ));
   }
@@ -63,16 +63,16 @@ private:
   kj::StringPtr input;
 };
 
-class ExternalResolver final: public capnp::compiler::ValueTranslator::Resolver {
+class ExternalResolver final: public zap::compiler::ValueTranslator::Resolver {
   // Throws all external resolution requests as assertion failures.
 public:
-  kj::Maybe<capnp::DynamicValue::Reader>
-  resolveConstant(capnp::compiler::Expression::Reader name) override {
+  kj::Maybe<zap::DynamicValue::Reader>
+  resolveConstant(zap::compiler::Expression::Reader name) override {
     KJ_FAIL_REQUIRE("External constants not allowed.");
   }
 
-  kj::Maybe<kj::Array<const capnp::byte>>
-  readEmbed(capnp::compiler::LocatedText::Reader filename) override {
+  kj::Maybe<kj::Array<const zap::byte>>
+  readEmbed(zap::compiler::LocatedText::Reader filename) override {
     KJ_FAIL_REQUIRE("External embeds not allowed.");
   }
 };
@@ -83,13 +83,13 @@ void lexAndParseExpression(kj::StringPtr input, Function f) {
 
   ThrowingErrorReporter errorReporter(input);
 
-  capnp::MallocMessageBuilder tokenArena;
-  auto lexedTokens = tokenArena.initRoot<capnp::compiler::LexedTokens>();
-  capnp::compiler::lex(input, lexedTokens, errorReporter);
+  zap::MallocMessageBuilder tokenArena;
+  auto lexedTokens = tokenArena.initRoot<zap::compiler::LexedTokens>();
+  zap::compiler::lex(input, lexedTokens, errorReporter);
 
-  capnp::compiler::CapnpParser parser(tokenArena.getOrphanage(), errorReporter);
+  zap::compiler::ZapParser parser(tokenArena.getOrphanage(), errorReporter);
   auto tokens = lexedTokens.asReader().getTokens();
-  capnp::compiler::CapnpParser::ParserInput parserInput(tokens.begin(), tokens.end());
+  zap::compiler::ZapParser::ParserInput parserInput(tokens.begin(), tokens.end());
 
   if (parserInput.getPosition() != tokens.end()) {
     KJ_IF_SOME(expression, parser.getParsers().expression(parserInput)) {
@@ -122,9 +122,9 @@ kj::String TextCodec::encode(DynamicValue::Reader value) const {
     return kj::str(value);
   } else {
     if (value.getType() == DynamicValue::Type::STRUCT) {
-      return capnp::prettyPrint(value.as<DynamicStruct>()).flatten();
+      return zap::prettyPrint(value.as<DynamicStruct>()).flatten();
     } else if (value.getType() == DynamicValue::Type::LIST) {
-      return capnp::prettyPrint(value.as<DynamicList>()).flatten();
+      return zap::prettyPrint(value.as<DynamicList>()).flatten();
     } else {
       return kj::str(value);
     }
@@ -162,4 +162,4 @@ Orphan<DynamicValue> TextCodec::decode(kj::StringPtr input, Type type, Orphanage
   return output;
 }
 
-}  // namespace capnp
+}  // namespace zap

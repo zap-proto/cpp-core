@@ -19,12 +19,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "catrank.capnp.h"
-#include "capnproto-common.h"
+#include "catrank.zap.h"
+#include "zap-common.h"
 
-namespace capnp {
+namespace zap {
 namespace benchmark {
-namespace capnp {
+namespace zap {
 
 struct ScoredResult {
   double score;
@@ -130,12 +130,12 @@ public:
   }
 };
 
-}  // namespace capnp
+}  // namespace zap
 }  // namespace benchmark
-}  // namespace capnp
+}  // namespace zap
 
 int main(int argc, char* argv[]) {
-  return capnp::benchmark::benchmarkMain<
-      capnp::benchmark::capnp::BenchmarkTypes,
-      capnp::benchmark::capnp::CatRankTestCase>(argc, argv);
+  return zap::benchmark::benchmarkMain<
+      zap::benchmark::zap::BenchmarkTypes,
+      zap::benchmark::zap::CatRankTestCase>(argc, argv);
 }

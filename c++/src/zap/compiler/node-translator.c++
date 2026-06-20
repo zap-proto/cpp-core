@@ -22,19 +22,19 @@
 #include "node-translator.h"
 #include "generics.h"
 #include "parser.h"      // only for generateGroupId() and expressionString()
-#include <capnp/serialize.h>
+#include <zap/serialize.h>
 #include <kj/debug.h>
 #include <kj/arena.h>
 #include <kj/encoding.h>
 #include <map>
 #include <stdlib.h>
-#include <capnp/stream.capnp.h>
+#include <zap/stream.zap.h>
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 
 bool shouldDetectIssue344() {
-  return getenv("CAPNP_IGNORE_ISSUE_344") == nullptr;
+  return getenv("ZAP_IGNORE_ISSUE_344") == nullptr;
 }
 
 class NodeTranslator::StructLayout {
@@ -424,7 +424,7 @@ public:
         if (newHoles) {
           holes.addHolesAtEnd(lgSizeUsed, 1, desiredUsage);
         } else if (shouldDetectIssue344()) {
-          // Unfortunately, Cap'n Proto 0.5.x and below would always call addHolesAtEnd(), which
+          // Unfortunately, Zap 0.5.x and below would always call addHolesAtEnd(), which
           // was the wrong thing to do when called from tryExpand(), which itself is only called
           // in cases involving unions nested in other unions. The bug could lead to multiple
           // fields in a group incorrectly being assigned overlapping offsets. Although the bug
@@ -433,7 +433,7 @@ public:
           // exception to alert developers of the problem.
           //
           // TODO(cleanup): Once sufficient time has elapsed, remove this assert.
-          KJ_FAIL_ASSERT("Bad news: Cap'n Proto 0.5.x and previous contained a bug which would cause this schema to be compiled incorrectly. Please see: https://github.com/capnproto/capnproto/issues/344");
+          KJ_FAIL_ASSERT("Bad news: Zap 0.5.x and previous contained a bug which would cause this schema to be compiled incorrectly. Please see: https://github.com/zap/zap/issues/344");
         }
         lgSizeUsed = desiredUsage;
         return true;
@@ -530,7 +530,7 @@ public:
         // Expansion is not possible because the new size is too large or the offset is not
         // properly-aligned.
 
-        // Unfortunately, Cap'n Proto 0.5.x and prior forgot to "return false" here, instead
+        // Unfortunately, Zap 0.5.x and prior forgot to "return false" here, instead
         // continuing to execute the rest of the method. In most cases, the method failed later
         // on, causing no harm. But, in cases where the method later succeeded, it probably
         // led to bogus layouts. We cannot simply add the return statement now as this would
@@ -559,7 +559,7 @@ public:
           bool result = usage.tryExpand(
               *this, location, oldLgSize, localOldOffset, expansionFactor);
           if (mustFail && result) {
-            KJ_FAIL_ASSERT("Bad news: Cap'n Proto 0.5.x and previous contained a bug which would cause this schema to be compiled incorrectly. Please see: https://github.com/capnproto/capnproto/issues/344");
+            KJ_FAIL_ASSERT("Bad news: Zap 0.5.x and previous contained a bug which would cause this schema to be compiled incorrectly. Please see: https://github.com/zap/zap/issues/344");
           }
           return result;
         }
@@ -791,7 +791,7 @@ void NodeTranslator::DuplicateNameDetector::check(
 
       if (nameText.findFirst('_') != kj::none) {
         errorReporter.addErrorOn(name,
-            "Cap'n Proto declaration names should use camelCase and must not contain "
+            "Zap declaration names should use camelCase and must not contain "
             "underscores. (Code generators may convert names to the appropriate style for the "
             "target language.)");
       }
@@ -1385,7 +1385,7 @@ private:
       MemberInfo& member = *entry.second;
 
       // Make sure the exceptions added relating to
-      // https://github.com/capnproto/capnproto/issues/344 identify the affected field.
+      // https://github.com/zap/zap/issues/344 identify the affected field.
       KJ_CONTEXT(member.name);
 
       if (member.declId.isOrdinal()) {
@@ -1722,17 +1722,17 @@ uint64_t NodeTranslator::compileParamList(
       }
       return 0;
     case Declaration::ParamList::STREAM:
-      KJ_IF_SOME(streamCapnp, resolver.resolveImport("/capnp/stream.capnp")) {
-        if (streamCapnp.resolver->resolveMember("StreamResult") == kj::none) {
+      KJ_IF_SOME(streamZap, resolver.resolveImport("/zap/stream.zap")) {
+        if (streamZap.resolver->resolveMember("StreamResult") == kj::none) {
           errorReporter.addErrorOn(paramList,
-              "The version of '/capnp/stream.capnp' found in your import path does not appear "
+              "The version of '/zap/stream.zap' found in your import path does not appear "
               "to be the official one; it is missing the declaration of StreamResult.");
         }
       } else {
         errorReporter.addErrorOn(paramList,
-            "A method declaration uses streaming, but '/capnp/stream.capnp' is not found "
+            "A method declaration uses streaming, but '/zap/stream.zap' is not found "
             "in the import path. This is a standard file that should always be installed "
-            "with the Cap'n Proto compiler.");
+            "with the Zap compiler.");
       }
       return typeId<StreamResult>();
   }
@@ -2099,7 +2099,7 @@ Orphan<DynamicValue> ValueTranslator::compileValueInner(Expression::Reader src, 
             // We will almost certainly
             if (data.size() % sizeof(word) != 0) {
               errorReporter.addErrorOn(src,
-                  "Embedded file is not a valid Cap'n Proto message.");
+                  "Embedded file is not a valid Zap message.");
               return nullptr;
             }
             kj::Array<word> copy;
@@ -2462,4 +2462,4 @@ Orphan<List<schema::Annotation>> NodeTranslator::compileAnnotationApplications(
 }
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap

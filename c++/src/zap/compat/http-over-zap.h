@@ -20,18 +20,18 @@
 // THE SOFTWARE.
 
 #pragma once
-// Bridges from KJ HTTP to Cap'n Proto HTTP-over-RPC.
+// Bridges from KJ HTTP to Zap HTTP-over-RPC.
 
-#include <capnp/compat/http-over-capnp.capnp.h>
+#include <zap/compat/http-over-zap.zap.h>
 #include <kj/compat/http.h>
 #include <kj/map.h>
 #include "byte-stream.h"
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
-class HttpOverCapnpFactory {
+class HttpOverZapFactory {
 public:
   class HeaderIdBundle {
   public:
@@ -40,16 +40,16 @@ public:
     HeaderIdBundle clone() const;
 
   private:
-    HeaderIdBundle(const kj::HttpHeaderTable& table, kj::Array<kj::HttpHeaderId> nameCapnpToKj,
+    HeaderIdBundle(const kj::HttpHeaderTable& table, kj::Array<kj::HttpHeaderId> nameZapToKj,
         size_t maxHeaderId);
     // Constructor for clone().
 
     const kj::HttpHeaderTable& table;
 
-    kj::Array<kj::HttpHeaderId> nameCapnpToKj;
+    kj::Array<kj::HttpHeaderId> nameZapToKj;
     size_t maxHeaderId = 0;
 
-    friend class HttpOverCapnpFactory;
+    friend class HttpOverZapFactory;
   };
 
   enum OptimizationLevel {
@@ -60,7 +60,7 @@ public:
     // There used to be a LEVEL_1, which used `startRequest()`, the original version of the
     // protocol. Support for this level was removed in the v2 branch in order to simplify the code.
     // If you have existing servers in the wild implementing this protocol that don't support
-    // LEVEL_2, then your clients will have to stick to Cap'n Proto 1.x until those servers are all
+    // LEVEL_2, then your clients will have to stick to Zap 1.x until those servers are all
     // updated.
 
     LEVEL_2
@@ -68,45 +68,45 @@ public:
     // only implement startRequest().
   };
 
-  HttpOverCapnpFactory(ByteStreamFactory& streamFactory, HeaderIdBundle headerIds,
+  HttpOverZapFactory(ByteStreamFactory& streamFactory, HeaderIdBundle headerIds,
                        OptimizationLevel peerOptimizationLevel);
   // Note: `peerOptimizationLevel` use to be optional, but defaulted to LEVEL_1. However, any
   // client still setting this to LEVEL_1 will be unable to talk to any server who is running new
   // code where LEVEL_1 was removed. So if you hit a compile error because your code is not setting
-  // this option, you will need to roll back to an older version of Cap'n Proto for now, until you
+  // this option, you will need to roll back to an older version of Zap for now, until you
   // can update all code in production to pass LEVEL_2 here.
 
-  kj::Own<kj::HttpService> capnpToKj(capnp::HttpService::Client rpcService);
-  capnp::HttpService::Client kjToCapnp(kj::Own<kj::HttpService> service);
+  kj::Own<kj::HttpService> zapToKj(zap::HttpService::Client rpcService);
+  zap::HttpService::Client kjToZap(kj::Own<kj::HttpService> service);
 
-  kj::HttpHeaders capnpToKj(capnp::List<capnp::HttpHeader>::Reader capnpHeaders) const;
-  // Returned headers may alias into `capnpHeaders`.
+  kj::HttpHeaders zapToKj(zap::List<zap::HttpHeader>::Reader zapHeaders) const;
+  // Returned headers may alias into `zapHeaders`.
 
 private:
   ByteStreamFactory& streamFactory;
   const kj::HttpHeaderTable& headerTable;
   OptimizationLevel peerOptimizationLevel;
-  kj::Array<capnp::CommonHeaderName> nameKjToCapnp;
-  kj::Array<kj::HttpHeaderId> nameCapnpToKj;
-  kj::Array<kj::StringPtr> valueCapnpToKj;
-  kj::HashMap<kj::StringPtr, capnp::CommonHeaderValue> valueKjToCapnp;
+  kj::Array<zap::CommonHeaderName> nameKjToZap;
+  kj::Array<kj::HttpHeaderId> nameZapToKj;
+  kj::Array<kj::StringPtr> valueZapToKj;
+  kj::HashMap<kj::StringPtr, zap::CommonHeaderValue> valueKjToZap;
 
-  class CapnpToKjWebSocketAdapter;
-  class KjToCapnpWebSocketAdapter;
+  class ZapToKjWebSocketAdapter;
+  class KjToZapWebSocketAdapter;
 
   class ClientRequestContextImpl;
   class ConnectClientRequestContextImpl;
-  class KjToCapnpHttpServiceAdapter;
+  class KjToZapHttpServiceAdapter;
 
   class HttpServiceResponseImpl;
-  class HttpOverCapnpConnectResponseImpl;
+  class HttpOverZapConnectResponseImpl;
   class ServerRequestContextImpl;
-  class CapnpToKjHttpServiceAdapter;
+  class ZapToKjHttpServiceAdapter;
 
-  capnp::Orphan<capnp::List<capnp::HttpHeader>> headersToCapnp(
-      const kj::HttpHeaders& headers, capnp::Orphanage orphanage);
+  zap::Orphan<zap::List<zap::HttpHeader>> headersToZap(
+      const kj::HttpHeaders& headers, zap::Orphanage orphanage);
 };
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

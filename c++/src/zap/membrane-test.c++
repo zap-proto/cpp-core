@@ -26,7 +26,7 @@
 #include <kj/async-io.h>
 #include "rpc-twoparty.h"
 
-namespace capnp {
+namespace zap {
 namespace _ {
 namespace {
 
@@ -102,7 +102,7 @@ public:
 
   kj::Maybe<Capability::Client> inboundCall(uint64_t interfaceId, uint16_t methodId,
                                             Capability::Client target) override {
-    if (interfaceId == capnp::typeId<Thing>() && methodId == 1) {
+    if (interfaceId == zap::typeId<Thing>() && methodId == 1) {
       return Capability::Client(kj::heap<ThingImpl>("inbound"));
     } else {
       return kj::none;
@@ -111,7 +111,7 @@ public:
 
   kj::Maybe<Capability::Client> outboundCall(uint64_t interfaceId, uint16_t methodId,
                                              Capability::Client target) override {
-    if (interfaceId == capnp::typeId<Thing>() && methodId == 1) {
+    if (interfaceId == zap::typeId<Thing>() && methodId == 1) {
       return Capability::Client(kj::heap<ThingImpl>("outbound"));
     } else {
       return kj::none;
@@ -403,4 +403,4 @@ KJ_TEST("revoke membrane") {
 
 }  // namespace
 }  // namespace _
-}  // namespace capnp
+}  // namespace zap

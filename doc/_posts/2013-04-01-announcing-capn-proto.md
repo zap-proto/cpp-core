@@ -1,6 +1,6 @@
 ---
 layout: post
-title: Announcing Cap'n Proto
+title: Announcing Zap
 author: kentonv
 ---
 
@@ -12,4 +12,4 @@ I may have rewritten Protocol Buffers.
 
 Again.
 
-[And it's infinity times faster.](https://capnproto.org)
+[And it's infinity times faster.](https://zap.org)

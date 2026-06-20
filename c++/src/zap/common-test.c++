@@ -23,7 +23,7 @@
 #include <kj/compat/gtest.h>
 #include <kj/string.h>
 #include <kj/debug.h>
-#include <capnp/test.capnp.h>
+#include <zap/test.zap.h>
 
 #include <type_traits>
 
@@ -31,33 +31,33 @@
 #include "config.h"
 #endif
 
-namespace capnp {
+namespace zap {
 namespace {
 
-KJ_ASSERT_CAN_MEMCPY(capnp::word);
+KJ_ASSERT_CAN_MEMCPY(zap::word);
   
 TEST(Common, Version) {
 #ifdef VERSION
   auto expectedVersion =
-      kj::str(CAPNP_VERSION_MAJOR, '.', CAPNP_VERSION_MINOR, '.', CAPNP_VERSION_MICRO);
+      kj::str(ZAP_VERSION_MAJOR, '.', ZAP_VERSION_MINOR, '.', ZAP_VERSION_MICRO);
   auto devVersion =
-      kj::str(CAPNP_VERSION_MAJOR, '.', CAPNP_VERSION_MINOR, "-dev");
+      kj::str(ZAP_VERSION_MAJOR, '.', ZAP_VERSION_MINOR, "-dev");
   kj::StringPtr actualVersion = VERSION;
   KJ_ASSERT(actualVersion == expectedVersion ||
             actualVersion.startsWith(kj::str(expectedVersion, '-')) ||
             actualVersion.startsWith(kj::str(expectedVersion, '.')) ||
-            (actualVersion == devVersion && CAPNP_VERSION_MICRO == 0),
+            (actualVersion == devVersion && ZAP_VERSION_MICRO == 0),
             expectedVersion, actualVersion);
 #endif
 }
 
 struct ExampleStruct {
-  struct _capnpPrivate {
+  struct _zapPrivate {
     struct IsStruct;
   };
 };
 struct ExampleInterface {
-  struct _capnpPrivate {
+  struct _zapPrivate {
     struct IsInterface;
   };
 };
@@ -75,17 +75,17 @@ struct EqualTypes_<T, T> { static constexpr bool value = true; };
 template <typename T, typename U>
 inline constexpr bool equalTypes() { return EqualTypes_<T, U>::value; }
 
-using capnproto_test::capnp::test::TestAllTypes;
-using capnproto_test::capnp::test::TestInterface;
+using zap_test::zap::test::TestAllTypes;
+using zap_test::zap::test::TestInterface;
 
 static_assert(equalTypes<FromAny<int>, int>(), "");
 static_assert(equalTypes<FromAny<TestAllTypes::Reader>, TestAllTypes>(), "");
 static_assert(equalTypes<FromAny<TestAllTypes::Builder>, TestAllTypes>(), "");
-#if !CAPNP_LITE
+#if !ZAP_LITE
 static_assert(equalTypes<FromAny<TestAllTypes::Pipeline>, TestAllTypes>(), "");
 static_assert(equalTypes<FromAny<TestInterface::Client>, TestInterface>(), "");
 static_assert(equalTypes<FromAny<kj::Own<TestInterface::Server>>, TestInterface>(), "");
 #endif
 
 }  // namespace
-}  // namespace capnp
+}  // namespace zap

@@ -1,13 +1,13 @@
 ---
 layout: slides
-title: "Slides: What's Next for Cap'n Proto"
+title: "Slides: What's Next for Zap"
 ---
 
 <!--===================================================================================-->
 
 <section markdown="1" id="slides-cover">
 
-What's Next for Cap'n Proto?
+What's Next for Zap?
 
 </section>
 
@@ -15,9 +15,9 @@ What's Next for Cap'n Proto?
 
 <section markdown="1" data-title="Streaming">
 
-Cap'n Proto supports streaming!
+Zap supports streaming!
 
-{% highlight capnp %}
+{% highlight zap %}
 interface FileStore {
   get @0 (name :Text, stream :Stream);
   put @1 (name :Text) -> (stream :Stream);
@@ -39,7 +39,7 @@ But flow control is up to the app.
 
 Let's build it in.
 
-{% highlight capnp %}
+{% highlight zap %}
 interface Stream {
   write @0 (data :Data) -> bulk;
   end @1 ();
@@ -54,7 +54,7 @@ interface Stream {
 
 What about realtime streams?
 
-{% highlight capnp %}
+{% highlight zap %}
 interface VideoCallStream {
   sendFrame @0 (frame :Frame) -> realtime;
 }
@@ -106,7 +106,7 @@ Redirect
 
 <img class="ph3" src="3ph-0rt.png">
 
-Cap'n Proto:
+Zap:
 
 3-Party Handoff
 
@@ -120,7 +120,7 @@ Cap'n Proto:
 
 <img class="ph3" src="3ph-0rt.png">
 
-Cap'n Proto:
+Zap:
 
 3-Party Handoff
 
@@ -136,7 +136,7 @@ Cap'n Proto:
 
 <img class="ph3" src="3ph-0rt.png">
 
-Cap'n Proto:
+Zap:
 
 3-Party Handoff
 
@@ -179,7 +179,7 @@ KJ client networking, no TLS:
 void send() {
   auto io = kj::setupAsyncIo();
   auto& network = io.provider->getNetwork();
-  auto addr = network.parseAddress("capnproto.org", 80)
+  auto addr = network.parseAddress("zap.org", 80)
       .wait(io.waitScope);
   auto connection = addr->connect().wait(io.waitScope);
   connection->write("GET /", 5).wait(io.waitScope);
@@ -199,7 +199,7 @@ void send() {
   auto io = kj::setupAsyncIo();
   kj::TlsContext tls;
   auto network = tls.wrapNetwork(io.provider->getNetwork());
-  auto addr = network->parseAddress("capnproto.org", 443)
+  auto addr = network->parseAddress("zap.org", 443)
       .wait(io.waitScope);
   auto connection = addr->connect().wait(io.waitScope);
   connection->write("GET /", 5).wait(io.waitScope);
@@ -303,7 +303,7 @@ auto client = kj::newHttpClient(
 
 kj::HttpHeaders headers(*headerTable);
 auto response = client->request(
-    kj::HttpMethod::GET, "http://capnproto.org", headers)
+    kj::HttpMethod::GET, "http://zap.org", headers)
     .response.wait(io.waitScope);
 
 KJ_ASSERT(response.statusCode == 200);
@@ -324,7 +324,7 @@ kj::HttpHeaderId userAgent = builder.add("User-Agent");
 auto headerTable = builder.build();
 
 kj::HttpHeaders headers(*headerTable);
-headers.set(kj::HttpHeaderId::HOST, "capnproto.org");
+headers.set(kj::HttpHeaderId::HOST, "zap.org");
 headers.set(userAgent, "kj-http/0.6");
 {% endhighlight %}
 
@@ -339,7 +339,7 @@ Header parsing is zero-copy.
 Ugly imperative code:
 
 {% highlight c++ %}
-capnp::MallocMessageBuilder message;
+zap::MallocMessageBuilder message;
 
 auto root = message.initRoot<MyStruct>();
 root.setFoo(123);
@@ -347,7 +347,7 @@ root.setBar("foo");
 auto inner = root.initBaz();
 inner.setQux(true);
 
-capnp::writeMessageToFd(fd, message);
+zap::writeMessageToFd(fd, message);
 {% endhighlight %}
 
 </section>
@@ -359,9 +359,9 @@ capnp::writeMessageToFd(fd, message);
 Nice declarative code:
 
 {% highlight c++ %}
-using namespace capnp::init;
+using namespace zap::init;
 
-capnp::MallocMessageBuilder message;
+zap::MallocMessageBuilder message;
 message.initRoot<MyStruct>(
   $foo = 123,
   $bar = "foo",
@@ -369,7 +369,7 @@ message.initRoot<MyStruct>(
     $qux = true
   )
 );
-capnp::writeMessageToFd(fd, message);
+zap::writeMessageToFd(fd, message);
 {% endhighlight %}
 
 </section>
@@ -381,9 +381,9 @@ capnp::writeMessageToFd(fd, message);
 Even better:
 
 {% highlight c++ %}
-using namespace capnp::init;
+using namespace zap::init;
 
-capnp::writeMessageToFd<MyStruct>(fd,
+zap::writeMessageToFd<MyStruct>(fd,
   $foo = 123,
   $bar = "foo",
   $baz(
@@ -424,7 +424,7 @@ struct {
 Not idiomatic:
 
 {% highlight c++ %}
-capnp::MallocMessageBuilder message;
+zap::MallocMessageBuilder message;
 
 MyStruct::Builder root = message.initRoot<MyStruct>();
 root.setFoo(123);
@@ -432,7 +432,7 @@ root.setBar("foo");
 InnerStruct::Builder inner = root.initBaz();
 inner.setQux(true);
 
-capnp::writeMessageToFd(fd, message);
+zap::writeMessageToFd(fd, message);
 {% endhighlight %}
 
 </section>
@@ -451,7 +451,7 @@ InnerStruct inner;
 inner.qux = true;
 root.baz = kj::mv(inner);
 
-capnp::writeMessageToFd(fd, message);
+zap::writeMessageToFd(fd, message);
 {% endhighlight %}
 
 Caveat: No longer zero-copy.
@@ -463,8 +463,8 @@ Caveat: No longer zero-copy.
 <section markdown="1" data-title="POCS">
 
 {% highlight c++ %}
-capnp::MallocMessageBuilder message;
-capnp::readMessageCopy(input, message);
+zap::MallocMessageBuilder message;
+zap::readMessageCopy(input, message);
 auto root = message.getRoot<MyStruct>();
 auto oldListOrphan = root.disownStructList();
 auto oldList = oldListOrphan.getReader();
@@ -473,9 +473,9 @@ for (auto i: kj::indices(newList)) {
   newList.setWithCaveats(i,
       oldList[i < indexToRemove ? i : i + 1]);
 }
-capnp::MallocMessageBuilder message2;
+zap::MallocMessageBuilder message2;
 message2.setRoot(root.asReader());
-capnp::writeMessage(output, message2);
+zap::writeMessage(output, message2);
 {% endhighlight %}
 
 </section>
@@ -485,9 +485,9 @@ capnp::writeMessage(output, message2);
 <section markdown="1" data-title="POCS">
 
 {% highlight c++ %}
-auto root = capnp::readMessageCopy<MyStruct>(input);
+auto root = zap::readMessageCopy<MyStruct>(input);
 root.structList.erase(indexToRemove);
-capnp::writeMessageCopy(output, root);
+zap::writeMessageCopy(output, root);
 {% endhighlight %}
 
 </section>
@@ -496,7 +496,7 @@ capnp::writeMessageCopy(output, root);
 
 <section markdown="1" data-title="JSON-HTTP Bridge">
 
-{% highlight capnp %}
+{% highlight zap %}
 interface AddressBook {
   getPerson @0 (id :UInt32 $httpPath)
             -> (person :Person $httpBody(type = json))
@@ -518,7 +518,7 @@ interface AddressBook {
 
 <section markdown="1" data-title="JSON-HTTP Bridge">
 
-{% highlight capnp %}
+{% highlight zap %}
 addPerson @2 (person :Person $httpBody(type = json))
           -> (id :UInt32 $httpBody(type = jsonField));
     $http(method = post, route = "person");
@@ -540,7 +540,7 @@ getAll @3 (page :UInt32 = 0 $httpQuery)
 
 <section markdown="1" data-title="JSON-HTTP Bridge">
 
-{% highlight capnp %}
+{% highlight zap %}
 interface AddressBookService {
   getAddressBook @0 (key :String $httpPath)
                  -> (result :AddressBook $httpPipeline);

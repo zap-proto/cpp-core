@@ -1,6 +1,6 @@
-"""Support rule to invoke capnp compiler."""
+"""Support rule to invoke zap compiler."""
 
-capnp_provider = provider("Capnproto Provider", fields = {
+zap_provider = provider("Zap Provider", fields = {
     "includes": "includes for this target (transitive)",
     "inputs": "src + data for the target",
     "src_prefix": "src_prefix of the target",
@@ -11,27 +11,27 @@ def _workspace_path(label, path):
         return path
     return label.workspace_root + "/" + path
 
-def _capnp_gen_impl(ctx):
+def _zap_gen_impl(ctx):
     label = ctx.label
     src_prefix = _workspace_path(label, ctx.attr.src_prefix) if ctx.attr.src_prefix != "" else ""
     includes = []
 
     inputs = ctx.files.srcs + ctx.files.data
     for dep_target in ctx.attr.deps:
-        includes += dep_target[capnp_provider].includes
-        inputs += dep_target[capnp_provider].inputs
+        includes += dep_target[zap_provider].includes
+        inputs += dep_target[zap_provider].inputs
 
     if src_prefix != "":
         includes.append(src_prefix)
 
-    system_include = ctx.files._capnp_system[0].dirname.removesuffix("/capnp")
+    system_include = ctx.files._zap_system[0].dirname.removesuffix("/zap")
 
     gen_dir = ctx.var["GENDIR"]
     out_dir = gen_dir
     if src_prefix != "":
         out_dir = out_dir + "/" + src_prefix
 
-    cc_out = "-o%s:%s" % (ctx.executable.capnpc_plugin.path, out_dir)
+    cc_out = "-o%s:%s" % (ctx.executable.zapc_plugin.path, out_dir)
     args = ctx.actions.args()
     args.add_all(["compile", "--verbose", cc_out])
     args.add_all(["-I" + inc for inc in includes])
@@ -50,33 +50,33 @@ def _capnp_gen_impl(ctx):
     args.add_all([s for s in ctx.files.srcs])
 
     ctx.actions.run(
-        inputs = inputs + ctx.files.capnpc_plugin + ctx.files._capnpc_capnp + ctx.files._capnp_system,
+        inputs = inputs + ctx.files.zapc_plugin + ctx.files._zapc_zap + ctx.files._zap_system,
         outputs = ctx.outputs.outs,
-        executable = ctx.executable._capnpc,
+        executable = ctx.executable._zapc,
         arguments = [args],
-        mnemonic = "GenCapnp",
+        mnemonic = "GenZap",
     )
 
     return [
-        capnp_provider(
+        zap_provider(
             includes = includes,
             inputs = inputs,
             src_prefix = src_prefix,
         ),
     ]
 
-capnp_gen = rule(
+zap_gen = rule(
     attrs = {
         "srcs": attr.label_list(allow_files = True),
-        "deps": attr.label_list(providers = [capnp_provider]),
+        "deps": attr.label_list(providers = [zap_provider]),
         "data": attr.label_list(allow_files = True),
         "outs": attr.output_list(),
         "src_prefix": attr.string(),
-        "capnpc_plugin": attr.label(executable = True, allow_single_file = True, cfg = "exec", mandatory = True),
-        "_capnpc": attr.label(executable = True, allow_single_file = True, cfg = "exec", default = "@capnp-cpp//src/capnp:capnp_tool"),
-        "_capnpc_capnp": attr.label(executable = True, allow_single_file = True, cfg = "exec", default = "@capnp-cpp//src/capnp:capnpc-capnp"),
-        "_capnp_system": attr.label(default = "@capnp-cpp//src/capnp:capnp_system_library"),
+        "zapc_plugin": attr.label(executable = True, allow_single_file = True, cfg = "exec", mandatory = True),
+        "_zapc": attr.label(executable = True, allow_single_file = True, cfg = "exec", default = "@zap-cpp//src/zap:zap_tool"),
+        "_zapc_zap": attr.label(executable = True, allow_single_file = True, cfg = "exec", default = "@zap-cpp//src/zap:zapc-zap"),
+        "_zap_system": attr.label(default = "@zap-cpp//src/zap:zap_system_library"),
     },
     output_to_genfiles = True,
-    implementation = _capnp_gen_impl,
+    implementation = _zap_gen_impl,
 )

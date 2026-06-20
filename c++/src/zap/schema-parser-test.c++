@@ -19,14 +19,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define CAPNP_TESTING_CAPNP 1
+#define ZAP_TESTING_ZAP 1
 
 #include "schema-parser.h"
 #include <kj/compat/gtest.h>
 #include "test-util.h"
 #include <kj/debug.h>
 
-namespace capnp {
+namespace zap {
 namespace {
 
 #if _WIN32
@@ -64,27 +64,27 @@ TEST(SchemaParser, Basic) {
   SchemaParser parser;
   parser.setDiskFilesystem(reader);
 
-  reader.add("src/foo/bar.capnp",
+  reader.add("src/foo/bar.zap",
       "@0x8123456789abcdef;\n"
       "struct Bar {\n"
-      "  baz @0: import \"baz.capnp\".Baz;\n"
-      "  corge @1: import \"../qux/corge.capnp\".Corge;\n"
-      "  grault @2: import \"/grault.capnp\".Grault;\n"
-      "  garply @3: import \"/garply.capnp\".Garply;\n"
+      "  baz @0: import \"baz.zap\".Baz;\n"
+      "  corge @1: import \"../qux/corge.zap\".Corge;\n"
+      "  grault @2: import \"/grault.zap\".Grault;\n"
+      "  garply @3: import \"/garply.zap\".Garply;\n"
       "}\n");
-  reader.add("src/foo/baz.capnp",
+  reader.add("src/foo/baz.zap",
       "@0x823456789abcdef1;\n"
       "struct Baz {}\n");
-  reader.add("src/qux/corge.capnp",
+  reader.add("src/qux/corge.zap",
       "@0x83456789abcdef12;\n"
       "struct Corge {}\n");
-  reader.add(ABS("usr/include/grault.capnp"),
+  reader.add(ABS("usr/include/grault.zap"),
       "@0x8456789abcdef123;\n"
       "struct Grault {}\n");
-  reader.add(ABS("opt/include/grault.capnp"),
+  reader.add(ABS("opt/include/grault.zap"),
       "@0x8000000000000001;\n"
       "struct WrongGrault {}\n");
-  reader.add(ABS("usr/local/include/garply.capnp"),
+  reader.add(ABS("usr/local/include/garply.zap"),
       "@0x856789abcdef1234;\n"
       "struct Garply {}\n");
 
@@ -93,11 +93,11 @@ TEST(SchemaParser, Basic) {
   };
 
   ParsedSchema barSchema = parser.parseDiskFile(
-      "foo2/bar2.capnp", "src/foo/bar.capnp", importPath);
+      "foo2/bar2.zap", "src/foo/bar.zap", importPath);
 
   auto barProto = barSchema.getProto();
   EXPECT_EQ(0x8123456789abcdefull, barProto.getId());
-  EXPECT_EQ("foo2/bar2.capnp", barProto.getDisplayName());
+  EXPECT_EQ("foo2/bar2.zap", barProto.getDisplayName());
 
   auto barStruct = barSchema.getNested("Bar");
   auto barFields = barStruct.asStruct().getFields();
@@ -121,35 +121,35 @@ TEST(SchemaParser, Basic) {
 
   auto bazSchema = parser.parseDiskFile(
       "not/used/because/already/loaded",
-      "src/foo/baz.capnp", importPath);
+      "src/foo/baz.zap", importPath);
   EXPECT_EQ(0x823456789abcdef1ull, bazSchema.getProto().getId());
-  EXPECT_EQ("foo2/baz.capnp", bazSchema.getProto().getDisplayName());
+  EXPECT_EQ("foo2/baz.zap", bazSchema.getProto().getDisplayName());
   auto bazStruct = bazSchema.getNested("Baz").asStruct();
   EXPECT_EQ(bazStruct, barStruct.getDependency(bazStruct.getProto().getId()));
 
   auto corgeSchema = parser.parseDiskFile(
       "not/used/because/already/loaded",
-      "src/qux/corge.capnp", importPath);
+      "src/qux/corge.zap", importPath);
   EXPECT_EQ(0x83456789abcdef12ull, corgeSchema.getProto().getId());
-  EXPECT_EQ("qux/corge.capnp", corgeSchema.getProto().getDisplayName());
+  EXPECT_EQ("qux/corge.zap", corgeSchema.getProto().getDisplayName());
   auto corgeStruct = corgeSchema.getNested("Corge").asStruct();
   EXPECT_EQ(corgeStruct, barStruct.getDependency(corgeStruct.getProto().getId()));
 
   auto graultSchema = parser.parseDiskFile(
       "not/used/because/already/loaded",
-      ABS("usr/include/grault.capnp"), importPath);
+      ABS("usr/include/grault.zap"), importPath);
   EXPECT_EQ(0x8456789abcdef123ull, graultSchema.getProto().getId());
-  EXPECT_EQ("grault.capnp", graultSchema.getProto().getDisplayName());
+  EXPECT_EQ("grault.zap", graultSchema.getProto().getDisplayName());
   auto graultStruct = graultSchema.getNested("Grault").asStruct();
   EXPECT_EQ(graultStruct, barStruct.getDependency(graultStruct.getProto().getId()));
 
-  // Try importing the other grault.capnp directly.  It'll get the display name we specify since
+  // Try importing the other grault.zap directly.  It'll get the display name we specify since
   // it wasn't imported before.
   auto wrongGraultSchema = parser.parseDiskFile(
-      "weird/display/name.capnp",
-      ABS("opt/include/grault.capnp"), importPath);
+      "weird/display/name.zap",
+      ABS("opt/include/grault.zap"), importPath);
   EXPECT_EQ(0x8000000000000001ull, wrongGraultSchema.getProto().getId());
-  EXPECT_EQ("weird/display/name.capnp", wrongGraultSchema.getProto().getDisplayName());
+  EXPECT_EQ("weird/display/name.zap", wrongGraultSchema.getProto().getDisplayName());
 }
 
 TEST(SchemaParser, Constants) {
@@ -161,7 +161,7 @@ TEST(SchemaParser, Constants) {
   SchemaParser parser;
   parser.setDiskFilesystem(reader);
 
-  reader.add("const.capnp",
+  reader.add("const.zap",
       "@0x8123456789abcdef;\n"
       "const uint32Const :UInt32 = 1234;\n"
       "const listConst :List(Float32) = [1.25, 2.5, 3e4];\n"
@@ -176,7 +176,7 @@ TEST(SchemaParser, Constants) {
       "}\n");
 
   ParsedSchema fileSchema = parser.parseDiskFile(
-      "const.capnp", "const.capnp", nullptr);
+      "const.zap", "const.zap", nullptr);
 
   EXPECT_EQ(1234, fileSchema.getNested("uint32Const").asConst().as<uint32_t>());
 
@@ -213,7 +213,7 @@ TEST(SchemaParser, SourceInfo) {
   SchemaParser parser;
   parser.setDiskFilesystem(reader);
 
-  reader.add("foo.capnp",
+  reader.add("foo.zap",
       "@0x84a2c6051e1061ed;\n"
       "# file doc comment\n"
       "\n"
@@ -247,7 +247,7 @@ TEST(SchemaParser, SourceInfo) {
       "# post-comment\n");
 
   ParsedSchema file = parser.parseDiskFile(
-      "foo.capnp", "foo.capnp", nullptr);
+      "foo.zap", "foo.zap", nullptr);
   ParsedSchema foo = file.getNested("Foo");
 
   expectSourceInfo(file.getSourceInfo(), 0x84a2c6051e1061edull, "file doc comment\n", {});
@@ -273,7 +273,7 @@ TEST(SchemaParser, SourceInfo) {
 
 TEST(SchemaParser, SetFileIdsRequired) {
   FakeFileReader reader;
-  reader.add("no-file-id.capnp",
+  reader.add("no-file-id.zap",
       "const foo :Int32 = 123;\n");
 
   {
@@ -281,17 +281,17 @@ TEST(SchemaParser, SetFileIdsRequired) {
     parser.setDiskFilesystem(reader);
 
     KJ_EXPECT_THROW_RECOVERABLE_MESSAGE("File does not declare an ID.",
-        parser.parseDiskFile("no-file-id.capnp", "no-file-id.capnp", nullptr));
+        parser.parseDiskFile("no-file-id.zap", "no-file-id.zap", nullptr));
   }
   {
     SchemaParser parser;
     parser.setDiskFilesystem(reader);
     parser.setFileIdsRequired(false);
 
-    auto fileSchema = parser.parseDiskFile("no-file-id.capnp", "no-file-id.capnp", nullptr);
+    auto fileSchema = parser.parseDiskFile("no-file-id.zap", "no-file-id.zap", nullptr);
     KJ_EXPECT(fileSchema.getNested("foo").asConst().as<int32_t>() == 123);
   }
 }
 
 }  // namespace
-}  // namespace capnp
+}  // namespace zap

@@ -67,8 +67,8 @@ function initSidebar() {
 }
 
 function setupSidebar() {
-  if (window.CAPNP_NEWS_SIDEBAR) {
-    setupNewsSidebar(CAPNP_NEWS_SIDEBAR);
+  if (window.ZAP_NEWS_SIDEBAR) {
+    setupNewsSidebar(ZAP_NEWS_SIDEBAR);
     return;
   }
 

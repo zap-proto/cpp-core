@@ -24,7 +24,7 @@
 #include <kj/debug.h>
 #include <kj/io.h>
 
-namespace capnp {
+namespace zap {
 
 TwoPartyVatNetwork::TwoPartyVatNetwork(
     kj::OneOf<MessageStream*, kj::Own<MessageStream>>&& stream,
@@ -50,13 +50,13 @@ TwoPartyVatNetwork::TwoPartyVatNetwork(
   disconnectFulfiller.fulfiller = kj::mv(paf.fulfiller);
 }
 
-TwoPartyVatNetwork::TwoPartyVatNetwork(capnp::MessageStream& stream,
+TwoPartyVatNetwork::TwoPartyVatNetwork(zap::MessageStream& stream,
                    rpc::twoparty::Side side, ReaderOptions receiveOptions,
                    const kj::MonotonicClock& clock)
   : TwoPartyVatNetwork(stream, 0, side, receiveOptions, clock) {}
 
 TwoPartyVatNetwork::TwoPartyVatNetwork(
-    capnp::MessageStream& stream,
+    zap::MessageStream& stream,
     uint maxFdsPerMessage,
     rpc::twoparty::Side side,
     ReaderOptions receiveOptions,
@@ -150,7 +150,7 @@ public:
       size += segment.size();
     }
     KJ_REQUIRE(size < network.receiveOptions.traversalLimitInWords, size,
-               "Trying to send Cap'n Proto message larger than our single-message size limit. The "
+               "Trying to send Zap message larger than our single-message size limit. The "
                "other side probably won't accept it (assuming its traversalLimitInWords matches "
                "ours) and would abort the connection, so I won't send it.") {
       return;
@@ -466,9 +466,9 @@ TwoPartyClient::TwoPartyClient(kj::AsyncCapabilityStream& connection, uint maxFd
       rpcSystem(network, bootstrapInterface) {}
 
 Capability::Client TwoPartyClient::bootstrap() {
-  capnp::word scratch[4];
+  zap::word scratch[4];
   memset(&scratch, 0, sizeof(scratch));
-  capnp::MallocMessageBuilder message(scratch);
+  zap::MallocMessageBuilder message(scratch);
   auto vatId = message.getRoot<rpc::twoparty::VatId>();
   vatId.setSide(network.getSide() == rpc::twoparty::Side::CLIENT
                 ? rpc::twoparty::Side::SERVER
@@ -480,4 +480,4 @@ void TwoPartyClient::setTraceEncoder(kj::Function<kj::String(const kj::Exception
   rpcSystem.setTraceEncoder(kj::mv(func));
 }
 
-}  // namespace capnp
+}  // namespace zap

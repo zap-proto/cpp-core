@@ -20,12 +20,12 @@
 # THE SOFTWARE.
 
 @0xb665280aaff2e632;
-# Cap'n Proto interface for HTTP.
+# Zap interface for HTTP.
 
-using import "/capnp/compat/byte-stream.capnp".ByteStream;
+using import "/zap/compat/byte-stream.zap".ByteStream;
 
-using Cxx = import "/capnp/c++.capnp";
-$Cxx.namespace("capnp");
+using Cxx = import "/zap/c++.zap";
+$Cxx.namespace("zap");
 $Cxx.allowCancellation;
 
 interface HttpService {
@@ -56,7 +56,7 @@ interface HttpService {
   #   `request()` instead of `startRequest()`. The new approach is more intuitive and avoids some
   #   unnecessary bookkeeping.
   #
-  #   `HttpOverCapnpFactory` will continue to support both methods. Use the `peerOptimizationLevel`
+  #   `HttpOverZapFactory` will continue to support both methods. Use the `peerOptimizationLevel`
   #   constructor parameter to specify which method to use, for backwards-compatibiltiy purposes.
 
   connect @2 (host :Text, headers :List(HttpHeader), down :ByteStream,
@@ -151,7 +151,7 @@ struct HttpResponse {
 
 enum HttpMethod {
   # This enum aligns precisely with the kj::HttpMethod enum. However, the backwards-compat
-  # constraints of a public-facing C++ enum vs. an internal Cap'n Proto interface differ in
+  # constraints of a public-facing C++ enum vs. an internal Zap interface differ in
   # several ways, which could possibly lead to divergence someday. For now, a unit test verifies
   # that they match exactly; if that test ever fails, we'll have to figure out what to do about it.
 

@@ -19,9 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <capnp/compat/byte-stream.h>
-#include <capnp/compat/http-over-capnp.h>
-#include <capnp/rpc-twoparty.h>
+#include <zap/compat/byte-stream.h>
+#include <zap/compat/http-over-zap.h>
+#include <zap/rpc-twoparty.h>
 #include <kj/async-io.h>
 #include <kj/compat/http.h>
 #include <kj/debug.h>
@@ -74,13 +74,13 @@ public:
     return kj::MainBuilder(context, "http-bench", "KJ HTTP stack benchmark")
         .addSubCommand("http-server", KJ_BIND_METHOD(*this, getHttpServer),
                        "Run an HTTP server.")
-        .addSubCommand("capnp-server", KJ_BIND_METHOD(*this, getCapnpServer),
-                       "Run an HTTP-over-Cap'n-Proto server.")
+        .addSubCommand("zap-server", KJ_BIND_METHOD(*this, getZapServer),
+                       "Run an HTTP-over-Zap server.")
         .addSubCommand("http-to-http", KJ_BIND_METHOD(*this, getHttpToHttp),
                        "Proxy HTTP requests to another HTTP server.")
         .addSubCommand(
-            "http-to-capnp", KJ_BIND_METHOD(*this, getHttpToCapnp),
-            "Proxy HTTP requests to an HTTP-over-Cap'n-Proto server.")
+            "http-to-zap", KJ_BIND_METHOD(*this, getHttpToZap),
+            "Proxy HTTP requests to an HTTP-over-Zap server.")
         .build();
   }
 
@@ -116,39 +116,39 @@ public:
     return true;
   }
 
-  kj::MainFunc getCapnpServer() {
-    return kj::MainBuilder(context, "capnp-server",
-                           "Run an HTTP-over-Cap'n-Proto server.")
+  kj::MainFunc getZapServer() {
+    return kj::MainBuilder(context, "zap-server",
+                           "Run an HTTP-over-Zap server.")
         .addOptionWithArg({'s', "server"}, KJ_BIND_METHOD(*this, setServer),
                           "<address>", "Server address to listen on.")
-        .callAfterParsing(KJ_BIND_METHOD(*this, runCapnpServer))
+        .callAfterParsing(KJ_BIND_METHOD(*this, runZapServer))
         .build();
   }
 
-  kj::MainBuilder::Validity runCapnpServer() {
+  kj::MainBuilder::Validity runZapServer() {
     KJ_REQUIRE(server != nullptr, "Must specify --server");
 
     auto io = kj::setupAsyncIo();
 
     HttpHeaderTable::Builder tableBuilder;
-    capnp::HttpOverCapnpFactory::HeaderIdBundle headerIds(tableBuilder);
+    zap::HttpOverZapFactory::HeaderIdBundle headerIds(tableBuilder);
     auto headerTable = tableBuilder.build();
 
-    auto capnpAddr =
+    auto zapAddr =
         io.provider->getNetwork().parseAddress(this->server).wait(io.waitScope);
-    auto capnpListener = capnpAddr->listen();
+    auto zapListener = zapAddr->listen();
 
-    KJ_LOG(WARNING, "Cap'n Proto server listening", this->server);
+    KJ_LOG(WARNING, "Zap server listening", this->server);
 
-    capnp::ByteStreamFactory streamFactory;
-    capnp::HttpOverCapnpFactory hocFactory(
-        streamFactory, kj::mv(headerIds), capnp::HttpOverCapnpFactory::LEVEL_2);
+    zap::ByteStreamFactory streamFactory;
+    zap::HttpOverZapFactory hocFactory(
+        streamFactory, kj::mv(headerIds), zap::HttpOverZapFactory::LEVEL_2);
 
     OkService okService(*headerTable);
-    auto capnpService = hocFactory.kjToCapnp(kj::heap<OkService>(*headerTable));
+    auto zapService = hocFactory.kjToZap(kj::heap<OkService>(*headerTable));
 
-    capnp::TwoPartyServer capnpServer(kj::mv(capnpService));
-    capnpServer.listen(*capnpListener).wait(io.waitScope);
+    zap::TwoPartyServer zapServer(kj::mv(zapService));
+    zapServer.listen(*zapListener).wait(io.waitScope);
 
     return true;
   }
@@ -195,42 +195,42 @@ public:
     return true;
   }
 
-  kj::MainFunc getHttpToCapnp() {
-    return kj::MainBuilder(context, "http-to-capnp",
-                           "Bridge HTTP to HTTP-over-Cap'n-Proto.")
+  kj::MainFunc getHttpToZap() {
+    return kj::MainBuilder(context, "http-to-zap",
+                           "Bridge HTTP to HTTP-over-Zap.")
         .addOptionWithArg({'s', "server"}, KJ_BIND_METHOD(*this, setServer),
                           "<address>", "Proxy listen address.")
         .addOptionWithArg({'c', "client"}, KJ_BIND_METHOD(*this, setClient),
-                          "<address>", "Target Cap'n Proto server address.")
-        .callAfterParsing(KJ_BIND_METHOD(*this, runHttpToCapnp))
+                          "<address>", "Target Zap server address.")
+        .callAfterParsing(KJ_BIND_METHOD(*this, runHttpToZap))
         .build();
   }
 
-  kj::MainBuilder::Validity runHttpToCapnp() {
+  kj::MainBuilder::Validity runHttpToZap() {
     KJ_REQUIRE(client != nullptr, "Must specify --client");
     KJ_REQUIRE(server != nullptr, "Must specify --server");
 
     auto io = kj::setupAsyncIo();
 
     HttpHeaderTable::Builder tableBuilder;
-    capnp::HttpOverCapnpFactory::HeaderIdBundle headerIds(tableBuilder);
+    zap::HttpOverZapFactory::HeaderIdBundle headerIds(tableBuilder);
     auto headerTable = tableBuilder.build();
 
-    auto capnpAddr =
+    auto zapAddr =
         io.provider->getNetwork().parseAddress(this->client).wait(io.waitScope);
-    auto capnpConnection = capnpAddr->connect().wait(io.waitScope);
+    auto zapConnection = zapAddr->connect().wait(io.waitScope);
 
-    KJ_LOG(WARNING, "Connected to Cap'n Proto server at ", this->client);
+    KJ_LOG(WARNING, "Connected to Zap server at ", this->client);
 
-    capnp::ByteStreamFactory streamFactory;
-    capnp::HttpOverCapnpFactory hocFactory(
-        streamFactory, kj::mv(headerIds), capnp::HttpOverCapnpFactory::LEVEL_2);
+    zap::ByteStreamFactory streamFactory;
+    zap::HttpOverZapFactory hocFactory(
+        streamFactory, kj::mv(headerIds), zap::HttpOverZapFactory::LEVEL_2);
 
-    capnp::TwoPartyClient capnpClient(*capnpConnection);
-    auto capnpHttpService =
-        capnpClient.bootstrap().castAs<capnp::HttpService>();
+    zap::TwoPartyClient zapClient(*zapConnection);
+    auto zapHttpService =
+        zapClient.bootstrap().castAs<zap::HttpService>();
 
-    auto kjHttpService = hocFactory.capnpToKj(kj::mv(capnpHttpService));
+    auto kjHttpService = hocFactory.zapToKj(kj::mv(zapHttpService));
 
     kj::TimerImpl timer(kj::origin<kj::TimePoint>());
     HttpServer httpServer(timer, *headerTable, *kjHttpService);

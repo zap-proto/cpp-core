@@ -19,15 +19,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define CAPNP_TESTING_CAPNP 1
+#define ZAP_TESTING_ZAP 1
 
 #include "schema-loader.h"
 #include <kj/compat/gtest.h>
 #include "test-util.h"
-#include <capnp/message.h>
+#include <zap/message.h>
 #include <kj/debug.h>
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -433,4 +433,4 @@ KJ_TEST("SchemaLoader placeholders are assumed to have caps") {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

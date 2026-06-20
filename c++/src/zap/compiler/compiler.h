@@ -21,15 +21,15 @@
 
 #pragma once
 
-#include <capnp/compiler/grammar.capnp.h>
-#include <capnp/schema.capnp.h>
-#include <capnp/schema-loader.h>
+#include <zap/compiler/grammar.zap.h>
+#include <zap/schema.zap.h>
+#include <zap/schema-loader.h>
 #include "error-reporter.h"
 #include "generics.h"
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 
 class Module: public ErrorReporter {
@@ -188,7 +188,7 @@ public:
     // For example, the flag combo:
     //     EAGER_NODE | EAGER_CHILDREN | EAGER_DEPENDENCIES | EAGER_DEPENDENCY_PARENTS
     // will compile the entire given module, plus all direct dependencies of anything in that
-    // module, plus all lexical ancestors of those dependencies.  This is what the Cap'n Proto
+    // module, plus all lexical ancestors of those dependencies.  This is what the Zap
     // compiler uses when building initial code generator requests.
 
     ALL_RELATED_NODES = ~0u,
@@ -260,6 +260,6 @@ private:
 };
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

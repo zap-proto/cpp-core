@@ -21,17 +21,17 @@
 
 #pragma once
 
-#include <capnp/capability.h>
+#include <zap/capability.h>
 #include "rpc-prelude.h"
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
 namespace kj {
   class OwnFd;
   using AutoCloseFd = OwnFd;
 }
 
-namespace capnp {
+namespace zap {
 
 template <typename VatId, typename ThirdPartyCompletion, typename ThirdPartyToAwait,
           typename ThirdPartyToContact, typename JoinResult>
@@ -192,7 +192,7 @@ class OutgoingRpcMessage {
 public:
   virtual AnyPointer::Builder getBody() = 0;
   // Get the message body, which the caller may fill in any way it wants.  (The standard RPC
-  // implementation initializes it as a Message as defined in rpc.capnp.)
+  // implementation initializes it as a Message as defined in rpc.zap.)
 
   virtual void setFds(kj::Array<int> fds) {}
   // Set the list of file descriptors to send along with this message, if FD passing is supported.
@@ -214,7 +214,7 @@ class IncomingRpcMessage {
 public:
   virtual AnyPointer::Reader getBody() = 0;
   // Get the message body, to be interpreted by the caller.  (The standard RPC implementation
-  // interprets it as a Message as defined in rpc.capnp.)
+  // interprets it as a Message as defined in rpc.zap.)
 
   virtual kj::ArrayPtr<kj::OwnFd> getAttachedFds() { return nullptr; }
   // If the transport supports attached file descriptors and some were attached to this message,
@@ -295,8 +295,8 @@ public:
 template <typename VatId, typename ThirdPartyCompletion, typename ThirdPartyToAwait,
           typename ThirdPartyToContact, typename JoinResult>
 class VatNetwork: public _::VatNetworkBase {
-  // Cap'n Proto RPC operates between vats, where a "vat" is some sort of host of objects.
-  // Typically one Cap'n Proto process (in the Unix sense) is one vat.  The RPC system is what
+  // Zap RPC operates between vats, where a "vat" is some sort of host of objects.
+  // Typically one Zap process (in the Unix sense) is one vat.  The RPC system is what
   // allows calls between objects hosted in different vats.
   //
   // The RPC implementation sits on top of an implementation of `VatNetwork`.  The `VatNetwork`
@@ -719,6 +719,6 @@ RpcSystem<VatId> makeRpcClient(
   return RpcSystem<VatId>(network, kj::none);
 }
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

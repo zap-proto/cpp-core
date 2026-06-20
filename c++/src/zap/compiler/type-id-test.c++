@@ -20,10 +20,10 @@
 // THE SOFTWARE.
 
 #include "type-id.h"
-#include <capnp/schema.capnp.h>
+#include <zap/schema.zap.h>
 #include <kj/test.h>
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 namespace {
 
@@ -45,4 +45,4 @@ KJ_TEST("type ID generation hasn't changed") {
 
 }  // namespace
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap

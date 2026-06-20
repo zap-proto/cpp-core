@@ -22,11 +22,11 @@
 #include "endian.h"
 #include <kj/compat/gtest.h>
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
-#if CAPNP_DISABLE_ENDIAN_DETECTION
+#if ZAP_DISABLE_ENDIAN_DETECTION
 #define Endian EndianUnoptimized
 #endif
 
@@ -104,4 +104,4 @@ TEST(Endian, EightBytes) {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

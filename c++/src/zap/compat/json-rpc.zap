@@ -1,8 +1,8 @@
 @0xd04299800d6725ba;
 
-$import "/capnp/c++.capnp".namespace("capnp::json");
+$import "/zap/c++.zap".namespace("zap::json");
 
-using Json = import "/capnp/compat/json.capnp";
+using Json = import "/zap/compat/json.zap";
 
 struct RpcMessage {
   jsonrpc @0 :Text;
@@ -15,7 +15,7 @@ struct RpcMessage {
   #
   # May be omitted when caller doesn't care about the response. The implementation will omit `id`
   # and return immediately when calling methods with the annotation `@notification` (defined in
-  # `json.capnp`). The `@notification` annotation only matters for outgoing calls; for incoming
+  # `json.zap`). The `@notification` annotation only matters for outgoing calls; for incoming
   # calls, it's the client's decision whether it wants to receive the response.
 
   method @2 :Text;

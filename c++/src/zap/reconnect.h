@@ -21,12 +21,12 @@
 
 #pragma once
 
-#include <capnp/capability.h>
+#include <zap/capability.h>
 #include <kj/function.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 class AutoReconnectController {
 public:
@@ -109,6 +109,6 @@ auto lazyAutoReconnectWithController(ConnectFunc&& connect) {
   };
 }
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

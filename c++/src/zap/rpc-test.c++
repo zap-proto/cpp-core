@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define CAPNP_TESTING_CAPNP 1
+#define ZAP_TESTING_ZAP 1
 
 #include "rpc.h"
 #include "test-util.h"
@@ -28,12 +28,12 @@
 #include <kj/debug.h>
 #include <kj/function.h>
 #include <kj/string-tree.h>
-#include <capnp/rpc.capnp.h>
+#include <zap/rpc.zap.h>
 #include <kj/async-queue.h>
 #include <kj/map.h>
 #include <kj/miniposix.h>
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -42,7 +42,7 @@ class RpcDumper {
   // results based on the call's interface and method IDs and extracting cap descriptors.
   //
   // TODO(cleanup):  Clean this code up and move it to someplace reusable, so it can be used as
-  //   a packet inspector / debugging tool for Cap'n Proto network traffic.
+  //   a packet inspector / debugging tool for Zap network traffic.
 
 public:
   void addSchema(InterfaceSchema schema) {
@@ -1311,7 +1311,7 @@ KJ_TEST("embargos block CapabilityServerSet") {
 
   TestContext context;
 
-  capnp::CapabilityServerSet<test::TestCallOrder> capSet;
+  zap::CapabilityServerSet<test::TestCallOrder> capSet;
 
   auto client = context.connect().getTestMoreStuffRequest().send().getCap();
 
@@ -1411,7 +1411,7 @@ KJ_TEST("embargo error") {
 
 KJ_TEST("don't embargo null capability") {
   // Set up a situation where we pipeline on a capability that ends up coming back null. This
-  // should NOT cause a Disembargo to be sent, but due to a bug in earlier versions of Cap'n Proto,
+  // should NOT cause a Disembargo to be sent, but due to a bug in earlier versions of Zap,
   // a Disembargo was indeed sent to the null capability, which caused the server to disconnect
   // due to protocol error.
 
@@ -1452,7 +1452,7 @@ KJ_TEST("call promise that later rejects") {
 
   bool returned = false;
   auto req = client.callHeldRequest().send()
-      .then([&](capnp::Response<test::TestMoreStuff::CallHeldResults>&&) {
+      .then([&](zap::Response<test::TestMoreStuff::CallHeldResults>&&) {
     returned = true;
   }, [&](kj::Exception&& e) {
     returned = true;
@@ -1684,7 +1684,7 @@ KJ_TEST("when OutgoingRpcMessage::send() throws, we don't leak exports") {
     auto message = builder.getRoot<rpc::Message>().asReader();
     if (message.isCall()) {
       auto call = message.getCall();
-      if (call.getInterfaceId() == capnp::typeId<test::TestMoreStuff>() &&
+      if (call.getInterfaceId() == zap::typeId<test::TestMoreStuff>() &&
           call.getMethodId() == 0) {
         // callFoo() request, expect a capability in the param caps. Specifically we expect a
         // promise, because that's what we send below.
@@ -1792,7 +1792,7 @@ KJ_TEST("export the same promise twice") {
     auto message = builder.getRoot<rpc::Message>().asReader();
     if (message.isCall()) {
       auto call = message.getCall();
-      if (call.getInterfaceId() == capnp::typeId<test::TestMoreStuff>() &&
+      if (call.getInterfaceId() == zap::typeId<test::TestMoreStuff>() &&
           call.getMethodId() == 0) {
         // callFoo() request, expect a capability in the param caps. Specifically we expect a
         // promise, because that's what we send below.
@@ -2137,7 +2137,7 @@ public:
 
   DispatchCallResult dispatchCall(uint64_t interfaceId, uint16_t methodId,
                                   CallContext<AnyPointer, AnyPointer> context) override {
-    if (interfaceId == capnp::typeId<test::TestMoreStuff>() && methodId == 3) {
+    if (interfaceId == zap::typeId<test::TestMoreStuff>() && methodId == 3) {
       // Calling TestMoreStuff.hold(). Dispatch normally.
       return test::TestMoreStuff::Server::dispatchCall(interfaceId, methodId, context);
     }
@@ -2353,4 +2353,4 @@ KJ_TEST("three-party handoff with embargos") {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

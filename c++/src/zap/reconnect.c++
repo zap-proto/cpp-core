@@ -21,7 +21,7 @@
 
 #include "reconnect.h"
 
-namespace capnp {
+namespace zap {
 
 namespace {
 
@@ -163,4 +163,4 @@ AutoReconnectClient<Capability::Client> lazyAutoReconnectWithController(
     .controller = hook.toOwn(),
   };
 }
-}  // namespace capnp
+}  // namespace zap

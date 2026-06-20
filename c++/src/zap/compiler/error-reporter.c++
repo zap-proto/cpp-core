@@ -22,7 +22,7 @@
 #include "error-reporter.h"
 #include <kj/debug.h>
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 
 namespace {
@@ -65,4 +65,4 @@ GlobalErrorReporter::SourcePos LineBreakTable::toSourcePos(uint32_t byteOffset) 
 }
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap

@@ -175,6 +175,9 @@ public:
     // returned bytes are identical), preserving exact back-compat. The desugared buffer
     // is held in `desugaredContent` so it outlives the line-break table (which indexes
     // into it) and the lex/parse below.
+    // desugar() is TOTAL — it never throws; a malformed construct (e.g. an out-of-range
+    // ordinal) is emitted verbatim and reported as a clean file:line:col diagnostic by the
+    // lexer/parser below, so this call needs no exception guard.
     kj::ArrayPtr<const char> content = mapped;
     if (isWhitespaceSchema(mapped)) {
       desugaredContent = desugar(mapped);

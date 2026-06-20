@@ -20,5 +20,5 @@
 // THE SOFTWARE.
 
 // Test that the shift-based implementation of WireValue works.
-#define CAPNP_DISABLE_ENDIAN_DETECTION 1
+#define ZAP_DISABLE_ENDIAN_DETECTION 1
 #include "endian-test.c++"

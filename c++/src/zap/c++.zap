@@ -20,7 +20,7 @@
 # THE SOFTWARE.
 
 @0xbdf87d7bb8304e81;
-$namespace("capnp::annotations");
+$namespace("zap::annotations");
 
 annotation namespace(file): Text;
 annotation name(field, enumerant, struct, enum, interface, method, param, group, union): Text;
@@ -41,7 +41,7 @@ annotation allowCancellation(interface, method, file) :Void;
 # It's generally recommended that this annotation be applied to all methods. However, when doing
 # so, it is important that the server implementation use cancellation-safe code. See:
 #
-#     https://github.com/capnproto/capnproto/blob/master/kjdoc/tour.md#cancellation
+#     https://github.com/zap/zap/blob/master/kjdoc/tour.md#cancellation
 #
 # If your code is not cancellation-safe, then allowing cancellation might give a malicious client
 # an easy way to induce use-after-free or other bugs in your server, by requesting cancellation

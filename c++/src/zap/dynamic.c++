@@ -22,7 +22,7 @@
 #include "dynamic.h"
 #include <kj/debug.h>
 
-namespace capnp {
+namespace zap {
 
 namespace {
 
@@ -1433,7 +1433,7 @@ DynamicValue::Reader::Reader(ConstSchema constant): type(VOID) {
   auto type = constant.getType();
   auto value = constant.getProto().getConst().getValue();
   switch (type.which()) {
-    case schema::Type::VOID: *this = capnp::VOID; break;
+    case schema::Type::VOID: *this = zap::VOID; break;
     case schema::Type::BOOL: *this = value.getBool(); break;
     case schema::Type::INT8: *this = value.getInt8(); break;
     case schema::Type::INT16: *this = value.getInt16(); break;
@@ -2181,4 +2181,4 @@ Orphan<DynamicValue> Orphanage::newOrphanCopy<DynamicValue::Reader>(
   KJ_UNREACHABLE;
 }
 
-}  // namespace capnp
+}  // namespace zap

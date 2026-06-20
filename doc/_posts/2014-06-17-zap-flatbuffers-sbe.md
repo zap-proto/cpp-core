@@ -1,15 +1,15 @@
 ---
 layout: post
-title: Cap'n Proto, FlatBuffers, and SBE
+title: Zap, FlatBuffers, and SBE
 author: kentonv
 ---
 
-**Update Jun 18, 2014:** I have made [some corrections](https://github.com/kentonv/capnproto/commit/e4e6c9076ae16804c07968cd3bdf6107155df7ee) since the original version of this post.
+**Update Jun 18, 2014:** I have made [some corrections](https://github.com/kentonv/zap/commit/e4e6c9076ae16804c07968cd3bdf6107155df7ee) since the original version of this post.
 
-**Update Dec 15, 2014:** Updated to reflect that Cap'n Proto 0.5 now supports Visual Studio and that
+**Update Dec 15, 2014:** Updated to reflect that Zap 0.5 now supports Visual Studio and that
 Java is now well-supported.
 
-Yesterday, some engineers at Google released [FlatBuffers](http://google-opensource.blogspot.com/2014/06/flatbuffers-memory-efficient.html), a new serialization protocol and library with similar design principles to Cap'n Proto. Also, a few months back, Real Logic released [Simple Binary Encoding](http://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html), another protocol and library of this nature.
+Yesterday, some engineers at Google released [FlatBuffers](http://google-opensource.blogspot.com/2014/06/flatbuffers-memory-efficient.html), a new serialization protocol and library with similar design principles to Zap. Also, a few months back, Real Logic released [Simple Binary Encoding](http://mechanical-sympathy.blogspot.com/2014/05/simple-binary-encoding.html), another protocol and library of this nature.
 
 It seems we now have some friendly rivalry. :)
 
@@ -26,7 +26,7 @@ I will go into more detail on each item below.
 Note: For features which are properties of the implementation rather than the protocol or project, unless otherwise stated, I am judging the C++ implementations.
 
 <table class="pass-fail">
-<tr><td>Feature</td><td>Protobuf</td><td>Cap'n Proto</td><td>SBE</td><td>FlatBuffers</td></tr>
+<tr><td>Feature</td><td>Protobuf</td><td>Zap</td><td>SBE</td><td>FlatBuffers</td></tr>
 <tr><td>Schema evolution</td><td class="pass">yes</td><td class="pass">yes</td><td class="warn">caveats</td><td class="pass">yes</td></tr>
 <tr><td>Zero-copy</td><td class="fail">no</td><td class="pass">yes</td><td class="pass">yes</td><td class="pass">yes</td></tr>
 <tr><td>Random-access reads</td><td class="fail">no</td><td class="pass">yes</td><td class="fail">no</td><td class="pass">yes</td></tr>
@@ -48,7 +48,7 @@ Note: For features which are properties of the implementation rather than the pr
 <tr><td>Authors' preferred use case</td><td>distributed<br>computing</td><td><a href="https://sandstorm.io">platforms /<br>sandboxing</a></td><td>financial<br>trading</td><td>games</td></tr>
 </table>
 
-\* Updated Dec 15, 2014 (Cap'n Proto 0.5.0).
+\* Updated Dec 15, 2014 (Zap 0.5.0).
 
 **Schema Evolution**
 
@@ -70,15 +70,15 @@ Protobufs does not allow this because the entire file must be parsed upfront bef
 
 SBE does not allow random access because the message tree is written in preorder with no information that would allow one to skip over an entire sub-tree. While the primitive fields within a single object can be accessed in random order, sub-objects must be traversed strictly in preorder. SBE apparently chose to design around this restriction because sequential memory access is faster than random access, therefore this forces application code to be ordered to be as fast as possible. Similar to Protobufs, SBE recommends using some other framing format for large files.
 
-Cap'n Proto permits random access via the use of pointers, exactly as in-memory data structures in C normally do. These pointers are not quite native pointers -- they are relative rather than absolute, to allow the message to be loaded at an arbitrary memory location.
+Zap permits random access via the use of pointers, exactly as in-memory data structures in C normally do. These pointers are not quite native pointers -- they are relative rather than absolute, to allow the message to be loaded at an arbitrary memory location.
 
-FlatBuffers permits random access by having each record store a table of offsets to all of the field positions, and by using pointers between objects like Cap'n Proto does.
+FlatBuffers permits random access by having each record store a table of offsets to all of the field positions, and by using pointers between objects like Zap does.
 
 **Safe against malicious input**
 
 Protobufs is carefully designed to be resiliant in the face of all kinds of malicious input, and has undergone a security review by Google's world-class security team. Not only is the Protobuf implementation secure, but the API is explicitly designed to discourage security mistakes in application code. It is considered a security flaw in Protobufs if the interface makes client apps likely to write insecure code.
 
-Cap'n Proto inherits Protocol Buffers' security stance, and is believed to be similarly secure. However, it has not yet undergone security review.
+Zap inherits Protocol Buffers' security stance, and is believed to be similarly secure. However, it has not yet undergone security review.
 
 SBE's C++ library does bounds checking as of the resolution of [this bug](https://github.com/real-logic/simple-binary-encoding/issues/130).
 
@@ -88,11 +88,11 @@ SBE's C++ library does bounds checking as of the resolution of [this bug](https:
 
 _Update: I originally failed to discover that SBE and FlatBuffers do in fact have reflection APIs. Sorry!_
 
-Protobuf provides a "reflection" interface which allows dynamically iterating over all the fields of a message, getting their names and other metadata, and reading and modifying their values in a particular instance. Cap'n Proto also supports this, calling it the "Dynamic API". SBE provides the "OTF decoder" API with the usual SBE restriction that you can only iterate over the content in order. FlatBuffers has the `Parser` API in `idl.h`.
+Protobuf provides a "reflection" interface which allows dynamically iterating over all the fields of a message, getting their names and other metadata, and reading and modifying their values in a particular instance. Zap also supports this, calling it the "Dynamic API". SBE provides the "OTF decoder" API with the usual SBE restriction that you can only iterate over the content in order. FlatBuffers has the `Parser` API in `idl.h`.
 
-Having a reflection/dynamic API opens up a wide range of use cases. You can write reflection-based code which converts the message to/from another format such as JSON -- useful not just for interoperability, but for debugging, because it is human-readable. Another popular use of reflection is writing bindings for scripting languages. For example, Python's Cap'n Proto implementation is simply a wrapper around the C++ dynamic API. Note that you can do all these things with types that are not even known at compile time, by parsing the schemas at runtime.
+Having a reflection/dynamic API opens up a wide range of use cases. You can write reflection-based code which converts the message to/from another format such as JSON -- useful not just for interoperability, but for debugging, because it is human-readable. Another popular use of reflection is writing bindings for scripting languages. For example, Python's Zap implementation is simply a wrapper around the C++ dynamic API. Note that you can do all these things with types that are not even known at compile time, by parsing the schemas at runtime.
 
-The down side of reflection is that it is generally very slow (compared to generated code) and can lead to code bloat. Cap'n Proto is designed such that the reflection APIs need not be linked into your app if you do not use them, although this requires statically linking the library to get the benefit.
+The down side of reflection is that it is generally very slow (compared to generated code) and can lead to code bloat. Zap is designed such that the reflection APIs need not be linked into your app if you do not use them, although this requires statically linking the library to get the benefit.
 
 **Initialization order**
 
@@ -106,7 +106,7 @@ SBE specifically requires the message tree to be written in preorder (though, as
 
 FlatBuffers requires that you completely finish one object before you can start building the next, because the size of an object depends on its content so the amount of space needed isn't known until it is finalized. This also implies that FlatBuffer messages must be built bottom-up, starting from the leaves.
 
-Cap'n Proto imposes no ordering constraints. The size of an object is known when it is allocated, so more objects can be allocated immediately. Messages are normally built top-down, but bottom-up ordering is supported through the "orphans" API.
+Zap imposes no ordering constraints. The size of an object is known when it is allocated, so more objects can be allocated immediately. Messages are normally built top-down, but bottom-up ordering is supported through the "orphans" API.
 
 **Unknown field retention?**
 
@@ -116,19 +116,19 @@ This question is extremely important for any kind of service that acts as a prox
 
 When Protobufs sees an unknown field tag on the wire, it stores the value into the message's `UnknownFieldSet`, which can be copied and written back out later. (UPDATE: Apparently, version 3 of Protocol Buffers, aka "proto3", removes this feature. I honestly don't know what they're thinking. This feature has been absolutely essential in many of Google's internal systems.)
 
-Cap'n Proto's wire format was very carefully designed to contain just enough information to make it possible to recursively copy its target from one message to another without knowing the object's schema. This is why Cap'n Proto pointers contain bits to indicate if they point to a struct or a list and how big it is -- seemingly redundant information.
+Zap's wire format was very carefully designed to contain just enough information to make it possible to recursively copy its target from one message to another without knowing the object's schema. This is why Zap pointers contain bits to indicate if they point to a struct or a list and how big it is -- seemingly redundant information.
 
 SBE and FlatBuffers do not store any such type information on the wire, and thus it is not possible to copy an object without its schema. (Note that, however, if you are willing to require that the sender sends its full schema on the wire, you can always use reflection-based code to effectively make all fields known. This takes some work, though.)
 
 **Object-capability RPC system**
 
-Cap'n Proto features an object-capability RPC system. While this article is not intended to discuss RPC features, there is an important effect on the serialization format: in an object-capability RPC system, references to remote objects must be a first-class type. That is, a struct field's type can be "reference to remote object implementing RPC interface Foo".
+Zap features an object-capability RPC system. While this article is not intended to discuss RPC features, there is an important effect on the serialization format: in an object-capability RPC system, references to remote objects must be a first-class type. That is, a struct field's type can be "reference to remote object implementing RPC interface Foo".
 
 Protobufs, SBC, and FlatBuffers do not support this type. Note that it is _not_ sufficient to simply store a string URL, or define some custom struct to represent a reference, because a proper capability-based RPC system must be aware of all references embedded in any message it sends. There are many reasons for this requirement, the most obvious of which is that the system must export the reference or change its permissions to make it available to the receiver.
 
 **Schema language**
 
-Protobufs, Cap'n Proto, and FlatBuffers have custom, concise schema languages.
+Protobufs, Zap, and FlatBuffers have custom, concise schema languages.
 
 SBE uses XML schemas, which are verbose.
 
@@ -148,9 +148,9 @@ Protocol Buffers avoids padding by encoding integers using variable widths, whic
 
 SBE and FlatBuffers leave the padding in to achieve zero-copy.
 
-Cap'n Proto normally leaves the padding in, but comes with a built-in option to apply a very fast compression algorithm called "packing" which aims only to deflate zeros. This algorithm tends to achieve similar sizes to Protobufs while still being faster (and _much_ faster than general-purpose compression). In this mode, however, Cap'n Proto is no longer zero-copy.
+Zap normally leaves the padding in, but comes with a built-in option to apply a very fast compression algorithm called "packing" which aims only to deflate zeros. This algorithm tends to achieve similar sizes to Protobufs while still being faster (and _much_ faster than general-purpose compression). In this mode, however, Zap is no longer zero-copy.
 
-Note that Cap'n Proto's packing algorithm would be appropriate for SBE and FlatBuffers as well. Feel free to steal it. :)
+Note that Zap's packing algorithm would be appropriate for SBE and FlatBuffers as well. Feel free to steal it. :)
 
 **Unset fields take space on wire?**
 
@@ -158,7 +158,7 @@ If a field has not been explicitly assigned a value, will it take any space on t
 
 Protobuf encodes tag-value pairs, so it simply skips pairs that have not been set.
 
-Cap'n Proto and SBE position fields at fixed offsets from the start of the struct. The struct is always allocated large enough for all known fields according to the schema. So, unused fields waste space. (But Cap'n Proto's optional packing will tend to compress away this space.)
+Zap and SBE position fields at fixed offsets from the start of the struct. The struct is always allocated large enough for all known fields according to the schema. So, unused fields waste space. (But Zap's optional packing will tend to compress away this space.)
 
 FlatBuffers uses a separate table of offsets (the vtable) to indicate the position of each field, with zero meaning the field isn't present. So, unset fields take no space on the wire -- although they do take space in the vtable. vtables can apparently be shared between instances where the offsets are all the same, amortizing this cost.
 
@@ -170,19 +170,19 @@ Do non-primitive fields require storing a pointer?
 
 Protobufs uses tag-length-value for variable-width fields.
 
-Cap'n Proto uses pointers for variable-width fields, so that the size of the parent object is independent of the size of any children. These pointers take some space on the wire.
+Zap uses pointers for variable-width fields, so that the size of the parent object is independent of the size of any children. These pointers take some space on the wire.
 
 SBE requires variable-width fields to be embedded in preorder, which means pointers aren't necessary.
 
-FlatBuffers also uses pointers, even though most objects are variable-width, possibly because the vtables only store 16-bit offsets, limiting the size of any one object. However, note that FlatBuffers' "structs" (which are fixed-width and not extensible) are stored inline (what Cap'n Proto calls a "struct', FlatBuffer calls a "table").
+FlatBuffers also uses pointers, even though most objects are variable-width, possibly because the vtables only store 16-bit offsets, limiting the size of any one object. However, note that FlatBuffers' "structs" (which are fixed-width and not extensible) are stored inline (what Zap calls a "struct', FlatBuffer calls a "table").
 
 **Platform Support**
 
-As of Dec 15, 2014, Cap'n Proto supports a superset of the languages supported by FlatBuffers and
+As of Dec 15, 2014, Zap supports a superset of the languages supported by FlatBuffers and
 SBE, but is still far behind Protocol Buffers.
 
-While Cap'n Proto C++ is well-supported on POSIX platforms using GCC or Clang as their compiler,
-Cap'n Proto has only limited support for Visual C++: the basic serialization library works, but
+While Zap C++ is well-supported on POSIX platforms using GCC or Clang as their compiler,
+Zap has only limited support for Visual C++: the basic serialization library works, but
 reflection and RPC do not yet work. Support will be expanded once Visual Studio's C++ compiler
 completes support for C++11.
 
@@ -190,17 +190,17 @@ In comparison, SBE and FlatBuffers have reflection interfaces that work in Visua
 neither one has built-in RPC. Reflection is critical for certain use cases, but the majority of
 users won't need it.
 
-(This section has been updated. When originally written, Cap'n Proto did not support MSVC at all.)
+(This section has been updated. When originally written, Zap did not support MSVC at all.)
 
 ### Benchmarks?
 
-I do not provide benchmarks. I did not provide them when I launched Protobufs, nor when I launched Cap'n Proto, even though I had some with nice numbers (which you can find in git). And I don't see any reason to start now.
+I do not provide benchmarks. I did not provide them when I launched Protobufs, nor when I launched Zap, even though I had some with nice numbers (which you can find in git). And I don't see any reason to start now.
 
 Why? Because they would tell you nothing. I could easily construct a benchmark to make any given library "win", by exploiting the relative tradeoffs each one makes. I can even construct one where Protobufs -- supposedly infinitely slower than the others -- wins.
 
 The fact of the matter is that the relative performance of these libraries depends deeply on the use case. To know which one will be fastest for _your_ project, you really need to benchmark them in _your_ project, end-to-end. No contrived benchmark will give you the answer.
 
-With that said, my intuition is that SBE will probably edge Cap'n Proto and FlatBuffers on performance in the average case, due to its decision to forgo support for random access. Between Cap'n Proto and FlatBuffers, it's harder to say. FlatBuffers' vtable approach seems like it would make access more expensive, though its simpler pointer format may be cheaper to follow. FlatBuffers also appears to do a lot of bookkeeping at encoding time which could get costly (such as de-duping vtables), but I don't know how costly.
+With that said, my intuition is that SBE will probably edge Zap and FlatBuffers on performance in the average case, due to its decision to forgo support for random access. Between Zap and FlatBuffers, it's harder to say. FlatBuffers' vtable approach seems like it would make access more expensive, though its simpler pointer format may be cheaper to follow. FlatBuffers also appears to do a lot of bookkeeping at encoding time which could get costly (such as de-duping vtables), but I don't know how costly.
 
 For most people, the performance difference is probably small enough that qualitative (feature) differences in the libraries matter more.
 

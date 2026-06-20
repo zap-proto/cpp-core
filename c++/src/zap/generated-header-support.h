@@ -32,13 +32,13 @@
 #include <kj/string.h>
 #include <kj/string-tree.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 class MessageBuilder;  // So that it can be declared a friend.
 
-template <typename T, Kind k = CAPNP_KIND(T)>
+template <typename T, Kind k = ZAP_KIND(T)>
 struct ToDynamic_;   // Defined in dynamic.h, needs to be declared as everyone's friend.
 
 struct DynamicStruct;  // So that it can be declared a friend.
@@ -47,20 +47,20 @@ struct Capability;  // To declare brandBindingFor<Capability>()
 
 namespace _ {  // private
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 
-template <typename T, typename CapnpPrivate = typename T::_capnpPrivate, bool = false>
+template <typename T, typename ZapPrivate = typename T::_zapPrivate, bool = false>
 inline const RawSchema& rawSchema() {
-  return *CapnpPrivate::schema;
+  return *ZapPrivate::schema;
 }
 template <typename T, uint64_t id = schemas::EnumInfo<T>::typeId>
 inline const RawSchema& rawSchema() {
   return *schemas::EnumInfo<T>::schema;
 }
 
-template <typename T, typename CapnpPrivate = typename T::_capnpPrivate>
+template <typename T, typename ZapPrivate = typename T::_zapPrivate>
 inline const RawBrandedSchema& rawBrandedSchema() {
-  return *CapnpPrivate::brand();
+  return *ZapPrivate::brand();
 }
 template <typename T, uint64_t id = schemas::EnumInfo<T>::typeId>
 inline const RawBrandedSchema& rawBrandedSchema() {
@@ -70,7 +70,7 @@ inline const RawBrandedSchema& rawBrandedSchema() {
 template <typename TypeTag, typename... Params>
 struct ChooseBrand;
 // If all of `Params` are `AnyPointer`, return the type's default brand. Otherwise, return a
-// specific brand instance. TypeTag is the _capnpPrivate struct for the type in question.
+// specific brand instance. TypeTag is the _zapPrivate struct for the type in question.
 
 template <typename TypeTag>
 struct ChooseBrand<TypeTag> {
@@ -143,14 +143,14 @@ struct BrandBindingFor_<T, Kind::ENUM> {
 template <typename T>
 struct BrandBindingFor_<T, Kind::STRUCT> {
   static constexpr RawBrandedSchema::Binding get(uint16_t listDepth) {
-    return { 16, listDepth, T::_capnpPrivate::brand() };
+    return { 16, listDepth, T::_zapPrivate::brand() };
   }
 };
 
 template <typename T>
 struct BrandBindingFor_<T, Kind::INTERFACE> {
   static constexpr RawBrandedSchema::Binding get(uint16_t listDepth) {
-    return { 17, listDepth, T::_capnpPrivate::brand() };
+    return { 17, listDepth, T::_zapPrivate::brand() };
   }
 };
 
@@ -201,7 +201,7 @@ inline kj::String enumString(T value) {
   return enumString(static_cast<uint16_t>(value), rawBrandedSchema<T>());
 }
 
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 // TODO(cleanup):  Unify ConstStruct and ConstList.
 template <typename T>
@@ -296,8 +296,8 @@ inline auto KJ_STRINGIFY(const ConstData<size>& s) -> decltype(kj::toCharSequenc
 
 }  // namespace _ (private)
 
-template <typename T, typename CapnpPrivate = typename T::_capnpPrivate>
-inline constexpr uint64_t typeId() { return CapnpPrivate::typeId; }
+template <typename T, typename ZapPrivate = typename T::_zapPrivate>
+inline constexpr uint64_t typeId() { return ZapPrivate::typeId; }
 template <typename T, uint64_t id = schemas::EnumInfo<T>::typeId>
 inline constexpr uint64_t typeId() { return id; }
 // typeId<MyType>() returns the type ID as defined in the schema.  Works with structs, enums, and
@@ -312,90 +312,90 @@ inline constexpr uint sizeInWords() {
       _::structSize<T>().pointers * WORDS_PER_POINTER) / WORDS);
 }
 
-}  // namespace capnp
+}  // namespace zap
 
 #if _MSC_VER && !defined(__clang__)
 // MSVC doesn't understand floating-point constexpr yet.
 //
 // TODO(msvc): Remove this hack when MSVC is fixed.
-#define CAPNP_NON_INT_CONSTEXPR_DECL_INIT(value)
-#define CAPNP_NON_INT_CONSTEXPR_DEF_INIT(value) = value
+#define ZAP_NON_INT_CONSTEXPR_DECL_INIT(value)
+#define ZAP_NON_INT_CONSTEXPR_DEF_INIT(value) = value
 #else
-#define CAPNP_NON_INT_CONSTEXPR_DECL_INIT(value) = value
-#define CAPNP_NON_INT_CONSTEXPR_DEF_INIT(value)
+#define ZAP_NON_INT_CONSTEXPR_DECL_INIT(value) = value
+#define ZAP_NON_INT_CONSTEXPR_DEF_INIT(value)
 #endif
 
 #if _MSC_VER && !defined(__clang__)
 // TODO(msvc): A little hack to allow MSVC to use C++14 return type deduction in cases where the
 // explicit type exposes bugs in the compiler.
-#define CAPNP_AUTO_IF_MSVC(...) auto
+#define ZAP_AUTO_IF_MSVC(...) auto
 #else
-#define CAPNP_AUTO_IF_MSVC(...) __VA_ARGS__
+#define ZAP_AUTO_IF_MSVC(...) __VA_ARGS__
 #endif
 
-#if CAPNP_LITE
+#if ZAP_LITE
 
-#define CAPNP_DECLARE_SCHEMA(id) \
-    extern ::capnp::word const* const bp_##id
+#define ZAP_DECLARE_SCHEMA(id) \
+    extern ::zap::word const* const bp_##id
 
-#define CAPNP_DECLARE_ENUM(type, id) \
+#define ZAP_DECLARE_ENUM(type, id) \
     inline ::kj::String KJ_STRINGIFY(type##_##id value) { \
       return ::kj::str(static_cast<uint16_t>(value)); \
     } \
     template <> struct EnumInfo<type##_##id> { \
       struct IsEnum; \
       static constexpr uint64_t typeId = 0x##id; \
-      static inline ::capnp::word const* encodedSchema() { return bp_##id; } \
+      static inline ::zap::word const* encodedSchema() { return bp_##id; } \
     }
 
-#define CAPNP_DECLARE_STRUCT_HEADER(id, dataWordSize_, pointerCount_) \
+#define ZAP_DECLARE_STRUCT_HEADER(id, dataWordSize_, pointerCount_) \
       struct IsStruct; \
       static constexpr uint64_t typeId = 0x##id; \
       static constexpr uint16_t dataWordSize = dataWordSize_; \
       static constexpr uint16_t pointerCount = pointerCount_; \
-      static inline ::capnp::word const* encodedSchema() { return ::capnp::schemas::bp_##id; }
+      static inline ::zap::word const* encodedSchema() { return ::zap::schemas::bp_##id; }
 
-#else  // CAPNP_LITE
+#else  // ZAP_LITE
 
-#define CAPNP_DECLARE_SCHEMA(id) \
-    extern ::capnp::word const* const bp_##id; \
-    extern const ::capnp::_::RawSchema s_##id
+#define ZAP_DECLARE_SCHEMA(id) \
+    extern ::zap::word const* const bp_##id; \
+    extern const ::zap::_::RawSchema s_##id
 
-#define CAPNP_DECLARE_ENUM(type, id) \
+#define ZAP_DECLARE_ENUM(type, id) \
     inline ::kj::String KJ_STRINGIFY(type##_##id value) { \
-      return ::capnp::_::enumString(value); \
+      return ::zap::_::enumString(value); \
     } \
     template <> struct EnumInfo<type##_##id> { \
       struct IsEnum; \
       static constexpr uint64_t typeId = 0x##id; \
-      static inline ::capnp::word const* encodedSchema() { return bp_##id; } \
-      static constexpr ::capnp::_::RawSchema const* schema = &s_##id; \
+      static inline ::zap::word const* encodedSchema() { return bp_##id; } \
+      static constexpr ::zap::_::RawSchema const* schema = &s_##id; \
     }
 
-#define CAPNP_DECLARE_STRUCT_HEADER(id, dataWordSize_, pointerCount_) \
+#define ZAP_DECLARE_STRUCT_HEADER(id, dataWordSize_, pointerCount_) \
       struct IsStruct; \
       static constexpr uint64_t typeId = 0x##id; \
-      static constexpr ::capnp::Kind kind = ::capnp::Kind::STRUCT; \
+      static constexpr ::zap::Kind kind = ::zap::Kind::STRUCT; \
       static constexpr uint16_t dataWordSize = dataWordSize_; \
       static constexpr uint16_t pointerCount = pointerCount_; \
-      static inline ::capnp::word const* encodedSchema() { return ::capnp::schemas::bp_##id; } \
-      static constexpr ::capnp::_::RawSchema const* schema = &::capnp::schemas::s_##id;
+      static inline ::zap::word const* encodedSchema() { return ::zap::schemas::bp_##id; } \
+      static constexpr ::zap::_::RawSchema const* schema = &::zap::schemas::s_##id;
 
-#define CAPNP_DECLARE_INTERFACE_HEADER(id) \
+#define ZAP_DECLARE_INTERFACE_HEADER(id) \
       struct IsInterface; \
       static constexpr uint64_t typeId = 0x##id; \
-      static constexpr ::capnp::Kind kind = ::capnp::Kind::INTERFACE; \
-      static inline ::capnp::word const* encodedSchema() { return ::capnp::schemas::bp_##id; } \
-      static constexpr ::capnp::_::RawSchema const* schema = &::capnp::schemas::s_##id;
+      static constexpr ::zap::Kind kind = ::zap::Kind::INTERFACE; \
+      static inline ::zap::word const* encodedSchema() { return ::zap::schemas::bp_##id; } \
+      static constexpr ::zap::_::RawSchema const* schema = &::zap::schemas::s_##id;
 
-#endif  // CAPNP_LITE, else
+#endif  // ZAP_LITE, else
 
-namespace capnp {
+namespace zap {
 namespace schemas {
-CAPNP_DECLARE_SCHEMA(995f9a3377c0b16e);
-// HACK: Forward-declare the RawSchema for StreamResult, from stream.capnp. This allows capnp
-//   files which declare streaming methods to avoid including stream.capnp.h.
+ZAP_DECLARE_SCHEMA(995f9a3377c0b16e);
+// HACK: Forward-declare the RawSchema for StreamResult, from stream.zap. This allows zap
+//   files which declare streaming methods to avoid including stream.zap.h.
 }
 }
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

@@ -21,6 +21,6 @@
 
 #include "list.h"
 
-namespace capnp {
+namespace zap {
 
-}  // namespace capnp
+}  // namespace zap

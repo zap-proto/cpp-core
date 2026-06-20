@@ -11,7 +11,7 @@ title: RPC Protocol
 
 <img src='images/time-travel.png' style='max-width:639px'>
 
-Cap'n Proto RPC employs TIME TRAVEL!  The results of an RPC call are returned to the client
+Zap RPC employs TIME TRAVEL!  The results of an RPC call are returned to the client
 instantly, before the server even receives the initial request!
 
 There is, of course, a catch:  The results can only be used as part of a new request sent to the
@@ -20,9 +20,9 @@ same server.  If you want to use the results for anything else, you must wait.
 This is useful, however:  Say that, as in the picture, you want to call `foo()`, then call `bar()`
 on its result, i.e. `bar(foo())`.  Or -- as is very common in object-oriented programming -- you
 want to call a method on the result of another call, i.e. `foo().bar()`.  With any traditional RPC
-system, this will require two network round trips.  With Cap'n Proto, it takes only one.  In fact,
+system, this will require two network round trips.  With Zap, it takes only one.  In fact,
 you can chain any number of such calls together -- with diamond dependencies and everything -- and
-Cap'n Proto will collapse them all into one round trip.
+Zap will collapse them all into one round trip.
 
 By now you can probably imagine how it works:  if you execute `bar(foo())`, the client sends two
 messages to the server, one saying "Please execute foo()", and a second saying "Please execute
@@ -34,7 +34,7 @@ work much like JavaScript promises or promises/futures in other languages:  the 
 immediately, but you must later call `wait()` on it, or call `then()` to register an asynchronous
 callback.
 
-However, Cap'n Proto promises support an additional feature:
+However, Zap promises support an additional feature:
 [pipelining](http://www.erights.org/elib/distrib/pipeline.html).  The promise
 actually has methods corresponding to whatever methods the final result would have, except that
 these methods may only be used for the purpose of calling back to the server.  Moreover, a
@@ -51,7 +51,7 @@ object-oriented protocols into ad-hoc messes.
 
 For example, consider the following interface:
 
-{% highlight capnp %}
+{% highlight zap %}
 # A happy, object-oriented interface!
 
 interface Node {}
@@ -88,7 +88,7 @@ foo = bar.open("foo");     # 2
 size = foo.size();         # 3
 data = foo.read(0, size);  # 4
 # The above is four calls but takes only one network
-# round trip with Cap'n Proto!
+# round trip with Zap!
 {% endhighlight %}
 
 In such a high-latency scenario, making your interface elegant is simply not worth 4x the latency.
@@ -99,7 +99,7 @@ So now you're going to change it.  You'll probably do something like:
 * Merge the `File` and `Directory` interfaces into a single `Filesystem` interface, where every
   call takes a path as an argument.
 
-{% highlight capnp %}
+{% highlight zap %}
 # A sad, singleton-ish interface.
 
 interface Filesystem {
@@ -142,12 +142,12 @@ performs as well as we can possibly hope for.
 
 #### Example code
 
-[The calculator example](https://github.com/capnproto/capnproto/blob/master/c++/samples/calculator-client.c++)
+[The calculator example](https://github.com/zap/zap/blob/master/c++/samples/calculator-client.c++)
 uses promise pipelining.  Take a look at the client side in particular.
 
 ### Distributed Objects
 
-As you've noticed by now, Cap'n Proto RPC is a distributed object protocol.  Interface references --
+As you've noticed by now, Zap RPC is a distributed object protocol.  Interface references --
 or, as we more commonly call them, capabilities -- are a first-class type.  You can pass a
 capability as a parameter to a method or embed it in a struct or list.  This is a huge difference
 from many modern RPC-over-HTTP protocols that only let you address global URLs, or other RPC
@@ -164,7 +164,7 @@ No!
 CORBA failed for many reasons, with the usual problems of design-by-committee being a big one.
 
 However, the biggest reason for CORBA's failure is that it tried to make remote calls look the
-same as local calls. Cap'n Proto does NOT do this -- remote calls have a different kind of API
+same as local calls. Zap does NOT do this -- remote calls have a different kind of API
 involving promises, and accounts for the presence of a network introducing latency and
 unreliability.
 
@@ -172,14 +172,14 @@ As shown above, promise pipelining is absolutely critical to making object-orien
 in the presence of latency. If remote calls look the same as local calls, there is no opportunity
 to introduce promise pipelining, and latency is inevitable. Any distributed object protocol which
 does not support promise pipelining cannot -- and should not -- succeed. Thus the failure of CORBA
-(and DCOM, etc.) was inevitable, but Cap'n Proto is different.
+(and DCOM, etc.) was inevitable, but Zap is different.
 
 ### Handling disconnects
 
 Networks are unreliable. Occasionally, connections will be lost. When this happens, all
 capabilities (object references) served by the connection will become disconnected. Any further
 calls addressed to these capabilities will throw "disconnected" exceptions. When this happens, the
-client will need to create a new connection and try again. All Cap'n Proto applications with
+client will need to create a new connection and try again. All Zap applications with
 long-running connections (and probably short-running ones too) should be prepared to catch
 "disconnected" exceptions and respond appropriately.
 
@@ -191,7 +191,7 @@ leaking memory.
 
 ### Security
 
-Cap'n Proto interface references are
+Zap interface references are
 [capabilities](http://en.wikipedia.org/wiki/Capability-based_security).  That is, they both
 designate an object to call and confer permission to call it.  When a new object is created, only
 the creator is initially able to call it.  When the object is passed over a network connection,
@@ -200,7 +200,7 @@ for others to access the capability without consent of either the host or the re
 the host only assigns it an ID specific to the connection over which it was sent.
 
 Capability-based design patterns -- which largely boil down to object-oriented design patterns --
-work great with Cap'n Proto.  Such patterns tend to be much more adaptable than traditional
+work great with Zap.  Such patterns tend to be much more adaptable than traditional
 ACL-based security, making it easy to keep security tight and avoid confused-deputy attacks while
 minimizing pain for legitimate users.  That said, you can of course implement ACLs or any other
 pattern on top of capabilities.
@@ -212,7 +212,7 @@ than ACLs, see Mark Miller's
 
 ## Protocol Features
 
-Cap'n Proto's RPC protocol has the following notable features.  Since the protocol is complicated,
+Zap's RPC protocol has the following notable features.  Since the protocol is complicated,
 the feature set has been divided into numbered "levels", so that implementations may declare which
 features they have covered by advertising a level number.
 
@@ -220,11 +220,11 @@ features they have covered by advertising a level number.
 * **Level 2:**  Persistent capabilities.  You may request to "save" a capability, receiving a
   persistent token which can be used to "restore" it in the future (on a new connection).  Not
   all capabilities can be saved; the host app must implement support for it.  Building this into
-  the protocol makes it possible for a Cap'n-Proto-based data store to transparently save
+  the protocol makes it possible for a Zap-based data store to transparently save
   structures containing capabilities without knowledge of the particular capability types or the
   application built on them, as well as potentially enabling more powerful analysis and
   visualization of stored data.
-* **Level 3:**  Three-way interactions.  A network of Cap'n Proto vats (nodes) can pass object
+* **Level 3:**  Three-way interactions.  A network of Zap vats (nodes) can pass object
   references to each other and automatically form direct connections as needed.  For instance, if
   Alice (on machine A) sends Bob (on machine B) a reference to Carol (on machine C), then machine B
   will form a new connection to machine C so that Bob can call Carol directly without proxying
@@ -237,20 +237,20 @@ features they have covered by advertising a level number.
 
 ## Encryption
 
-At this time, Cap'n Proto does not specify an encryption scheme, but as it is a simple byte
+At this time, Zap does not specify an encryption scheme, but as it is a simple byte
 stream protocol, it can easily be layered on top of SSL/TLS or other such protocols.
 
 ## Specification
 
-The Cap'n Proto RPC protocol is defined in terms of Cap'n Proto serialization schemas.  The
+The Zap RPC protocol is defined in terms of Zap serialization schemas.  The
 documentation is inline.  See
-[rpc.capnp](https://github.com/capnproto/capnproto/blob/master/c++/src/capnp/rpc.capnp).
+[rpc.zap](https://github.com/zap/zap/blob/master/c++/src/zap/rpc.zap).
 
-Cap'n Proto's RPC protocol is based heavily on
+Zap's RPC protocol is based heavily on
 [CapTP](http://www.erights.org/elib/distrib/captp/index.html), the distributed capability protocol
 used by the [E programming language](http://www.erights.org/index.html).  Lots of useful material
 for understanding capabilities can be found at those links.
 
 The protocol is complex, but the functionality it supports is conceptually simple.  Just as TCP
-is a complex protocol that implements the simple concept of a byte stream, Cap'n Proto RPC is a
+is a complex protocol that implements the simple concept of a byte stream, Zap RPC is a
 complex protocol that implements the simple concept of objects with callable methods.

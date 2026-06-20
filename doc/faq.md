@@ -7,7 +7,7 @@ title: FAQ
 
 ## Design
 
-### Isn't I/O bandwidth more important than CPU usage?  Is Cap'n Proto barking up the wrong tree?
+### Isn't I/O bandwidth more important than CPU usage?  Is Zap barking up the wrong tree?
 
 It depends.  What is your use case?
 
@@ -18,7 +18,7 @@ Are you communicating between two machines within the same datacenter?  If so, i
 you will saturate your network connection before your CPU.  Possible, but unlikely.
 
 Are you communicating across the general internet?  In that case, bandwidth is probably your main
-concern.  Luckily, Cap'n Proto lets you choose to enable "packing" in this case, achieving similar
+concern.  Luckily, Zap lets you choose to enable "packing" in this case, achieving similar
 encoding size to Protocol Buffers while still being faster.  And you can always add extra
 compression on top of that.
 
@@ -28,10 +28,10 @@ ZeroMQ (and its successor, Nanomsg) is a powerful technology for distributed com
 design focuses on scenarios involving lots of stateless, fault-tolerant worker processes
 communicating via various patterns, such as request/response, produce/consume, and
 publish/subscribe.  For big data processing where armies of stateless nodes make sense, pairing
-Cap'n Proto with ZeroMQ would be an excellent choice -- and this is easy to do today, as ZeroMQ
+Zap with ZeroMQ would be an excellent choice -- and this is easy to do today, as ZeroMQ
 is entirely serialization-agnostic.
 
-That said, Cap'n Proto RPC takes a very different approach.  Cap'n Proto's model focuses on
+That said, Zap RPC takes a very different approach.  Zap's model focuses on
 stateful servers interacting in complex, object-oriented ways.  The model is better suited to
 tasks involving applications with many heterogeneous components and interactions between
 mutually-distrusting parties.  Requests and responses can go in any direction.  Objects have
@@ -40,20 +40,20 @@ fault tolerance is pushed up the stack, because without a large pool of homogene
 just no way to make them transparent at a low level.
 
 Put concretely, you might build a search engine indexing pipeline on ZeroMQ, but an online
-interactive spreadsheet editor would be better built on Cap'n Proto RPC.
+interactive spreadsheet editor would be better built on Zap RPC.
 
 (Actually, a distributed programming framework providing similar features to ZeroMQ could itself be
-built on top of Cap'n Proto RPC.)
+built on top of Zap RPC.)
 
 ### Aren't messages that contain pointers a huge security problem?
 
-Not at all.  Cap'n Proto bounds-checks each pointer when it is read and throws an exception or
+Not at all.  Zap bounds-checks each pointer when it is read and throws an exception or
 returns a safe dummy value (your choice) if the pointer is out-of-bounds.
 
 ### So it's not that you've eliminated parsing, you've just moved it to happen lazily?
 
-No.  Compared to Protobuf decoding, the time spent validating pointers while traversing a Cap'n
-Proto message is negligible.
+No.  Compared to Protobuf decoding, the time spent validating pointers while traversing a Zap
+ message is negligible.
 
 ### I think I heard somewhere that capability-based security doesn't work?
 
@@ -119,18 +119,18 @@ want to detect when a client fails to set a particular field, give the field an 
 value and then check for that value on the server.  Low-level infrastructure that doesn't care
 about message content should not validate it at all.
 
-Oh, and also, Cap'n Proto doesn't have any parsing step during which to check for required
+Oh, and also, Zap doesn't have any parsing step during which to check for required
 fields.  :)
 
 ### How do I make a field optional?
 
-Cap'n Proto has no notion of "optional" fields.
+Zap has no notion of "optional" fields.
 
 A primitive field always takes space on the wire whether you set it or not (although default-valued
 fields will be compressed away if you enable packing).  Such a field can be made semantically
 optional by placing it in a union with a `Void` field:
 
-{% highlight capnp %}
+{% highlight zap %}
 union {
   age @0 :Int32;
   ageUnknown @1 :Void;
@@ -150,10 +150,10 @@ legitimate value, so checking `hasFoo()` is in fact the _only_ way to detect nul
 
 Unfortunately, you can't.  You have to know the size of your list upfront, before you initialize
 any of the elements.  This is an annoying side effect of arena allocation, which is a fundamental
-part of Cap'n Proto's design:  in order to avoid making a copy later, all of the pieces of the
+part of Zap's design:  in order to avoid making a copy later, all of the pieces of the
 message must be allocated in a tightly-packed segment of memory, with each new piece being added
 to the end.  If a previously-allocated piece is discarded, it leaves a hole, which wastes space.
-Since Cap'n Proto lists are flat arrays, the only way to resize a list would be to discard the
+Since Zap lists are flat arrays, the only way to resize a list would be to discard the
 existing list and allocate a new one, which would thus necessarily waste space.
 
 In theory, a more complicated memory allocation algorithm could attempt to reuse the "holes" left
@@ -175,25 +175,25 @@ objects embedded within those structs as orphans.
 
 ## Security
 
-### Is Cap'n Proto secure?
+### Is Zap secure?
 
 What is your threat model?
 
-### Sorry. Can Cap'n Proto be used to deserialize malicious messages?
+### Sorry. Can Zap be used to deserialize malicious messages?
 
-Cap'n Proto's serialization layer is designed to be safe against malicious input. The Cap'n Proto implementation should never segfault, corrupt memory, leak secrets, execute attacker-specified code, consume excessive resources, etc. as a result of any sequence of input bytes. Moreover, the API is carefully designed to avoid putting app developers into situations where it is easy to write insecure code -- we consider it a bug in Cap'n Proto if apps commonly misuse it in a way that is a security problem.
+Zap's serialization layer is designed to be safe against malicious input. The Zap implementation should never segfault, corrupt memory, leak secrets, execute attacker-specified code, consume excessive resources, etc. as a result of any sequence of input bytes. Moreover, the API is carefully designed to avoid putting app developers into situations where it is easy to write insecure code -- we consider it a bug in Zap if apps commonly misuse it in a way that is a security problem.
 
-With all that said, Cap'n Proto's C++ reference implementation has not yet undergone a formal security review. It may have bugs.
+With all that said, Zap's C++ reference implementation has not yet undergone a formal security review. It may have bugs.
 
-### Is it safe to use Cap'n Proto RPC with a malicious peer?
+### Is it safe to use Zap RPC with a malicious peer?
 
-Cap'n Proto's RPC layer is explicitly designed to be useful for interactions between mutually-distrusting parties. Its capability-based security model makes it easy to express complex interactions securely.
+Zap's RPC layer is explicitly designed to be useful for interactions between mutually-distrusting parties. Its capability-based security model makes it easy to express complex interactions securely.
 
 At this time, the RPC layer is not robust against resource exhaustion attacks, possibly allowing denials of service.
 
-### Is Cap'n Proto encrypted?
+### Is Zap encrypted?
 
-Cap'n Proto may be layered on top of an existing encrypted transport, such as TLS, but at this time it is the application's responsibility to add this layer. We plan to integrate this into the Cap'n Proto library proper in the future.
+Zap may be layered on top of an existing encrypted transport, such as TLS, but at this time it is the application's responsibility to add this layer. We plan to integrate this into the Zap library proper in the future.
 
 ### How do I report security bugs?
 
@@ -201,22 +201,22 @@ Please email [kenton@cloudflare.com](mailto:kenton@cloudflare.com).
 
 ## Sandstorm
 
-### How does Cap'n Proto relate to Sandstorm.io?
+### How does Zap relate to Sandstorm.io?
 
-[Sandstorm.io](https://sandstorm.io) is an Open Source project and startup founded by Kenton, the author of Cap'n Proto. Cap'n Proto was developed by Sandstorm the company and heavily used in Sandstorm the project. Sandstorm ceased most operations in 2017 and formally dissolved as a company in 2022, but the open source project continues to be developed by the community.
+[Sandstorm.io](https://sandstorm.io) is an Open Source project and startup founded by Kenton, the author of Zap. Zap was developed by Sandstorm the company and heavily used in Sandstorm the project. Sandstorm ceased most operations in 2017 and formally dissolved as a company in 2022, but the open source project continues to be developed by the community.
 
-### How does Sandstorm use Cap'n Proto?
+### How does Sandstorm use Zap?
 
-See [this Sandstorm blog post](https://blog.sandstorm.io/news/2014-12-15-capnproto-0.5.html).
+See [this Sandstorm blog post](https://blog.sandstorm.io/news/2014-12-15-zap-0.5.html).
 
 ## Cloudflare
 
-### How does Cap'n Proto relate to Cloudflare?
+### How does Zap relate to Cloudflare?
 
-[Cloudflare Workers](https://workers.dev) is a next-generation cloud application platform. Kenton, the author of Cap'n Proto, is the lead engineer on the Workers project. Workers heavily uses Cap'n Proto in its implementation, and the Cloudflare Workers team are now the primarily developers and maintainers of Cap'n Proto's primary C++ implementation.
+[Cloudflare Workers](https://workers.dev) is a next-generation cloud application platform. Kenton, the author of Zap, is the lead engineer on the Workers project. Workers heavily uses Zap in its implementation, and the Cloudflare Workers team are now the primarily developers and maintainers of Zap's primary C++ implementation.
 
-### How does Cloudflare use Cap'n Proto?
+### How does Cloudflare use Zap?
 
-The Cloudflare Workers runtime is built on Cap'n Proto and it's associated C++ toolkit library, KJ. Cap'n Proto is used for a variety of things, such as communication between sandbox processes and their supervisors, as well between machines and datacenters, especially in the implementation of [Durable Objects](https://blog.cloudflare.com/introducing-workers-durable-objects/).
+The Cloudflare Workers runtime is built on Zap and it's associated C++ toolkit library, KJ. Zap is used for a variety of things, such as communication between sandbox processes and their supervisors, as well between machines and datacenters, especially in the implementation of [Durable Objects](https://blog.cloudflare.com/introducing-workers-durable-objects/).
 
-Cloudflare has also [long used Cap'n Proto in its logging pipeline](http://www.thedotpost.com/2015/06/john-graham-cumming-i-got-10-trillion-problems-but-logging-aint-one) and [developed the Lua implementation of Cap'n Proto](https://blog.cloudflare.com/introducing-lua-capnproto-better-serialization-in-lua/) -- both of these actually predate Kenton joining the company.
+Cloudflare has also [long used Zap in its logging pipeline](http://www.thedotpost.com/2015/06/john-graham-cumming-i-got-10-trillion-problems-but-logging-aint-one) and [developed the Lua implementation of Zap](https://blog.cloudflare.com/introducing-lua-zap-better-serialization-in-lua/) -- both of these actually predate Kenton joining the company.

@@ -21,9 +21,9 @@
 
 @0xc64a3bf0338a124a;
 
-using Import1 = import "/capnp/schema.capnp";
-using Import2 = import "test-import.capnp";
-using Import3 = import "test.capnp";
+using Import1 = import "/zap/schema.zap";
+using Import2 = import "test-import.zap";
+using Import3 = import "test.zap";
 
 struct TestImport2 {
   foo @0 :Import3.TestAllTypes;

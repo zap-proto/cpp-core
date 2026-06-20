@@ -24,12 +24,12 @@
 
 #pragma once
 
-#include <capnp/capability.h>
-#include "persistent.capnp.h"
+#include <zap/capability.h>
+#include "persistent.zap.h"
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 class OutgoingRpcMessage;
 class IncomingRpcMessage;
@@ -128,10 +128,10 @@ private:
   // Get the RpcConnectionState associated with the given connection, creating it if necessary.
 
   template <typename>
-  friend class capnp::RpcSystem;
+  friend class zap::RpcSystem;
 };
 
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

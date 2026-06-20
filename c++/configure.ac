@@ -1,8 +1,8 @@
 ## Process this file with autoconf to produce configure.
 
-AC_INIT([Capn Proto],[2.0-dev],[capnproto@googlegroups.com],[capnproto-c++])
+AC_INIT([Zap],[2.0-dev],[zap@googlegroups.com],[zap-c++])
 
-AC_CONFIG_SRCDIR([src/capnp/layout.c++])
+AC_CONFIG_SRCDIR([src/zap/layout.c++])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
@@ -16,11 +16,11 @@ AS_IF([test "x${ac_cv_env_CXXFLAGS_set}" = "x"],
 
 AM_INIT_AUTOMAKE([tar-ustar])
 
-AC_ARG_WITH([external-capnp],
-  [AS_HELP_STRING([--with-external-capnp],
-    [use the system capnp binary (or the one specified with $CAPNP) instead of compiling a new
+AC_ARG_WITH([external-zap],
+  [AS_HELP_STRING([--with-external-zap],
+    [use the system zap binary (or the one specified with $ZAP) instead of compiling a new
      one (useful for cross-compiling)])],
-  [external_capnp=yes],[external_capnp=no])
+  [external_zap=yes],[external_zap=no])
 
 AC_ARG_WITH([zlib],
   [AS_HELP_STRING([--with-zlib],
@@ -39,10 +39,10 @@ AC_ARG_WITH([fibers],
 
 AC_ARG_ENABLE([reflection], [
   AS_HELP_STRING([--disable-reflection], [
-    compile Cap'n Proto in "lite mode", in which all reflection APIs (schema.h, dynamic.h, etc.)
+    compile Zap in "lite mode", in which all reflection APIs (schema.h, dynamic.h, etc.)
     are not included. Produces a smaller library at the cost of features. All programs built
-    against the library MUST be compiled with -DCAPNP_LITE=1. Note that because the compiler
-    itself uses reflection in its implementation, you must also use --with-external-capnp when
+    against the library MUST be compiled with -DZAP_LITE=1. Note that because the compiler
+    itself uses reflection in its implementation, you must also use --with-external-zap when
     using this option.])
   ], [
     case "${enableval}" in
@@ -51,8 +51,8 @@ AC_ARG_ENABLE([reflection], [
         ;;
       no)
         lite_mode=yes
-        AS_IF([test "$external_capnp" != "yes"], [
-          AC_MSG_ERROR([you must specify --with-external-capnp when using --disable-reflection])
+        AS_IF([test "$external_zap" != "yes"], [
+          AC_MSG_ERROR([you must specify --with-external-zap when using --disable-reflection])
         ])
         ;;
       *)
@@ -85,31 +85,31 @@ AS_CASE("${host_os}", *mingw*, [
 
 LT_INIT
 
-AS_IF([test "$external_capnp" != "no"], [
-	AS_IF([test "x$CAPNP" = "x"], [CAPNP="capnp"], [with_capnp=yes])
-	AS_IF([test "x$CAPNPC_CXX" = "x"], [
-	  # CAPNPC_CXX was not specified.  Choose a reasonable default.
-	  AS_CASE([$CAPNP], [*/*], [
-	    # $CAPNP contains a slash, so it's not on $PATH.  Assume capnpc-c++ is not either, but is
+AS_IF([test "$external_zap" != "no"], [
+	AS_IF([test "x$ZAP" = "x"], [ZAP="zap"], [with_zap=yes])
+	AS_IF([test "x$ZAPC_CXX" = "x"], [
+	  # ZAPC_CXX was not specified.  Choose a reasonable default.
+	  AS_CASE([$ZAP], [*/*], [
+	    # $ZAP contains a slash, so it's not on $PATH.  Assume zapc-c++ is not either, but is
 	    # in the same directory.
-	    CAPNPC_CXX=`dirname $CAPNP`/capnpc-c++
+	    ZAPC_CXX=`dirname $ZAP`/zapc-c++
 	  ], [
-	    # $CAPNP is on $PATH, so tell it to find the plugin on $PATH as well.
-	    CAPNPC_CXX="c++"
+	    # $ZAP is on $PATH, so tell it to find the plugin on $PATH as well.
+	    ZAPC_CXX="c++"
 	  ])
 	])
-	AC_SUBST([CAPNP])
-	AC_SUBST([CAPNPC_CXX])
+	AC_SUBST([ZAP])
+	AC_SUBST([ZAPC_CXX])
 ])
-AM_CONDITIONAL([USE_EXTERNAL_CAPNP], [test "$external_capnp" != "no"])
+AM_CONDITIONAL([USE_EXTERNAL_ZAP], [test "$external_zap" != "no"])
 
 AM_CONDITIONAL([LITE_MODE], [test "$lite_mode" = "yes"])
 
 AS_IF([test "$lite_mode" = "yes"], [
-  CXXFLAGS="-DCAPNP_LITE $CXXFLAGS"
-  CAPNP_LITE_FLAG=-DCAPNP_LITE
+  CXXFLAGS="-DZAP_LITE $CXXFLAGS"
+  ZAP_LITE_FLAG=-DZAP_LITE
 ])
-AC_SUBST([CAPNP_LITE_FLAG])
+AC_SUBST([ZAP_LITE_FLAG])
 
 AC_SEARCH_LIBS(sched_yield, rt)
 
@@ -153,12 +153,12 @@ AC_SUBST([STDLIB_FLAG])
 LIBS="$PTHREAD_LIBS $LIBS"
 CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"
 
-AC_DEFUN([CAPNP_PKG_CONFIG_FILES], [ \
-  pkgconfig/capnp.pc \
-  pkgconfig/capnpc.pc \
-  pkgconfig/capnp-rpc.pc \
-  pkgconfig/capnp-json.pc \
-  pkgconfig/capnp-websocket.pc \
+AC_DEFUN([ZAP_PKG_CONFIG_FILES], [ \
+  pkgconfig/zap.pc \
+  pkgconfig/zapc.pc \
+  pkgconfig/zap-rpc.pc \
+  pkgconfig/zap-json.pc \
+  pkgconfig/zap-websocket.pc \
   pkgconfig/kj.pc \
   pkgconfig/kj-async.pc \
   pkgconfig/kj-http.pc \
@@ -166,28 +166,28 @@ AC_DEFUN([CAPNP_PKG_CONFIG_FILES], [ \
   pkgconfig/kj-tls.pc \
   pkgconfig/kj-test.pc \
 ])
-AC_DEFUN([CAPNP_CMAKE_CONFIG_FILES], [ \
-  cmake/CapnProtoConfig.cmake \
-  cmake/CapnProtoConfigVersion.cmake \
+AC_DEFUN([ZAP_CMAKE_CONFIG_FILES], [ \
+  cmake/ZapConfig.cmake \
+  cmake/ZapConfigVersion.cmake \
 ])
 
-[CAPNP_PKG_CONFIG_FILES]="CAPNP_PKG_CONFIG_FILES"
-[CAPNP_CMAKE_CONFIG_FILES]="CAPNP_CMAKE_CONFIG_FILES"
-AC_SUBST([CAPNP_PKG_CONFIG_FILES])
-AC_SUBST([CAPNP_CMAKE_CONFIG_FILES])
+[ZAP_PKG_CONFIG_FILES]="ZAP_PKG_CONFIG_FILES"
+[ZAP_CMAKE_CONFIG_FILES]="ZAP_CMAKE_CONFIG_FILES"
+AC_SUBST([ZAP_PKG_CONFIG_FILES])
+AC_SUBST([ZAP_CMAKE_CONFIG_FILES])
 
 # Don't include security release in soname -- we want to replace old binaries
 # in this case.
 SO_VERSION=$(echo $VERSION | sed -e 's/^\([0-9]*[.][0-9]*[.][0-9]*\)\([.][0-9]*\)*\(-.*\)*$/\1\3/g')
 AC_SUBST([SO_VERSION])
 
-# CapnProtoConfig.cmake.in needs these PACKAGE_* output variables.
-PACKAGE_INIT="set([CAPNP_PKG_CONFIG_FILES] CAPNP_PKG_CONFIG_FILES)"
+# ZapConfig.cmake.in needs these PACKAGE_* output variables.
+PACKAGE_INIT="set([ZAP_PKG_CONFIG_FILES] ZAP_PKG_CONFIG_FILES)"
 PACKAGE_CMAKE_INSTALL_FULL_INCLUDEDIR="\${CMAKE_CURRENT_LIST_DIR}/../../../include"
 AC_SUBST([PACKAGE_INIT])
 AC_SUBST([PACKAGE_CMAKE_INSTALL_FULL_INCLUDEDIR])
 
-# CapnProtoConfigVersion.cmake.in needs PACKAGE_VERSION (already defined by AC_INIT) and
+# ZapConfigVersion.cmake.in needs PACKAGE_VERSION (already defined by AC_INIT) and
 # CMAKE_SIZEOF_VOID_P output variables.
 AC_CHECK_SIZEOF([void *])
 AC_SUBST(CMAKE_SIZEOF_VOID_P, $ac_cv_sizeof_void_p)
@@ -293,7 +293,7 @@ AS_IF([test "$with_fibers" = yes], [
   CXXFLAGS="$CXXFLAGS -DKJ_USE_FIBERS=0"
 ])
 
-# CapnProtoConfig.cmake.in needs these variables,
+# ZapConfig.cmake.in needs these variables,
 # we force them to NO because we don't need the CMake dependency for them,
 # the dependencies are provided by the .pc files.
 AC_SUBST(WITH_OPENSSL, NO)
@@ -301,5 +301,5 @@ AC_SUBST(_WITH_LIBUCONTEXT, NO)
 
 AM_CONDITIONAL([HAS_FUZZING_ENGINE], [test "x$LIB_FUZZING_ENGINE" != "x"])
 
-AC_CONFIG_FILES([Makefile] CAPNP_PKG_CONFIG_FILES CAPNP_CMAKE_CONFIG_FILES)
+AC_CONFIG_FILES([Makefile] ZAP_PKG_CONFIG_FILES ZAP_CMAKE_CONFIG_FILES)
 AC_OUTPUT

@@ -5,15 +5,15 @@ title: C++ Serialization
 
 # C++ Serialization
 
-The Cap'n Proto C++ runtime implementation provides an easy-to-use interface for manipulating
+The Zap C++ runtime implementation provides an easy-to-use interface for manipulating
 messages backed by fast pointer arithmetic.  This page discusses the serialization layer of
 the runtime; see [C++ RPC](cxxrpc.html) for information about the RPC layer.
 
 ## Example Usage
 
-For the Cap'n Proto definition:
+For the Zap definition:
 
-{% highlight capnp %}
+{% highlight zap %}
 struct Person {
   id @0 :UInt32;
   name @1 :Text;
@@ -48,23 +48,23 @@ struct AddressBook {
 You might write code like:
 
 {% highlight c++ %}
-#include "addressbook.capnp.h"
-#include <capnp/message.h>
-#include <capnp/serialize-packed.h>
+#include "addressbook.zap.h"
+#include <zap/message.h>
+#include <zap/serialize-packed.h>
 #include <iostream>
 
 void writeAddressBook(int fd) {
-  ::capnp::MallocMessageBuilder message;
+  ::zap::MallocMessageBuilder message;
 
   AddressBook::Builder addressBook = message.initRoot<AddressBook>();
-  ::capnp::List<Person>::Builder people = addressBook.initPeople(2);
+  ::zap::List<Person>::Builder people = addressBook.initPeople(2);
 
   Person::Builder alice = people[0];
   alice.setId(123);
   alice.setName("Alice");
   alice.setEmail("alice@example.com");
   // Type shown for explanation purposes; normally you'd use auto.
-  ::capnp::List<Person::PhoneNumber>::Builder alicePhones =
+  ::zap::List<Person::PhoneNumber>::Builder alicePhones =
       alice.initPhones(1);
   alicePhones[0].setNumber("555-1212");
   alicePhones[0].setType(Person::PhoneNumber::Type::MOBILE);
@@ -85,7 +85,7 @@ void writeAddressBook(int fd) {
 }
 
 void printAddressBook(int fd) {
-  ::capnp::PackedFdMessageReader message(fd);
+  ::zap::PackedFdMessageReader message(fd);
 
   AddressBook::Reader addressBook = message.getRoot<AddressBook>();
 
@@ -126,31 +126,31 @@ void printAddressBook(int fd) {
 ## C++ Feature Usage:  C++11, Exceptions
 
 This implementation makes use of C++11 features.  If you are using GCC, you will need at least
-version 4.7 to compile Cap'n Proto.  If you are using Clang, you will need at least version 3.2.
+version 4.7 to compile Zap.  If you are using Clang, you will need at least version 3.2.
 These compilers required the flag `-std=c++11` to enable C++11 features -- your code which
-`#include`s Cap'n Proto headers will need to be compiled with this flag.  Other compilers have not
+`#include`s Zap headers will need to be compiled with this flag.  Other compilers have not
 been tested at this time.
 
 This implementation prefers to handle errors using exceptions.  Exceptions are only used in
 circumstances that should never occur in normal operation.  For example, exceptions are thrown
 on assertion failures (indicating bugs in the code), network failures, and invalid input.
-Exceptions thrown by Cap'n Proto are never part of the interface and never need to be caught in
+Exceptions thrown by Zap are never part of the interface and never need to be caught in
 correct usage.  The purpose of throwing exceptions is to allow higher-level code a chance to
 recover from unexpected circumstances without disrupting other work happening in the same process.
 For example, a server that handles requests from multiple clients should, on exception, return an
 error to the client that caused the exception and close that connection, but should continue
 handling other connections normally.
 
-When Cap'n Proto code might throw an exception from a destructor, it first checks
+When Zap code might throw an exception from a destructor, it first checks
 `std::uncaught_exception()` to ensure that this is safe.  If another exception is already active,
 the new exception is assumed to be a side-effect of the main exception, and is either silently
 swallowed or reported on a side channel.
 
 In recognition of the fact that some teams prefer not to use exceptions, and that even enabling
-exceptions in the compiler introduces overhead, Cap'n Proto allows you to disable them entirely
+exceptions in the compiler introduces overhead, Zap allows you to disable them entirely
 by registering your own exception callback.  The callback will be called in place of throwing an
 exception.  The callback may abort the process, and is required to do so in certain circumstances
-(when a fatal bug is detected).  If the callback returns normally, Cap'n Proto will attempt
+(when a fatal bug is detected).  If the callback returns normally, Zap will attempt
 to continue by inventing "safe" values.  This will lead to garbage output, but at least the program
 will not crash.  Your exception callback should set some sort of a flag indicating that an error
 occurred, and somewhere up the stack you should check for that flag and cancel the operation.
@@ -158,44 +158,44 @@ See the header `kj/exception.h` for details on how to register an exception call
 
 ## KJ Library
 
-Cap'n Proto is built on top of a basic utility library called KJ.  The two were actually developed
-together -- KJ is simply the stuff which is not specific to Cap'n Proto serialization, and may be
-useful to others independently of Cap'n Proto.  For now, the two are distributed together.  The
+Zap is built on top of a basic utility library called KJ.  The two were actually developed
+together -- KJ is simply the stuff which is not specific to Zap serialization, and may be
+useful to others independently of Zap.  For now, the two are distributed together.  The
 name "KJ" has no particular meaning; it was chosen to be short and easy-to-type.
 
-As of v0.3, KJ is distributed with Cap'n Proto but built as a separate library.  You may need
-to explicitly link against libraries:  `-lcapnp -lkj`
+As of v0.3, KJ is distributed with Zap but built as a separate library.  You may need
+to explicitly link against libraries:  `-lzap -lkj`
 
 ## Generating Code
 
-To generate C++ code from your `.capnp` [interface definition](language.html), run:
+To generate C++ code from your `.zap` [interface definition](language.html), run:
 
-    capnp compile -oc++ myproto.capnp
+    zap compile -oc++ myproto.zap
 
-This will create `myproto.capnp.h` and `myproto.capnp.c++` in the same directory as `myproto.capnp`.
+This will create `myproto.zap.h` and `myproto.zap.c++` in the same directory as `myproto.zap`.
 
-To use this code in your app, you must link against both `libcapnp` and `libkj`.  If you use
-`pkg-config`, Cap'n Proto provides the `capnp` module to simplify discovery of compiler and linker
+To use this code in your app, you must link against both `libzap` and `libkj`.  If you use
+`pkg-config`, Zap provides the `zap` module to simplify discovery of compiler and linker
 flags.
 
 If you use [RPC](cxxrpc.html) (i.e., your schema defines [interfaces](language.html#interfaces)),
-then you will additionally need to link against `libcapnp-rpc` and `libkj-async`, or use the
-`capnp-rpc` `pkg-config` module.
+then you will additionally need to link against `libzap-rpc` and `libkj-async`, or use the
+`zap-rpc` `pkg-config` module.
 
 ### Setting a Namespace
 
 You probably want your generated types to live in a C++ namespace.  You will need to import
-`/capnp/c++.capnp` and use the `namespace` annotation it defines:
+`/zap/c++.zap` and use the `namespace` annotation it defines:
 
-{% highlight capnp %}
-using Cxx = import "/capnp/c++.capnp";
+{% highlight zap %}
+using Cxx = import "/zap/c++.zap";
 $Cxx.namespace("foo::bar::baz");
 {% endhighlight %}
 
-Note that `capnp/c++.capnp` is installed in `$PREFIX/include` (`/usr/local/include` by default)
-when you install the C++ runtime.  The `capnp` tool automatically searches `/usr/include` and
+Note that `zap/c++.zap` is installed in `$PREFIX/include` (`/usr/local/include` by default)
+when you install the C++ runtime.  The `zap` tool automatically searches `/usr/include` and
 `/usr/local/include` for imports that start with a `/`, so it should "just work".  If you installed
-somewhere else, you may need to add it to the search path with the `-I` flag to `capnp compile`,
+somewhere else, you may need to add it to the search path with the `-I` flag to `zap compile`,
 which works much like the compiler flag of the same name.
 
 ## Types
@@ -209,7 +209,7 @@ Primitive types map to the obvious C++ types:
 * `UIntNN` -> `uintNN_t`
 * `Float32` -> `float`
 * `Float64` -> `double`
-* `Void` -> `::capnp::Void` (An empty struct; its only value is `::capnp::VOID`)
+* `Void` -> `::zap::Void` (An empty struct; its only value is `::zap::VOID`)
 
 ### Structs
 
@@ -232,7 +232,7 @@ type.
 int32_t getMyPrimitiveField();
 
 // myTextField @1 :Text;
-::capnp::Text::Reader getMyTextField();
+::zap::Text::Reader getMyTextField();
 // (Note that Text::Reader may be implicitly cast to const char* and
 // std::string.)
 
@@ -240,7 +240,7 @@ int32_t getMyPrimitiveField();
 MyStruct::Reader getMyStructField();
 
 // myListField @3 :List(Float64);
-::capnp::List<double> getMyListField();
+::zap::List<double> getMyListField();
 {% endhighlight %}
 
 `Foo::Builder`, meanwhile, has several methods for each field `bar`:
@@ -272,9 +272,9 @@ int32_t getMyPrimitiveField();
 void setMyPrimitiveField(int32_t value);
 
 // myTextField @1 :Text;
-::capnp::Text::Builder getMyTextField();
-void setMyTextField(::capnp::Text::Reader value);
-::capnp::Text::Builder initMyTextField(size_t size);
+::zap::Text::Builder getMyTextField();
+void setMyTextField(::zap::Text::Reader value);
+::zap::Text::Builder initMyTextField(size_t size);
 // (Note that Text::Reader is implicitly constructable from const char*
 // and std::string, and Text::Builder can be implicitly cast to
 // these types.)
@@ -285,9 +285,9 @@ void setMyStructField(MyStruct::Reader value);
 MyStruct::Builder initMyStructField();
 
 // myListField @3 :List(Float64);
-::capnp::List<double>::Builder getMyListField();
-void setMyListField(::capnp::List<double>::Reader value);
-::capnp::List<double>::Builder initMyListField(size_t size);
+::zap::List<double>::Builder getMyListField();
+void setMyListField(::zap::List<double>::Reader value);
+::zap::List<double>::Builder initMyListField(size_t size);
 {% endhighlight %}
 
 ### Groups
@@ -315,8 +315,8 @@ See the [example](#example-usage) at the top of the page for an example of union
 
 ### Lists
 
-Lists are represented by the type `capnp::List<T>`, where `T` is any of the primitive types,
-any Cap'n Proto user-defined type, `capnp::Text`, `capnp::Data`, or `capnp::List<U>`
+Lists are represented by the type `zap::List<T>`, where `T` is any of the primitive types,
+any Zap user-defined type, `zap::Text`, `zap::Data`, or `zap::List<U>`
 (to form a list of lists).
 
 The type `List<T>` itself is not instantiatable, but has two inner classes: `Reader` and `Builder`.
@@ -340,7 +340,7 @@ values when the list is created.
 
 ### Enums
 
-Cap'n Proto enums become C++11 "enum classes".  That means they behave like any other enum, but
+Zap enums become C++11 "enum classes".  That means they behave like any other enum, but
 the enum's values are scoped within the type.  E.g. for an enum `Foo` with value `bar`, you must
 refer to the value as `Foo::BAR`.
 
@@ -350,12 +350,12 @@ To match prevaling C++ style, an enum's value names are converted to UPPERCASE_W
 Keep in mind when writing `switch` blocks that an enum read off the wire may have a numeric
 value that is not listed in its definition.  This may be the case if the sender is using a newer
 version of the protocol, or if the message is corrupt or malicious.  In C++11, enums are allowed
-to have any value that is within the range of their base type, which for Cap'n Proto enums is
+to have any value that is within the range of their base type, which for Zap enums is
 `uint16_t`.
 
 ### Blobs (Text and Data)
 
-Blobs are manipulated using the classes `capnp::Text` and `capnp::Data`.  These classes are,
+Blobs are manipulated using the classes `zap::Text` and `zap::Data`.  These classes are,
 again, just containers for inner classes `Reader` and `Builder`.  These classes are iterable and
 implement `size()` and `operator[]` methods.  `Builder::operator[]` even returns a reference
 (unlike with `List<T>`).  `Text::Reader` additionally has a method `cStr()` which returns a
@@ -380,7 +380,7 @@ should refer to outer types, not `Reader` or `Builder` types.
 
 For example, given:
 
-{% highlight capnp %}
+{% highlight zap %}
 struct Map(Key, Value) {
   entries @0 :List(Entry);
   struct Entry {
@@ -400,7 +400,7 @@ You might write code like:
 {% highlight c++ %}
 void processPeople(People::Reader people) {
   Map<Text, Person>::Reader reader = people.getByName();
-  capnp::List<Map<Text, Person>::Entry>::Reader entries =
+  zap::List<Map<Text, Person>::Entry>::Reader entries =
       reader.getEntries()
   for (auto entry: entries) {
     processPerson(entry);
@@ -409,7 +409,7 @@ void processPeople(People::Reader people) {
 {% endhighlight %}
 
 Note that all template parameters will be specified with a default value of `AnyPointer`.
-Therefore, the type `Map<>` is equivalent to `Map<capnp::AnyPointer, capnp::AnyPointer>`.
+Therefore, the type `Map<>` is equivalent to `Map<zap::AnyPointer, zap::AnyPointer>`.
 
 ### Constants
 
@@ -421,37 +421,37 @@ using the unary `*` or `->` operators.
 
 ## Messages and I/O
 
-To create a new message, you must start by creating a `capnp::MessageBuilder`
-(`capnp/message.h`).  This is an abstract type which you can implement yourself, but most users
-will want to use `capnp::MallocMessageBuilder`.  Once your message is constructed, write it to
-a file descriptor with `capnp::writeMessageToFd(fd, builder)` (`capnp/serialize.h`) or
-`capnp::writePackedMessageToFd(fd, builder)` (`capnp/serialize-packed.h`).
+To create a new message, you must start by creating a `zap::MessageBuilder`
+(`zap/message.h`).  This is an abstract type which you can implement yourself, but most users
+will want to use `zap::MallocMessageBuilder`.  Once your message is constructed, write it to
+a file descriptor with `zap::writeMessageToFd(fd, builder)` (`zap/serialize.h`) or
+`zap::writePackedMessageToFd(fd, builder)` (`zap/serialize-packed.h`).
 
-To read a message, you must create a `capnp::MessageReader`, which is another abstract type.
-Implementations are specific to the data source.  You can use `capnp::StreamFdMessageReader`
-(`capnp/serialize.h`) or `capnp::PackedFdMessageReader` (`capnp/serialize-packed.h`)
+To read a message, you must create a `zap::MessageReader`, which is another abstract type.
+Implementations are specific to the data source.  You can use `zap::StreamFdMessageReader`
+(`zap/serialize.h`) or `zap::PackedFdMessageReader` (`zap/serialize-packed.h`)
 to read from file descriptors; both take the file descriptor as a constructor argument.
 
 Note that if your stream contains additional data after the message, `PackedFdMessageReader` may
 accidentally read some of that data, since it does buffered I/O.  To make this work correctly, you
 will need to set up a multi-use buffered stream.  Buffered I/O may also be a good idea with
-`StreamFdMessageReader` and also when writing, for performance reasons.  See `capnp/io.h` for
+`StreamFdMessageReader` and also when writing, for performance reasons.  See `zap/io.h` for
 details.
 
 There is an [example](#example-usage) of all this at the beginning of this page.
 
 ### Using mmap
 
-Cap'n Proto can be used together with `mmap()` (or Win32's `MapViewOfFile()`) for extremely fast
+Zap can be used together with `mmap()` (or Win32's `MapViewOfFile()`) for extremely fast
 reads, especially when you only need to use a subset of the data in the file.  Currently,
-Cap'n Proto is not well-suited for _writing_ via `mmap()`, only reading, but this is only because
+Zap is not well-suited for _writing_ via `mmap()`, only reading, but this is only because
 we have not yet invented a mutable segment framing format -- the underlying design should
 eventually work for both.
 
 To take advantage of `mmap()` at read time, write your file in regular serialized (but NOT packed)
 format -- that is, use `writeMessageToFd()`, _not_ `writePackedMessageToFd()`.  Now, `mmap()` in
 the entire file, and then pass the mapped memory to the constructor of
-`capnp::FlatArrayMessageReader` (defined in `capnp/serialize.h`).  That's it.  You can use the
+`zap::FlatArrayMessageReader` (defined in `zap/serialize.h`).  That's it.  You can use the
 reader just like a normal `StreamFdMessageReader`.  The operating system will automatically page
 in data from disk as you read it.
 
@@ -467,36 +467,36 @@ sure your benchmark is actually interacting with disk and not cache.)
 
 Sometimes you want to write generic code that operates on arbitrary types, iterating over the
 fields or looking them up by name.  For example, you might want to write code that encodes
-arbitrary Cap'n Proto types in JSON format.  This requires something like "reflection", but C++
+arbitrary Zap types in JSON format.  This requires something like "reflection", but C++
 does not offer reflection.  Also, you might even want to operate on types that aren't compiled
 into the binary at all, but only discovered at runtime.
 
 The C++ API supports inspecting schemas at runtime via the interface defined in
-`capnp/schema.h`, and dynamically reading and writing instances of arbitrary types via
-`capnp/dynamic.h`.  Here's the example from the beginning of this file rewritten in terms
+`zap/schema.h`, and dynamically reading and writing instances of arbitrary types via
+`zap/dynamic.h`.  Here's the example from the beginning of this file rewritten in terms
 of the dynamic API:
 
 {% highlight c++ %}
-#include "addressbook.capnp.h"
-#include <capnp/message.h>
-#include <capnp/serialize-packed.h>
+#include "addressbook.zap.h"
+#include <zap/message.h>
+#include <zap/serialize-packed.h>
 #include <iostream>
-#include <capnp/schema.h>
-#include <capnp/dynamic.h>
+#include <zap/schema.h>
+#include <zap/dynamic.h>
 
-using ::capnp::DynamicValue;
-using ::capnp::DynamicStruct;
-using ::capnp::DynamicEnum;
-using ::capnp::DynamicList;
-using ::capnp::List;
-using ::capnp::Schema;
-using ::capnp::StructSchema;
-using ::capnp::EnumSchema;
+using ::zap::DynamicValue;
+using ::zap::DynamicStruct;
+using ::zap::DynamicEnum;
+using ::zap::DynamicList;
+using ::zap::List;
+using ::zap::Schema;
+using ::zap::StructSchema;
+using ::zap::EnumSchema;
 
-using ::capnp::Void;
-using ::capnp::Text;
-using ::capnp::MallocMessageBuilder;
-using ::capnp::PackedFdMessageReader;
+using ::zap::Void;
+using ::zap::Text;
+using ::zap::MallocMessageBuilder;
+using ::zap::PackedFdMessageReader;
 
 void dynamicWriteAddressBook(int fd, StructSchema schema) {
   // Write a message using the dynamic API to set each
@@ -539,7 +539,7 @@ void dynamicWriteAddressBook(int fd, StructSchema schema) {
   bobPhones[1].setNumber("555-7654");
   bobPhones[1].setType(Person::PhoneNumber::Type::WORK);
   bob.get("employment").as<DynamicStruct>()
-     .set("unemployed", ::capnp::VOID);
+     .set("unemployed", ::zap::VOID);
 
   writePackedMessageToFd(fd, message);
 }
@@ -627,24 +627,24 @@ void dynamicPrintMessage(int fd, StructSchema schema) {
 
 Notes about the dynamic API:
 
-* You can implicitly cast any compiled Cap'n Proto struct reader/builder type directly to
+* You can implicitly cast any compiled Zap struct reader/builder type directly to
   `DynamicStruct::Reader`/`DynamicStruct::Builder`.  Similarly with `List<T>` and `DynamicList`,
-  and even enum types and `DynamicEnum`.  Finally, all valid Cap'n Proto field types may be
+  and even enum types and `DynamicEnum`.  Finally, all valid Zap field types may be
   implicitly converted to `DynamicValue`.
 
-* You can load schemas dynamically at runtime using `SchemaLoader` (`capnp/schema-loader.h`) and
+* You can load schemas dynamically at runtime using `SchemaLoader` (`zap/schema-loader.h`) and
   use the Dynamic API to manipulate objects of these types.  `MessageBuilder` and `MessageReader`
   have methods for accessing the message root using a dynamic schema.
 
 * While `SchemaLoader` loads binary schemas, you can also parse directly from text using
-  `SchemaParser` (`capnp/schema-parser.h`).  However, this requires linking against `libcapnpc`
-  (in addition to `libcapnp` and `libkj`) -- this code is bulky and not terribly efficient.  If
+  `SchemaParser` (`zap/schema-parser.h`).  However, this requires linking against `libzapc`
+  (in addition to `libzap` and `libkj`) -- this code is bulky and not terribly efficient.  If
   you can arrange to use only binary schemas at runtime, you'll be better off.
 
 * Unlike with Protobufs, there is no "global registry" of compiled-in types.  To get the schema
-  for a compiled-in type, use `capnp::Schema::from<MyType>()`.
+  for a compiled-in type, use `zap::Schema::from<MyType>()`.
 
-* Unlike with Protobufs, the overhead of supporting reflection is small.  Generated `.capnp.c++`
+* Unlike with Protobufs, the overhead of supporting reflection is small.  Generated `.zap.c++`
   files contain only some embedded const data structures describing the schema, no code at all,
   and the runtime library support code is relatively small.  Moreover, if you do not use the
   dynamic API or the schema API, you do not even need to link their implementations into your
@@ -655,20 +655,20 @@ Notes about the dynamic API:
   never throw, but bugs happen.  Enabling and catching exceptions will make your code more robust.
 
 * Loading user-provided schemas has security implications: it greatly increases the attack
-  surface of the Cap'n Proto library.  In particular, it is easy for an attacker to trigger
+  surface of the Zap library.  In particular, it is easy for an attacker to trigger
   exceptions.  To protect yourself, you are strongly advised to enable exceptions and catch them.
 
 ## Orphans
 
-An "orphan" is a Cap'n Proto object that is disconnected from the message structure.  That is,
-it is not the root of a message, and there is no other Cap'n Proto object holding a pointer to it.
+An "orphan" is a Zap object that is disconnected from the message structure.  That is,
+it is not the root of a message, and there is no other Zap object holding a pointer to it.
 Thus, it has no parents.  Orphans are an advanced feature that can help avoid copies and make it
-easier to use Cap'n Proto objects as part of your application's internal state.  Typical
+easier to use Zap objects as part of your application's internal state.  Typical
 applications probably won't use orphans.
 
-The class `capnp::Orphan<T>` (defined in `<capnp/orphan.h>`) represents a pointer to an orphaned
+The class `zap::Orphan<T>` (defined in `<zap/orphan.h>`) represents a pointer to an orphaned
 object of type `T`.  `T` can be any struct type, `List<T>`, `Text`, or `Data`.  E.g.
-`capnp::Orphan<Person>` would be an orphaned `Person` structure.  `Orphan<T>` is a move-only class,
+`zap::Orphan<Person>` would be an orphaned `Person` structure.  `Orphan<T>` is a move-only class,
 similar to `std::unique_ptr<T>`.  This prevents two different objects from adopting the same
 orphan, which would result in an invalid message.
 
@@ -683,7 +683,7 @@ for a particular message (i.e. a particular `MessageBuilder`).  An orphan can on
 objects that live in the same message.  To move objects between messages, you must perform a copy.
 If the message is serialized while an `Orphan<T>` living within it still exists, the orphan's
 content will be part of the serialized message, but the only way the receiver could find it is by
-investigating the raw message; the Cap'n Proto API provides no way to detect or read it.
+investigating the raw message; the Zap API provides no way to detect or read it.
 
 To construct an orphan from scratch (without having some other object disown it), you need an
 `Orphanage`, which is essentially an orphan factory associated with some message.  You can get one
@@ -702,18 +702,18 @@ only the reachable objects will be copied.
 The runtime library contains lots of useful features not described on this page.  For now, the
 best reference is the header files.  See:
 
-    capnp/list.h
-    capnp/blob.h
-    capnp/message.h
-    capnp/serialize.h
-    capnp/serialize-packed.h
-    capnp/schema.h
-    capnp/schema-loader.h
-    capnp/dynamic.h
+    zap/list.h
+    zap/blob.h
+    zap/message.h
+    zap/serialize.h
+    zap/serialize-packed.h
+    zap/schema.h
+    zap/schema-loader.h
+    zap/dynamic.h
 
 ## Tips and Best Practices
 
-Here are some tips for using the C++ Cap'n Proto runtime most effectively:
+Here are some tips for using the C++ Zap runtime most effectively:
 
 * Accessor methods for primitive (non-pointer) fields are fast and inline.  They should be just
   as fast as accessing a struct field through a pointer.
@@ -735,12 +735,12 @@ Here are some tips for using the C++ Cap'n Proto runtime most effectively:
       frob(bar.getBaz(), bar.getQux(), bar.getCorge());
 
   It is especially important to use this style when reading messages, for another reason:  as
-  described under the "security tips" section, below, every time you `get` a pointer, Cap'n Proto
+  described under the "security tips" section, below, every time you `get` a pointer, Zap
   increments a counter by the size of the target object.  If that counter hits a pre-defined limit,
   an exception is thrown (or a default value is returned, if exceptions are disabled), to prevent
   a malicious client from sending your server into an infinite loop with a specially-crafted
   message.  If you repeatedly `get` the same object, you are repeatedly counting the same bytes,
-  and so you may hit the limit prematurely.  (Since Cap'n Proto readers are backed directly by
+  and so you may hit the limit prematurely.  (Since Zap readers are backed directly by
   the underlying message buffer and do not have anywhere else to store per-object information, it
   is impossible to remember whether you've seen a particular object already.)
 
@@ -757,7 +757,7 @@ Here are some tips for using the C++ Cap'n Proto runtime most effectively:
 
 * It is possible to receive a struct value constructed from a newer version of the protocol than
   the one your binary was built with, and that struct might have extra fields that you don't know
-  about.  The Cap'n Proto implementation tries to avoid discarding this extra data.  If you copy
+  about.  The Zap implementation tries to avoid discarding this extra data.  If you copy
   the struct from one message to another (e.g. by calling a set() method on a parent object), the
   extra fields will be preserved.  This makes it possible to build proxies that receive messages
   and forward them on without having to rebuild the proxy every time a new field is added.  You
@@ -771,7 +771,7 @@ Here are some tips for using the C++ Cap'n Proto runtime most effectively:
 * Messages are built in "arena" or "region" style:  each object is allocated sequentially in
   memory, until there is no more room in the segment, in which case a new segment is allocated,
   and objects continue to be allocated sequentially in that segment.  This design is what makes
-  Cap'n Proto possible at all, and it is very fast compared to other allocation strategies.
+  Zap possible at all, and it is very fast compared to other allocation strategies.
   However, it has the disadvantage that if you allocate an object and then discard it, that memory
   is lost.  In fact, the empty space will still become part of the serialized message, even though
   it is unreachable.  The implementation will try to zero it out, so at least it should pack well,
@@ -793,43 +793,43 @@ Here are some tips for using the C++ Cap'n Proto runtime most effectively:
   `MessageBuilder`, only the reachable objects will be copied, leaving out all of the unreachable
   dead space.
 
-  In the future, Cap'n Proto may be improved such that it can re-use dead space in a message.
+  In the future, Zap may be improved such that it can re-use dead space in a message.
   However, this will only improve things, not fix them entirely: fragmentation could still leave
   dead space.
 
 ### Build Tips
 
-* If you are worried about the binary footprint of the Cap'n Proto library, consider statically
+* If you are worried about the binary footprint of the Zap library, consider statically
   linking with the `--gc-sections` linker flag.  This will allow the linker to drop pieces of the
   library that you do not actually use.  For example, many users do not use the dynamic schema and
-  reflection APIs, which contribute a large fraction of the Cap'n Proto library's overall
-  footprint.  Keep in mind that if you ever stringify a Cap'n Proto type, the stringification code
+  reflection APIs, which contribute a large fraction of the Zap library's overall
+  footprint.  Keep in mind that if you ever stringify a Zap type, the stringification code
   depends on the dynamic API; consider only using stringification in debug builds.
 
-  If you are dynamically linking against the system's shared copy of `libcapnp`, don't worry about
+  If you are dynamically linking against the system's shared copy of `libzap`, don't worry about
   its binary size.  Remember that only the code which you actually use will be paged into RAM, and
   those pages are shared with other applications on the system.
 
-  Also remember to strip your binary.  In particular, `libcapnpc` (the schema parser) has
+  Also remember to strip your binary.  In particular, `libzapc` (the schema parser) has
   excessively large symbol names caused by its use of template-based parser combinators.  Stripping
   the binary greatly reduces its size.
 
-* The Cap'n Proto library has lots of debug-only asserts that are removed if you `#define NDEBUG`,
+* The Zap library has lots of debug-only asserts that are removed if you `#define NDEBUG`,
   including in headers.  If you care at all about performance, you should compile your production
-  binaries with the `-DNDEBUG` compiler flag.  In fact, if Cap'n Proto detects that you have
+  binaries with the `-DNDEBUG` compiler flag.  In fact, if Zap detects that you have
   optimization enabled but have not defined `NDEBUG`, it will define it for you (with a warning),
   unless you define `DEBUG` or `KJ_DEBUG` to explicitly request debugging.
 
 ### Security Tips
 
-Cap'n Proto has not yet undergone security review.  It most likely has some vulnerabilities.  You
-should not attempt to decode Cap'n Proto messages from sources you don't trust at this time.
+Zap has not yet undergone security review.  It most likely has some vulnerabilities.  You
+should not attempt to decode Zap messages from sources you don't trust at this time.
 
-However, assuming the Cap'n Proto implementation hardens up eventually, then the following security
+However, assuming the Zap implementation hardens up eventually, then the following security
 tips will apply.
 
 * It is highly recommended that you enable exceptions.  When compiled with `-fno-exceptions`,
-  Cap'n Proto categorizes exceptions into "fatal" and "recoverable" varieties.  Fatal exceptions
+  Zap categorizes exceptions into "fatal" and "recoverable" varieties.  Fatal exceptions
   cause the server to crash, while recoverable exceptions are handled by logging an error and
   returning a "safe" garbage value.  Fatal is preferred in cases where it's unclear what kind of
   garbage value would constitute "safe".  The more of the library you use, the higher the chance
@@ -837,7 +837,7 @@ tips will apply.
   exception somewhere.  If you enable exceptions, then you can catch the exception instead of
   crashing, and return an error just to the attacker rather than to everyone using your server.
 
-  Basic parsing of Cap'n Proto messages shouldn't ever trigger fatal exceptions (assuming the
+  Basic parsing of Zap messages shouldn't ever trigger fatal exceptions (assuming the
   implementation is not buggy).  However, the dynamic API -- especially if you are loading schemas
   controlled by the attacker -- is much more exception-happy.  If you cannot use exceptions, then
   you are advised to avoid the dynamic API when dealing with untrusted data.
@@ -847,7 +847,7 @@ tips will apply.
   as of this writing, it is trivial to deadlock the parser by simply writing a constant whose value
   depends on itself.
 
-* Cap'n Proto automatically applies two artificial limits on messages for security reasons:
+* Zap automatically applies two artificial limits on messages for security reasons:
   a limit on nesting dept, and a limit on total bytes traversed.
 
   * The nesting depth limit is designed to prevent stack overflow when handling a deeply-nested
@@ -857,7 +857,7 @@ tips will apply.
   * The traversal limit is designed to defend against maliciously-crafted messages which use
     pointer cycles or overlapping objects to make a message appear much larger than it looks off
     the wire.  While cycles and overlapping objects are illegal, they are hard to detect reliably.
-    Instead, Cap'n Proto places a limit on how many bytes worth of objects you can _dereference_
+    Instead, Zap places a limit on how many bytes worth of objects you can _dereference_
     before it throws an exception.  This limit is assessed every time you follow a pointer.  By
     default, the limit is 64MiB (this may change in the future).  `StreamFdMessageReader` will
     actually reject upfront any message which is larger than the traversal limit, even before you
@@ -870,41 +870,41 @@ tips will apply.
     objects once they live in a `MessageBuilder`, even if you use `.asReader()` to convert a
     particular object's builder to the corresponding reader type.
 
-  Both limits may be increased using `capnp::ReaderOptions`, defined in `capnp/message.h`.
+  Both limits may be increased using `zap::ReaderOptions`, defined in `zap/message.h`.
 
 * Remember that enums on the wire may have a numeric value that does not match any value defined
   in the schema.  Your `switch()` statements must always have a safe default case.
 
 ## Lessons Learned from Protocol Buffers
 
-The author of Cap'n Proto's C++ implementation also wrote (in the past) version 2 of Google's
-Protocol Buffers.  As a result, Cap'n Proto's implementation benefits from a number of lessons
+The author of Zap's C++ implementation also wrote (in the past) version 2 of Google's
+Protocol Buffers.  As a result, Zap's implementation benefits from a number of lessons
 learned the hard way:
 
 * Protobuf generated code is enormous due to the parsing and serializing code generated for every
   class.  This actually poses a significant problem in practice -- there exist server binaries
-  containing literally hundreds of megabytes of compiled protobuf code.  Cap'n Proto generated code,
-  on the other hand, is almost entirely inlined accessors.  The only things that go into `.capnp.o`
+  containing literally hundreds of megabytes of compiled protobuf code.  Zap generated code,
+  on the other hand, is almost entirely inlined accessors.  The only things that go into `.zap.o`
   files are default values for pointer fields (if needed, which is rare) and the encoded schema
-  (just the raw bytes of a Cap'n-Proto-encoded schema structure).  The latter could even be removed
+  (just the raw bytes of a Zap-encoded schema structure).  The latter could even be removed
   if you don't use dynamic reflection.
 
 * The C++ Protobuf implementation used lots of dynamic initialization code (that runs before
   `main()`) to do things like register types in global tables.  This proved problematic for
-  programs which linked in lots of protocols but needed to start up quickly.  Cap'n Proto does not
+  programs which linked in lots of protocols but needed to start up quickly.  Zap does not
   use any dynamic initializers anywhere, period.
 
 * The C++ Protobuf implementation makes heavy use of STL in its interface and implementation.
   The proliferation of template instantiations gives the Protobuf runtime library a large footprint,
-  and using STL in the interface can lead to weird ABI problems and slow compiles.  Cap'n Proto
+  and using STL in the interface can lead to weird ABI problems and slow compiles.  Zap
   does not use any STL containers in its interface and makes sparing use in its implementation.
-  As a result, the Cap'n Proto runtime library is smaller, and code that uses it compiles quickly.
+  As a result, the Zap runtime library is smaller, and code that uses it compiles quickly.
 
 * The in-memory representation of messages in Protobuf-C++ involves many heap objects.  Each
   message (struct) is an object, each non-primitive repeated field allocates an array of pointers
-  to more objects, and each string may actually add two heap objects.  Cap'n Proto by its nature
+  to more objects, and each string may actually add two heap objects.  Zap by its nature
   uses arena allocation, so the entire message is allocated in a few contiguous segments.  This
-  means Cap'n Proto spends very little time allocating memory, stores messages more compactly, and
+  means Zap spends very little time allocating memory, stores messages more compactly, and
   avoids memory fragmentation.
 
 * Related to the last point, Protobuf-C++ relies heavily on object reuse for performance.
@@ -912,8 +912,8 @@ learned the hard way:
   an existing one.  However, the memory usage of a Protobuf object will tend to grow the more times
   it is reused, particularly if it is used to parse messages of many different "shapes", so the
   objects need to be deleted and re-allocated from time to time.  All this makes tuning Protobufs
-  fairly tedious.  In contrast, enabling memory reuse with Cap'n Proto is as simple as providing
+  fairly tedious.  In contrast, enabling memory reuse with Zap is as simple as providing
   a byte buffer to use as scratch space when you build or read in a message.  Provide enough scratch
-  space to hold the entire message and Cap'n Proto won't allocate any memory.  Or don't -- since
-  Cap'n Proto doesn't do much allocation in the first place, the benefits of scratch space are
+  space to hold the entire message and Zap won't allocate any memory.  Or don't -- since
+  Zap doesn't do much allocation in the first place, the benefits of scratch space are
   small.

@@ -20,31 +20,31 @@
 # THE SOFTWARE.
 
 @0xb312981b2552a250;
-# Recall that Cap'n Proto RPC allows messages to contain references to remote objects that
+# Recall that Zap RPC allows messages to contain references to remote objects that
 # implement interfaces.  These references are called "capabilities", because they both designate
 # the remote object to use and confer permission to use it.
 #
-# Recall also that Cap'n Proto RPC has the feature that when a method call itself returns a
+# Recall also that Zap RPC has the feature that when a method call itself returns a
 # capability, the caller can begin calling methods on that capability _before the first call has
 # returned_.  The caller essentially sends a message saying "Hey server, as soon as you finish
-# that previous call, do this with the result!".  Cap'n Proto's RPC protocol makes this possible.
+# that previous call, do this with the result!".  Zap's RPC protocol makes this possible.
 #
 # The protocol is significantly more complicated than most RPC protocols.  However, this is
 # implementation complexity that underlies an easy-to-grasp higher-level model of object oriented
 # programming.  That is, just like TCP is a surprisingly complicated protocol that implements a
-# conceptually-simple byte stream abstraction, Cap'n Proto is a surprisingly complicated protocol
+# conceptually-simple byte stream abstraction, Zap is a surprisingly complicated protocol
 # that implements a conceptually-simple object abstraction.
 #
-# Cap'n Proto RPC is based heavily on CapTP, the object-capability protocol used by the E
+# Zap RPC is based heavily on CapTP, the object-capability protocol used by the E
 # programming language:
 #     http://www.erights.org/elib/distrib/captp/index.html
 #
-# Cap'n Proto RPC takes place between "vats".  A vat hosts some set of objects and talks to other
+# Zap RPC takes place between "vats".  A vat hosts some set of objects and talks to other
 # vats through direct bilateral connections.  Typically, there is a 1:1 correspondence between vats
 # and processes (in the unix sense of the word), although this is not strictly always true (one
 # process could run multiple vats, or a distributed virtual vat might live across many processes).
 #
-# Cap'n Proto does not distinguish between "clients" and "servers" -- this is up to the application.
+# Zap does not distinguish between "clients" and "servers" -- this is up to the application.
 # Either end of any connection can potentially hold capabilities pointing to the other end, and
 # can call methods on those capabilities.  In the doc comments below, we use the words "sender"
 # and "receiver".  These refer to the sender and receiver of an instance of the struct or field
@@ -101,21 +101,21 @@
 # the "Network-specific Parameters" section below.  An implementation might have different levels
 # depending on the network used.
 #
-# New implementations of Cap'n Proto should start out targeting the simplistic two-party network
-# type as defined in `rpc-twoparty.capnp`.  With this network type, level 3 is irrelevant and
+# New implementations of Zap should start out targeting the simplistic two-party network
+# type as defined in `rpc-twoparty.zap`.  With this network type, level 3 is irrelevant and
 # levels 2 and 4 are much easier than usual to implement.  When such an implementation is paired
 # with a container proxy, the contained app effectively gets to make full use of the proxy's
-# network at level 4.  And since Cap'n Proto IPC is extremely fast, it may never make sense to
+# network at level 4.  And since Zap IPC is extremely fast, it may never make sense to
 # bother implementing any other vat network protocol -- just use the correct container type and get
 # it for free.
 
-using Cxx = import "/capnp/c++.capnp";
-$Cxx.namespace("capnp::rpc");
+using Cxx = import "/zap/c++.zap";
+$Cxx.namespace("zap::rpc");
 
 # ========================================================================================
 # The Four Tables
 #
-# Cap'n Proto RPC connections are stateful (although an application built on Cap'n Proto could
+# Zap RPC connections are stateful (although an application built on Zap could
 # export a stateless interface).  As in CapTP, for each open connection, a vat maintains four state
 # tables: questions, answers, imports, and exports.  See the diagram at:
 #     http://www.erights.org/elib/distrib/captp/4tables.html
@@ -146,7 +146,7 @@ $Cxx.namespace("capnp::rpc");
 # end of life of each ID _in each direction_.  The ID is only safe to reuse once it has been
 # released by both sides.
 #
-# When a Cap'n Proto connection is lost, everything on the four tables is lost.  All questions are
+# When a Zap connection is lost, everything on the four tables is lost.  All questions are
 # canceled and throw exceptions.  All imports become broken (all future calls to them throw
 # exceptions).  All exports and answers are implicitly released.  The only things not lost are
 # persistent capabilities (`SturdyRef`s).  The application must plan for this and should respond by
@@ -256,7 +256,7 @@ struct Message {
 
     obsoleteSave @7 :AnyPointer;
     # Obsolete request to save a capability, resulting in a SturdyRef. This has been replaced
-    # by the `Persistent` interface defined in `persistent.capnp`. This operation was never
+    # by the `Persistent` interface defined in `persistent.zap`. This operation was never
     # implemented.
 
     obsoleteDelete @9 :AnyPointer;
@@ -286,22 +286,22 @@ struct Bootstrap {
   # bootstrap interface defines the basic functionality available to a client when it connects.
   # The exact interface definition obviously depends on the application.
   #
-  # We call this a "bootstrap" because in an ideal Cap'n Proto world, bootstrap interfaces would
+  # We call this a "bootstrap" because in an ideal Zap world, bootstrap interfaces would
   # never be used. In such a world, any time you connect to a new vat, you do so because you
   # received an introduction from some other vat (see `ThirdPartyToContact`). Thus, the first
   # message you send is `Accept`, and further communications derive from there. `Bootstrap` is not
   # used.
   #
-  # In such an ideal world, DNS itself would support Cap'n Proto -- performing a DNS lookup would
-  # actually return a new Cap'n Proto capability, thus introducing you to the target system via
+  # In such an ideal world, DNS itself would support Zap -- performing a DNS lookup would
+  # actually return a new Zap capability, thus introducing you to the target system via
   # level 3 RPC. Applications would receive the capability to talk to DNS in the first place as
   # an initial endowment or part of a Powerbox interaction. Therefore, an app can form arbitrary
   # connections without ever using `Bootstrap`.
   #
-  # Of course, in the real world, DNS is not Cap'n-Proto-based, and we don't want Cap'n Proto to
+  # Of course, in the real world, DNS is not Zap-based, and we don't want Zap to
   # require a whole new internet infrastructure to be useful. Therefore, we offer bootstrap
   # interfaces as a way to get up and running without a level 3 introduction. Thus, bootstrap
-  # interfaces are used to "bootstrap" from other, non-Cap'n-Proto-based means of service discovery,
+  # interfaces are used to "bootstrap" from other, non-Zap-based means of service discovery,
   # such as legacy DNS.
   #
   # Note that a vat need not provide a bootstrap interface, and in fact many vats (especially those
@@ -326,7 +326,7 @@ struct Bootstrap {
   #
   # **History**
   #
-  # In the first version of Cap'n Proto RPC (0.4.x) the `Bootstrap` message was called `Restore`.
+  # In the first version of Zap RPC (0.4.x) the `Bootstrap` message was called `Restore`.
   # At the time, it was thought that this would eventually serve as the way to restore SturdyRefs
   # (level 2). Meanwhile, an application could offer its "main" interface on a well-known
   # (non-secret) SturdyRef.
@@ -345,7 +345,7 @@ struct Bootstrap {
   #   machine to connect to and would be able to immediately restore a SturdyRef on connection.
   #   However, in practice, the ability to restore SturdyRefs is itself a capability that may
   #   require going through an authentication process to obtain. Thus, it makes more sense to
-  #   define a "restorer service" as a full Cap'n Proto interface. If this restorer interface is
+  #   define a "restorer service" as a full Zap interface. If this restorer interface is
   #   offered as the vat's bootstrap interface, then this is equivalent to the old arrangement.
   #
   # - Overloading "Restore" for the purpose of obtaining well-known capabilities encouraged the
@@ -371,7 +371,7 @@ struct Bootstrap {
   #   capability cannot be given an unguessable name, because then the supervisor itself would not
   #   be able to address it!
   #
-  # As of Cap'n Proto 0.5, `Restore` has been renamed to `Bootstrap` and is no longer planned for
+  # As of Zap 0.5, `Restore` has been renamed to `Bootstrap` and is no longer planned for
   # use in restoring SturdyRefs.
   #
   # Note that 0.4 also defined a message type called `Delete` that, like `Restore`, addressed a
@@ -604,10 +604,10 @@ struct Finish {
   # If true, if the RPC system receives this Finish message before the original call has even been
   # delivered, it should defer cancellation until after delivery. In particular, this gives the
   # destination object a chance to opt out of cancellation, e.g. as controlled by the
-  # `allowCancellation` annotation defined in `c++.capnp`.
+  # `allowCancellation` annotation defined in `c++.zap`.
   #
-  # This is a work-around. Versions 1.0 and up of Cap'n Proto always set this to false. However,
-  # older versions of Cap'n Proto unintentionally exhibited this errant behavior by default, and
+  # This is a work-around. Versions 1.0 and up of Zap always set this to false. However,
+  # older versions of Zap unintentionally exhibited this errant behavior by default, and
   # as a result programs built with older versions could be inadvertently relying on their peers
   # to implement the behavior. The purpose of this flag is to let newer versions know when the
   # peer is an older version, so that it can attempt to work around the issue.
@@ -817,7 +817,7 @@ struct Disembargo {
 
 # Level 2 message types ----------------------------------------------
 
-# See persistent.capnp.
+# See persistent.zap.
 
 # Level 3 message types ----------------------------------------------
 
@@ -829,7 +829,7 @@ struct Provide {
   # party to proxy through the sender).
   #
   # (In CapTP, `Provide` and `Accept` are methods of the global `NonceLocator` object exported by
-  # every vat.  In Cap'n Proto, we bake this into the core protocol.)
+  # every vat.  In Zap, we bake this into the core protocol.)
 
   questionId @0 :QuestionId;
   # Question ID to be held open until the recipient has received the capability.  No `Return`
@@ -1037,7 +1037,7 @@ struct Payload {
   # Represents some data structure that might contain capabilities.
 
   content @0 :AnyPointer;
-  # Some Cap'n Proto data structure.  Capability pointers embedded in this structure index into
+  # Some Zap data structure.  Capability pointers embedded in this structure index into
   # `capTable`.
 
   capTable @1 :List(CapDescriptor);
@@ -1242,7 +1242,7 @@ struct Exception {
   #
   # Describes an arbitrary error that prevented an operation (e.g. a call) from completing.
   #
-  # Cap'n Proto exceptions always indicate that something went wrong. In other words, in a fantasy
+  # Zap exceptions always indicate that something went wrong. In other words, in a fantasy
   # world where everything always works as expected, no exceptions would ever be thrown. Clients
   # should only ever catch exceptions as a means to implement fault-tolerance, where "fault" can
   # mean:
@@ -1255,7 +1255,7 @@ struct Exception {
   # - Other logistical problems.
   #
   # Exceptions should NOT be used to flag application-specific conditions that a client is expected
-  # to handle in an application-specific way. Put another way, in the Cap'n Proto world,
+  # to handle in an application-specific way. Put another way, in the Zap world,
   # "checked exceptions" (where an interface explicitly defines the exceptions it throws and
   # clients are forced by the type system to handle those exceptions) do NOT make sense.
 
@@ -1332,13 +1332,13 @@ struct Exception {
   # detail they want. It is expected that exceptions will rarely have more than one or two details.
   #
   # The main use case for details is to be able to tunnel exceptions of a different type through
-  # KJ / Cap'n Proto. In particular, Cloudflare Workers commonly has to convert a JavaScript
+  # KJ / Zap. In particular, Cloudflare Workers commonly has to convert a JavaScript
   # exception to KJ and back. The exception is serialized using V8 serialization.
 
   struct Detail {
     detailId @0 :UInt64;
     # Every type of detail should have a unique ID, which is a 64-bit integer. It's suggested that
-    # you use `capnp id` to generate these.
+    # you use `zap id` to generate these.
 
     data @1 :Data;
     # The arbitrary extra information.
@@ -1348,7 +1348,7 @@ struct Exception {
 # ========================================================================================
 # Network-specific Parameters
 #
-# Some parts of the Cap'n Proto RPC protocol are not specified here because different vat networks
+# Some parts of the Zap RPC protocol are not specified here because different vat networks
 # may wish to use different approaches to solving them.  For example, on the public internet, you
 # may want to authenticate vats using public-key cryptography, but on a local intranet with trusted
 # infrastructure, you may be happy to authenticate based on network address only, or some other
@@ -1376,7 +1376,7 @@ struct Exception {
 # Moreover, if you pair an app implementing the two-party network with a container that implements
 # some other network, the app can then participate on the container's network just as if it
 # implemented that network directly.  The types used by the two-party network are defined in
-# `rpc-twoparty.capnp`.
+# `rpc-twoparty.zap`.
 #
 # The things that we need to parameterize are:
 # - How to store capabilities long-term without holding a connection open (mostly level 2).
@@ -1423,7 +1423,7 @@ using SturdyRef = AnyPointer;
 #
 # Identifies a persisted capability that can be restored in the future. How exactly a SturdyRef
 # is restored to a live object is specified along with the SturdyRef definition (i.e. not by
-# rpc.capnp).
+# rpc.zap).
 #
 # Generally a SturdyRef needs to specify three things:
 # - How to reach the vat that can restore the ref (e.g. a hostname or IP address).
@@ -1661,9 +1661,9 @@ using JoinResult = AnyPointer;
 # Network interface sketch
 #
 # The interfaces below are meant to be pseudo-code to illustrate how the details of a particular
-# vat network might be abstracted away.  They are written like Cap'n Proto interfaces, but in
+# vat network might be abstracted away.  They are written like Zap interfaces, but in
 # practice you'd probably define these interfaces manually in the target programming language.  A
-# Cap'n Proto RPC implementation should be able to use these interfaces without knowing the
+# Zap RPC implementation should be able to use these interfaces without knowing the
 # definitions of the various network-specific parameters defined above.
 
 # interface VatNetwork {

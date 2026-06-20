@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define CAPNP_PRIVATE
+#define ZAP_PRIVATE
 
 #include "capability.h"
 #include "message.h"
@@ -29,7 +29,7 @@
 #include <kj/vector.h>
 #include "generated-header-support.h"
 
-namespace capnp {
+namespace zap {
 
 namespace _ {
 
@@ -45,10 +45,10 @@ static kj::Own<ClientHook> newNullCap();
 class BrokenCapFactoryImpl: public _::BrokenCapFactory {
 public:
   kj::Own<ClientHook> newBrokenCap(kj::StringPtr description) override {
-    return capnp::newBrokenCap(description);
+    return zap::newBrokenCap(description);
   }
   kj::Own<ClientHook> newNullCap() override {
-    return capnp::newNullCap();
+    return zap::newNullCap();
   }
 };
 
@@ -1231,4 +1231,4 @@ void* CapabilityServerSetBase::tryGetLocalServerSyncInternal(Capability::Client&
 
 }  // namespace _ (private)
 
-}  // namespace capnp
+}  // namespace zap

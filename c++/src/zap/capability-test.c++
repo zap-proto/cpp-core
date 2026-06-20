@@ -19,25 +19,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "schema.capnp.h"
+#include "schema.zap.h"
 
-#ifdef CAPNP_CAPABILITY_H_INCLUDED
-#error "schema.capnp should not depend on capability.h, because it contains no interfaces."
+#ifdef ZAP_CAPABILITY_H_INCLUDED
+#error "schema.zap should not depend on capability.h, because it contains no interfaces."
 #endif
 
-#include <capnp/test.capnp.h>
+#include <zap/test.zap.h>
 
-#ifndef CAPNP_CAPABILITY_H_INCLUDED
-#error "test.capnp did not include capability.h."
+#ifndef ZAP_CAPABILITY_H_INCLUDED
+#error "test.zap did not include capability.h."
 #endif
 
 #include "capability.h"
 #include "test-util.h"
 #include <kj/debug.h>
 #include <kj/compat/gtest.h>
-#include <capnp/message.h>
+#include <zap/message.h>
 
-namespace capnp {
+namespace zap {
 namespace _ {
 namespace {
 
@@ -643,7 +643,7 @@ public:
       request.set("j", true);
 
       return request.send().then(
-          [this,KJ_CPCAP(context)](capnp::Response<DynamicStruct>&& response) mutable {
+          [this,KJ_CPCAP(context)](zap::Response<DynamicStruct>&& response) mutable {
             EXPECT_EQ("foo", response.get("x").as<Text>());
 
             auto result = context.getResults();
@@ -937,7 +937,7 @@ TEST(Capability, Generics) {
   initTestMessage(request.initInnerBound().initFoo());
   initTestMessage(request.initInnerUnbound().getFoo().initAs<TestAllTypes>());
 
-  auto promise = request.send().then([](capnp::Response<Interface::CallResults>&& response) {
+  auto promise = request.send().then([](zap::Response<Interface::CallResults>&& response) {
     // This doesn't actually execute; we're just checking that it compiles.
     List<uint32_t>::Reader qux = response.getQux();
     qux.size();
@@ -969,14 +969,14 @@ TEST(Capability, ImplicitParams) {
   typedef test::TestImplicitMethodParams Interface;
   Interface::Client client = nullptr;
 
-  capnp::Request<Interface::CallParams<Text, TestAllTypes>,
+  zap::Request<Interface::CallParams<Text, TestAllTypes>,
                  test::TestGenerics<Text, TestAllTypes>> request =
       client.callRequest<Text, TestAllTypes>();
   request.setFoo("hello");
   initTestMessage(request.initBar());
 
   auto promise = request.send()
-      .then([](capnp::Response<test::TestGenerics<Text, TestAllTypes>>&& response) {
+      .then([](zap::Response<test::TestGenerics<Text, TestAllTypes>>&& response) {
     // This doesn't actually execute; we're just checking that it compiles.
     Text::Reader text = response.getFoo();
     text.size();
@@ -1517,4 +1517,4 @@ KJ_TEST("servers can be refcounted") {
 
 }  // namespace
 }  // namespace _
-}  // namespace capnp
+}  // namespace zap

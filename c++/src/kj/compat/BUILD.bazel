@@ -169,8 +169,8 @@ cc_binary(
     srcs = ["http-bench.c++"],
     deps = [
         ":kj-http",
-        "//src/capnp:capnp-rpc",
-        "//src/capnp/compat:http-over-capnp",
+        "//src/zap:zap-rpc",
+        "//src/zap/compat:http-over-zap",
         "//src/kj:kj-async",
     ],
 )

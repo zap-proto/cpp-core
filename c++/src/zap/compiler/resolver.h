@@ -21,13 +21,13 @@
 
 #pragma once
 
-#include <capnp/compiler/grammar.capnp.h>
-#include <capnp/schema.capnp.h>
+#include <zap/compiler/grammar.zap.h>
+#include <zap/schema.zap.h>
 #include <kj/one-of.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 class Type;
 class Schema;
 
@@ -129,6 +129,6 @@ public:
 };
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

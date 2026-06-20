@@ -30,10 +30,10 @@
 #define _GNU_SOURCE
 #endif
 
-#include <capnp/compiler/grammar.capnp.h>
-#include <capnp/schema-loader.h>
-#include <capnp/message.h>
-#include <capnp/pretty-print.h>
+#include <zap/compiler/grammar.zap.h>
+#include <zap/schema-loader.h>
+#include <zap/message.h>
+#include <zap/pretty-print.h>
 #include "compiler.h"
 #include <kj/function.h>
 #include <kj/debug.h>
@@ -43,7 +43,7 @@
 #include <kj/io.h>
 #include <kj/miniposix.h>
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 namespace {
 
@@ -643,7 +643,7 @@ class ModuleImpl final: public Module {
 public:
   explicit ModuleImpl(ParsedFile::Reader content): content(content) {}
 
-  kj::StringPtr getSourceName() override { return "evolving-schema.capnp"; }
+  kj::StringPtr getSourceName() override { return "evolving-schema.zap"; }
   Orphan<ParsedFile> loadContent(Orphanage orphanage) override {
     return orphanage.newOrphanCopy(content);
   }
@@ -872,7 +872,7 @@ public:
   }
 
   kj::MainBuilder::Validity run() {
-    // https://github.com/capnproto/capnproto/issues/344 describes an obscure bug in the layout
+    // https://github.com/zap/zap/issues/344 describes an obscure bug in the layout
     // algorithm, the fix for which breaks backwards-compatibility for any schema triggering the
     // bug. In order to avoid silently breaking protocols, we are temporarily throwing an exception
     // in cases where this bug would have occurred, so that people can decide what to do.
@@ -883,9 +883,9 @@ public:
     //
     // On Linux, seed 1467142714 (for example) will trigger the exception (without this env var).
 #if defined(__MINGW32__) || defined(_MSC_VER)
-    putenv("CAPNP_IGNORE_ISSUE_344=1");
+    putenv("ZAP_IGNORE_ISSUE_344=1");
 #else
-    setenv("CAPNP_IGNORE_ISSUE_344", "1", true);
+    setenv("ZAP_IGNORE_ISSUE_344", "1", true);
 #endif
 
     srand(seed);
@@ -910,6 +910,6 @@ private:
 
 }  // namespace
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap
 
-KJ_MAIN(capnp::compiler::EvolutionTestMain);
+KJ_MAIN(zap::compiler::EvolutionTestMain);

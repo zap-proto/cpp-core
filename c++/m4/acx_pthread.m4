@@ -1,4 +1,4 @@
-# This file was copied to Cap'n Proto from the Protocol Buffers distribution,
+# This file was copied to Zap from the Protocol Buffers distribution,
 # version 2.3.0.
 
 # This was retrieved from

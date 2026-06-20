@@ -3,9 +3,9 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: Cap'n Proto RPC
+Name: Zap RPC
 Description: Fast object-oriented RPC system
 Version: @VERSION@
-Libs: -L${libdir} -lcapnp-rpc
-Requires: capnp = @VERSION@ kj-async = @VERSION@
+Libs: -L${libdir} -lzap-rpc
+Requires: zap = @VERSION@ kj-async = @VERSION@
 Cflags: -I${includedir}

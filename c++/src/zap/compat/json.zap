@@ -21,7 +21,7 @@
 
 @0x8ef99297a43a5e34;
 
-$import "/capnp/c++.capnp".namespace("capnp::json");
+$import "/zap/c++.zap".namespace("zap::json");
 
 struct Value {
   union {
@@ -72,7 +72,7 @@ struct Value {
 # ========================================================================================
 # Annotations to control parsing. Typical usage:
 #
-#     using Json = import "/capnp/compat/json.capnp";
+#     using Json = import "/zap/compat/json.zap";
 #
 # And then later on:
 #
@@ -80,7 +80,7 @@ struct Value {
 
 annotation name @0xfa5b1fd61c2e7c3d (field, enumerant, method, group, union) :Text;
 # Define an alternative name to use when encoding the given item in JSON. This can be used, for
-# example, to use snake_case names where needed, even though Cap'n Proto uses strictly camelCase.
+# example, to use snake_case names where needed, even though Zap uses strictly camelCase.
 #
 # (However, because JSON is derived from JavaScript, you *should* use camelCase names when
 # defining JSON-based APIs. But, when supporting a pre-existing API you may not have a choice.)

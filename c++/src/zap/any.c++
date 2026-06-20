@@ -23,13 +23,13 @@
 
 #include <kj/debug.h>
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 #include "capability.h"
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
-namespace capnp {
+namespace zap {
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 
 kj::Own<ClientHook> PipelineHook::getPipelinedCap(kj::Array<PipelineOp>&& ops) {
   return getPipelinedCap(ops.asPtr());
@@ -77,7 +77,7 @@ kj::Own<ClientHook> AnyPointer::Pipeline::asCap() {
   return hook->getPipelinedCap(ops);
 }
 
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 Equality AnyStruct::Reader::equals(AnyStruct::Reader right) const {
   auto dataL = getDataSection();
@@ -262,4 +262,4 @@ bool AnyList::Reader::operator==(AnyList::Reader right) const {
   KJ_UNREACHABLE;
 }
 
-}  // namespace capnp
+}  // namespace zap

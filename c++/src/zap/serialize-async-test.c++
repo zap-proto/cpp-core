@@ -49,7 +49,7 @@ namespace kj {
 #include <sys/socket.h>
 #endif
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -371,7 +371,7 @@ TEST(SerializeAsyncTest, WriteMultipleMessagesAsync) {
     }
   });
 
-  auto msgs = kj::heapArray<capnp::MessageBuilder*>(numMessages);
+  auto msgs = kj::heapArray<zap::MessageBuilder*>(numMessages);
   for (int i = 0; i < numMessages; ++i) {
     msgs[i] = &messages[i];
   }
@@ -379,7 +379,7 @@ TEST(SerializeAsyncTest, WriteMultipleMessagesAsync) {
 }
 
 void writeSmallMessage(kj::OutputStream& output, kj::StringPtr text) {
-  capnp::MallocMessageBuilder message;
+  zap::MallocMessageBuilder message;
   message.getRoot<test::TestAnyPointer>().getAnyPointerField().setAs<Text>(text);
   writeMessage(output, message);
 }
@@ -390,7 +390,7 @@ void expectSmallMessage(MessageStream& stream, kj::StringPtr text, kj::WaitScope
 }
 
 void writeBigMessage(kj::OutputStream& output) {
-  capnp::MallocMessageBuilder message(4);  // first segment is small
+  zap::MallocMessageBuilder message(4);  // first segment is small
   initTestMessage(message.getRoot<test::TestAllTypes>());
   writeMessage(output, message);
 }
@@ -557,4 +557,4 @@ KJ_TEST("BufferedMessageStream many small messages") {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

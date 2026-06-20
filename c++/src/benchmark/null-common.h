@@ -21,7 +21,7 @@
 
 #include "common.h"
 
-namespace capnp {
+namespace zap {
 namespace benchmark {
 namespace null {
 
@@ -171,4 +171,4 @@ struct BenchmarkTypes {
 
 }  // namespace null
 }  // namespace benchmark
-}  // namespace capnp
+}  // namespace zap

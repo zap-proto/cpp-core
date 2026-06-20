@@ -24,7 +24,7 @@
 #include <kj/vector.h>
 #include <kj/encoding.h>
 
-namespace capnp {
+namespace zap {
 
 namespace {
 
@@ -266,4 +266,4 @@ kj::String enumString(uint16_t value, const RawBrandedSchema& schema) {
 
 }  // namespace _ (private)
 
-}  // namespace capnp
+}  // namespace zap

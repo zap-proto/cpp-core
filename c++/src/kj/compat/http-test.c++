@@ -6263,34 +6263,34 @@ KJ_TEST("HttpClient multi host") {
 
 #if KJ_HTTP_TEST_USE_OS_PIPE
 // This test only makes sense using the real network.
-KJ_TEST("HttpClient to capnproto.org") {
+KJ_TEST("HttpClient to zap.org") {
   auto io = kj::setupAsyncIo();
 
-  auto maybeConn = io.provider->getNetwork().parseAddress("capnproto.org", 80)
+  auto maybeConn = io.provider->getNetwork().parseAddress("zap.org", 80)
       .then([](kj::Own<kj::NetworkAddress> addr) {
     auto promise = addr->connect();
     return promise.attach(kj::mv(addr));
   }).then([](kj::Own<kj::AsyncIoStream>&& connection) -> kj::Maybe<kj::Own<kj::AsyncIoStream>> {
     return kj::mv(connection);
   }, [](kj::Exception&& e) -> kj::Maybe<kj::Own<kj::AsyncIoStream>> {
-    KJ_LOG(WARNING, "skipping test because couldn't connect to capnproto.org");
+    KJ_LOG(WARNING, "skipping test because couldn't connect to zap.org");
     return kj::none;
   }).wait(io.waitScope);
 
   KJ_IF_SOME(conn, maybeConn) {
-    // Successfully connected to capnproto.org. Try doing GET /. We expect to get a redirect to
+    // Successfully connected to zap.org. Try doing GET /. We expect to get a redirect to
     // HTTPS, because what kind of horrible web site would serve in plaintext, really?
 
     HttpHeaderTable table;
     auto client = newHttpClient(table, *conn);
 
     HttpHeaders headers(table);
-    headers.setPtr(HttpHeaderId::HOST, "capnproto.org");
+    headers.setPtr(HttpHeaderId::HOST, "zap.org");
 
     auto response = client->request(HttpMethod::GET, "/", headers).response.wait(io.waitScope);
     KJ_EXPECT(response.statusCode / 100 == 3);
     auto location = KJ_ASSERT_NONNULL(response.headers->get(HttpHeaderId::LOCATION));
-    KJ_EXPECT(location == "https://capnproto.org/");
+    KJ_EXPECT(location == "https://zap.org/");
 
     auto body = response.body->readAllText().wait(io.waitScope);
   }

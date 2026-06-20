@@ -26,9 +26,9 @@
 #include "common.h"
 #include <string.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 struct Data {
   Data() = delete;
@@ -203,6 +203,6 @@ inline kj::ArrayPtr<char> Text::Builder::slice(size_t start, size_t end) {
   return content.slice(start, end);
 }
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

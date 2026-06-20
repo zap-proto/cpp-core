@@ -19,8 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <capnp/test-import.capnp.h>
-#include <capnp/test-import2.capnp.h>
+#include <zap/test-import.zap.h>
+#include <zap/test-import2.zap.h>
 #include "message.h"
 #include <kj/debug.h>
 #include <kj/compat/gtest.h>
@@ -28,7 +28,7 @@
 #include "schema-lite.h"
 #include "serialize-packed.h"
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -268,14 +268,14 @@ TEST(Encoding, UnnamedUnion) {
   EXPECT_DEBUG_ANY_THROW(root.getBar());
   EXPECT_DEBUG_ANY_THROW(root.asReader().getBar());
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
   StructSchema schema = Schema::from<test::TestUnnamedUnion>();
 
   // The discriminant is allocated just before allocating "bar".
   EXPECT_EQ(2u, schema.getProto().getStruct().getDiscriminantOffset());
   EXPECT_EQ(0u, schema.getFieldByName("foo").getProto().getSlot().getOffset());
   EXPECT_EQ(2u, schema.getFieldByName("bar").getProto().getSlot().getOffset());
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 }
 
 TEST(Encoding, Groups) {
@@ -591,7 +591,7 @@ TEST(Encoding, SetListToEmpty) {
 #undef CHECK_EMPTY_NONNULL
 }
 
-#if CAPNP_EXPENSIVE_TESTS
+#if ZAP_EXPENSIVE_TESTS
 TEST(Encoding, LongList) {
   // This test allocates 512MB of contiguous memory and takes several seconds, so we usually don't
   // run it. It is run before release, though.
@@ -1749,7 +1749,7 @@ TEST(Encoding, Embeds) {
     checkTestMessage(reader.getRoot<TestAllTypes>());
   }
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 
   {
     MallocMessageBuilder builder;
@@ -1759,7 +1759,7 @@ TEST(Encoding, Embeds) {
     EXPECT_EQ(kj::str(root, text.endsWith("\r\n") ? "\r\n" : "\n"), text);
   }
 
-#endif // CAPNP_LITE
+#endif // ZAP_LITE
 
   {
     checkTestMessage(test::EMBEDDED_STRUCT);
@@ -2003,7 +2003,7 @@ TEST(Encoding, ListSize) {
 
   auto structSize = lists.totalSize();
 
-  auto shallowSize = unbound(capnp::_::structSize<test::TestLists>().total() / WORDS);
+  auto shallowSize = unbound(zap::_::structSize<test::TestLists>().total() / WORDS);
 
   EXPECT_EQ(structSize.wordCount - shallowSize, listSizes.wordCount);
 }
@@ -2098,4 +2098,4 @@ KJ_TEST("Copying ListList downgraded from ListStruct does not get corrupted") {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

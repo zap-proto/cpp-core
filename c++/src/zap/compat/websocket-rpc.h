@@ -22,16 +22,16 @@
 #pragma once
 
 #include <kj/compat/http.h>
-#include <capnp/serialize-async.h>
+#include <zap/serialize-async.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 class WebSocketMessageStream final : public MessageStream {
   // An implementation of MessageStream that sends messages over a websocket.
   //
-  // Each capnproto message is sent in a single binary websocket frame.
+  // Each zap message is sent in a single binary websocket frame.
 public:
   WebSocketMessageStream(kj::WebSocket& socket);
 
@@ -52,6 +52,6 @@ private:
   kj::WebSocket& socket;
 };
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

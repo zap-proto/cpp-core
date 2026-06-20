@@ -21,22 +21,22 @@
 
 #pragma once
 
-#if defined(__GNUC__) && !defined(CAPNP_HEADER_WARNINGS)
+#if defined(__GNUC__) && !defined(ZAP_HEADER_WARNINGS)
 #pragma GCC system_header
 #endif
 
 #include "common.h"
-#include <capnp/serialize.h>
-#include <capnp/serialize-packed.h>
+#include <zap/serialize.h>
+#include <zap/serialize-packed.h>
 #include <kj/debug.h>
 #if HAVE_SNAPPY
-#include <capnp/serialize-snappy.h>
+#include <zap/serialize-snappy.h>
 #endif  // HAVE_SNAPPY
 #include <thread>
 
-namespace capnp {
+namespace zap {
 namespace benchmark {
-namespace capnp {
+namespace zap {
 
 class CountingOutputStream: public kj::FdOutputStream {
 public:
@@ -402,19 +402,19 @@ struct BenchmarkMethods {
 };
 
 struct BenchmarkTypes {
-  typedef capnp::Uncompressed Uncompressed;
-  typedef capnp::Packed Packed;
+  typedef zap::Uncompressed Uncompressed;
+  typedef zap::Packed Packed;
 #if HAVE_SNAPPY
-  typedef capnp::SnappyCompressed SnappyCompressed;
+  typedef zap::SnappyCompressed SnappyCompressed;
 #endif  // HAVE_SNAPPY
 
-  typedef capnp::UseScratch ReusableResources;
-  typedef capnp::NoScratch SingleUseResources;
+  typedef zap::UseScratch ReusableResources;
+  typedef zap::NoScratch SingleUseResources;
 
   template <typename TestCase, typename ReuseStrategy, typename Compression>
-  struct BenchmarkMethods: public capnp::BenchmarkMethods<TestCase, ReuseStrategy, Compression> {};
+  struct BenchmarkMethods: public zap::BenchmarkMethods<TestCase, ReuseStrategy, Compression> {};
 };
 
-}  // namespace capnp
+}  // namespace zap
 }  // namespace benchmark
-}  // namespace capnp
+}  // namespace zap

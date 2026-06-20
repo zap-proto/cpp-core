@@ -28,7 +28,7 @@
 // TODO(test):  This test is outdated -- it predates the retrofit of Text and Data on top of
 //   kj::ArrayPtr/kj::StringPtr.  Clean it up.
 
-namespace capnp {
+namespace zap {
 namespace {
 
 TEST(Blob, Text) {
@@ -114,4 +114,4 @@ TEST(Blob, Compare) {
 }
 
 }  // namespace
-}  // namespace capnp
+}  // namespace zap

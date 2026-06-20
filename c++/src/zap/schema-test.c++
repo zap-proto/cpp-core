@@ -19,22 +19,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define CAPNP_TESTING_CAPNP 1
+#define ZAP_TESTING_ZAP 1
 
 #include "schema.h"
 #include <kj/compat/gtest.h>
 #include "test-util.h"
 
 // TODO(cleanup): Auto-generate stringification functions for union discriminants.
-namespace capnp {
+namespace zap {
 namespace schema {
 inline kj::String KJ_STRINGIFY(Type::Which which) {
   return kj::str(static_cast<uint16_t>(which));
 }
 }  // namespace schema
-}  // namespace capnp
+}  // namespace zap
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -398,4 +398,4 @@ KJ_TEST("list-of-enum as generic type parameter has working schema") {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

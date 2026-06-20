@@ -50,9 +50,9 @@
 #include "capability.h"
 #include <kj/map.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 class MembranePolicy {
   // Applications may implement this interface to define a membrane policy, which allows some
@@ -232,7 +232,7 @@ typename ServerType::Serves::Client reverseMembrane(
 template <typename Reader>
 Orphan<typename kj::Decay<Reader>::Reads> copyIntoMembrane(
     Reader&& from, Orphanage to, kj::Own<MembranePolicy> policy);
-// Copy a Cap'n Proto object (e.g. struct or list), adding the given membrane to any capabilities
+// Copy a Zap object (e.g. struct or list), adding the given membrane to any capabilities
 // found within it. `from` is interpreted as "outside" the membrane while `to` is "inside".
 
 template <typename Reader>
@@ -300,6 +300,6 @@ Orphan<typename kj::Decay<Reader>::Reads> copyOutOfMembrane(
       to, kj::mv(policy), false);
 }
 
-} // namespace capnp
+} // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

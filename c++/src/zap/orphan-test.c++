@@ -24,7 +24,7 @@
 #include <kj/compat/gtest.h>
 #include "test-util.h"
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -337,7 +337,7 @@ TEST(Orphans, ListAnyPointer) {
   checkList(root.asReader().getAnyPointerField().getAs<List<uint32_t>>(), {12u, 34u, 56u});
 }
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 TEST(Orphans, DynamicStruct) {
   MallocMessageBuilder builder;
   auto root = builder.initRoot<test::TestAnyPointer>();
@@ -623,7 +623,7 @@ TEST(Orphans, DynamicDisownGroup) {
   EXPECT_EQ("foo", newBar.getGrault());
   EXPECT_EQ(9876543210987ll, newBar.getGarply());
 }
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 TEST(Orphans, OrphanageFromBuilder) {
   MallocMessageBuilder builder;
@@ -645,7 +645,7 @@ TEST(Orphans, OrphanageFromBuilder) {
     checkTestMessage(root.asReader().getStructField());
   }
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
   {
     Orphanage orphanage = Orphanage::getForMessageContaining(toDynamic(root));
     Orphan<TestAllTypes> orphan = orphanage.newOrphan<TestAllTypes>();
@@ -661,7 +661,7 @@ TEST(Orphans, OrphanageFromBuilder) {
     root.adoptStructField(kj::mv(orphan));
     checkTestMessage(root.asReader().getStructField());
   }
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 }
 
 static bool allZero(const word* begin, const word* end) {
@@ -1749,4 +1749,4 @@ TEST(Orphans, ConcatenateStructListsUpgradeFromPrimitive) {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

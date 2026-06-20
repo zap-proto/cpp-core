@@ -22,7 +22,7 @@
 #include "membrane.h"
 #include <kj/debug.h>
 
-namespace capnp {
+namespace zap {
 
 namespace {
 
@@ -623,5 +623,5 @@ _::OrphanBuilder copyOutOfMembrane(ListReader from, Orphanage to,
 
 }  // namespace _ (private)
 
-}  // namespace capnp
+}  // namespace zap
 

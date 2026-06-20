@@ -23,7 +23,7 @@
 #include <kj/debug.h>
 #include <string.h>
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 
 class TypeIdGenerator {
@@ -436,4 +436,4 @@ kj::ArrayPtr<const kj::byte> TypeIdGenerator::finish()
 
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap

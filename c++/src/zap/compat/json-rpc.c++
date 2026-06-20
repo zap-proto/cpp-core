@@ -21,10 +21,10 @@
 
 #include "json-rpc.h"
 #include <kj/compat/http.h>
-#include <capnp/compat/json-rpc.capnp.h>
-#include <capnp/message.h>
+#include <zap/compat/json-rpc.zap.h>
+#include <zap/message.h>
 
-namespace capnp {
+namespace zap {
 
 static constexpr uint64_t JSON_NAME_ANNOTATION_ID = 0xfa5b1fd61c2e7c3dull;
 static constexpr uint64_t JSON_NOTIFICATION_ANNOTATION_ID = 0xa0a054dea32fd98cull;
@@ -50,7 +50,7 @@ public:
       }
     }
 
-    capnp::MallocMessageBuilder message;
+    zap::MallocMessageBuilder message;
     auto value = message.getRoot<json::Value>();
     auto list = value.initObject(3 + !isNotification);
 
@@ -149,8 +149,8 @@ kj::Promise<void> JsonRpc::queueWrite(kj::String text) {
 }
 
 void JsonRpc::queueError(kj::Maybe<json::Value::Reader> id, int code, kj::StringPtr message) {
-  MallocMessageBuilder capnpMessage;
-  auto jsonResponse = capnpMessage.getRoot<json::RpcMessage>();
+  MallocMessageBuilder zapMessage;
+  auto jsonResponse = zapMessage.getRoot<json::RpcMessage>();
   jsonResponse.setJsonrpc("2.0");
   KJ_IF_SOME(i, id) {
     jsonResponse.setId(i);
@@ -167,8 +167,8 @@ void JsonRpc::queueError(kj::Maybe<json::Value::Reader> id, int code, kj::String
 
 kj::Promise<void> JsonRpc::readLoop() {
   return transport.receive().then([this](kj::String message) -> kj::Promise<void> {
-    MallocMessageBuilder capnpMessage;
-    auto rpcMessageBuilder = capnpMessage.getRoot<json::RpcMessage>();
+    MallocMessageBuilder zapMessage;
+    auto rpcMessageBuilder = zapMessage.getRoot<json::RpcMessage>();
 
     KJ_IF_SOME(exception, kj::runCatchingExceptions([&]() {
       codec.decode(message, rpcMessageBuilder);
@@ -218,15 +218,15 @@ kj::Promise<void> JsonRpc::readLoop() {
 
             auto promise = req.send()
                 .then([this,idPtr](Response<DynamicStruct> response) mutable {
-              MallocMessageBuilder capnpMessage;
-              auto jsonResponse = capnpMessage.getRoot<json::RpcMessage>();
+              MallocMessageBuilder zapMessage;
+              auto jsonResponse = zapMessage.getRoot<json::RpcMessage>();
               jsonResponse.setJsonrpc("2.0");
               jsonResponse.setId(idPtr);
               codec.encode(DynamicStruct::Reader(response), jsonResponse.initResult());
               return queueWrite(codec.encode(jsonResponse));
             }, [this,idPtr](kj::Exception&& e) {
-              MallocMessageBuilder capnpMessage;
-              auto jsonResponse = capnpMessage.getRoot<json::RpcMessage>();
+              MallocMessageBuilder zapMessage;
+              auto jsonResponse = zapMessage.getRoot<json::RpcMessage>();
               jsonResponse.setJsonrpc("2.0");
               jsonResponse.setId(idPtr);
               auto error = jsonResponse.initError();
@@ -338,4 +338,4 @@ kj::Promise<kj::String> JsonRpc::ContentLengthTransport::receive() {
   });
 }
 
-}  // namespace capnp
+}  // namespace zap

@@ -23,8 +23,8 @@
 #define _GNU_SOURCE
 #endif
 
-#include <capnp/test-import.capnp.h>
-#include <capnp/test-import2.capnp.h>
+#include <zap/test-import.zap.h>
+#include <zap/test-import2.zap.h>
 #include "message.h"
 #include "serialize.h"
 #include <kj/test.h>
@@ -32,13 +32,13 @@
 #include <kj/miniposix.h>
 #include "test-util.h"
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
 bool skipFuzzTest() {
-  if (getenv("CAPNP_SKIP_FUZZ_TEST") != nullptr) {
-    KJ_LOG(WARNING, "Skipping test because CAPNP_SKIP_FUZZ_TEST is set in environment.");
+  if (getenv("ZAP_SKIP_FUZZ_TEST") != nullptr) {
+    KJ_LOG(WARNING, "Skipping test because ZAP_SKIP_FUZZ_TEST is set in environment.");
     return true;
   } else {
     return false;
@@ -287,4 +287,4 @@ KJ_TEST("fuzz-test double-far pointer") {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

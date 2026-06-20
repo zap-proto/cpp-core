@@ -19,10 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-using Cxx = import "/capnp/c++.capnp";
+using Cxx = import "/zap/c++.zap";
 
 @0xff75ddc6a36723c9;
-$Cxx.namespace("capnp::benchmark::capnp");
+$Cxx.namespace("zap::benchmark::zap");
 
 struct ParkingLot {
   cars@0: List(Car);

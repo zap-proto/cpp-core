@@ -22,7 +22,7 @@
 #include "websocket-rpc.h"
 #include <kj/test.h>
 
-#include <capnp/test.capnp.h>
+#include <zap/test.zap.h>
 
 KJ_TEST("WebSocketMessageStream") {
   kj::EventLoop loop;
@@ -30,12 +30,12 @@ KJ_TEST("WebSocketMessageStream") {
 
   auto pipe = kj::newWebSocketPipe();
 
-  auto msgStreamA = capnp::WebSocketMessageStream(*pipe.ends[0]);
-  auto msgStreamB = capnp::WebSocketMessageStream(*pipe.ends[1]);
+  auto msgStreamA = zap::WebSocketMessageStream(*pipe.ends[0]);
+  auto msgStreamB = zap::WebSocketMessageStream(*pipe.ends[1]);
 
   // Make a message, fill it with some stuff
-  capnp::MallocMessageBuilder originalMsg;
-  auto object = originalMsg.initRoot<capnproto_test::capnp::test::TestAllTypes>().initStructList(10);
+  zap::MallocMessageBuilder originalMsg;
+  auto object = originalMsg.initRoot<zap_test::zap::test::TestAllTypes>().initStructList(10);
   object[0].setTextField("Test");
   object[1].initStructField().setTextField("A string");
   object[2].setTextField("Another field");
@@ -80,13 +80,13 @@ KJ_TEST("WebSocketMessageStreamByteCount") {
   auto pipe1 = kj::newWebSocketPipe();
   auto pipe2 = kj::newWebSocketPipe();
 
-  auto msgStreamA = capnp::WebSocketMessageStream(*pipe1.ends[0]);
-  auto msgStreamB = capnp::WebSocketMessageStream(*pipe2.ends[1]);
+  auto msgStreamA = zap::WebSocketMessageStream(*pipe1.ends[0]);
+  auto msgStreamB = zap::WebSocketMessageStream(*pipe2.ends[1]);
 
   auto pumpTask = pipe1.ends[1]->pumpTo(*pipe2.ends[0]);
 
-  capnp::MallocMessageBuilder originalMsg;
-  auto object = originalMsg.initRoot<capnproto_test::capnp::test::TestAllTypes>().initStructList(10);
+  zap::MallocMessageBuilder originalMsg;
+  auto object = originalMsg.initRoot<zap_test::zap::test::TestAllTypes>().initStructList(10);
   object[0].setTextField("Test");
   object[1].initStructField().setTextField("A string");
   object[2].setTextField("Another field");

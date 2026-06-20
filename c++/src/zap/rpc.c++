@@ -29,11 +29,11 @@
 #include <kj/map.h>
 #include <functional>  // std::greater
 #include <queue>
-#include <capnp/rpc.capnp.h>
+#include <zap/rpc.zap.h>
 #include <kj/io.h>
 #include <kj/map.h>
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 
 [[noreturn]] void throwNo3ph() {
@@ -632,7 +632,7 @@ private:
   typedef QuestionId AnswerId;
   typedef uint32_t ExportId;
   typedef ExportId ImportId;
-  // See equivalent definitions in rpc.capnp.
+  // See equivalent definitions in rpc.zap.
   //
   // We always use the type that refers to the local table of the same name.  So e.g. although
   // QuestionId and AnswerId are the same type, we use QuestionId when referring to an entry in
@@ -1596,7 +1596,7 @@ private:
 
         return VineToExport {
           .vine = deferred.vine->addRef(),
-          .vineInfo = kj::heap(VineInfo {.info = capnp::clone(*deferred.contact)}),
+          .vineInfo = kj::heap(VineInfo {.info = zap::clone(*deferred.contact)}),
         };
       } else {
         // Either:
@@ -2048,7 +2048,7 @@ private:
 
   class TribbleRaceBlocker: public ClientHook, public kj::Refcounted {
     // Hack to work around a problem that arises during the Tribble 4-way Race Condition as
-    // described in rpc.capnp in the documentation for the `Disembargo` message.
+    // described in rpc.zap in the documentation for the `Disembargo` message.
     //
     // Consider a remote promise that is resolved by a `Resolve` message. PromiseClient::resolve()
     // is eventually called and given the `ClientHook` for the resolution. Imagine that the
@@ -2159,7 +2159,7 @@ private:
               kj::Own<RpcClient> vine = result.downcast<RpcClient>();
               auto& vineConnection = *vine->connectionState;
               result = kj::refcounted<DeferredThirdPartyClient>(
-                  vineConnection, capnp::clone(*contact), kj::mv(vine));
+                  vineConnection, zap::clone(*contact), kj::mv(vine));
             }
           }
           if (unwrapIfSameConnection(*result) != kj::none) {
@@ -2196,7 +2196,7 @@ private:
         auto vine = import(tph.getVineId(), false, kj::mv(fd));
 
         return kj::refcounted<DeferredThirdPartyClient>(
-            *this, capnp::clone(tph.getId()), kj::mv(vine));
+            *this, zap::clone(tph.getId()), kj::mv(vine));
       }
 
       default:
@@ -2213,7 +2213,7 @@ private:
         // message here because we can't allocate the actual outgoing message until we have a
         // connection object.
         // TODO(perf): Maybe we can change the signature of connectToIntroduced() to fix this?
-        capnp::word scratch[32];
+        zap::word scratch[32];
         memset(scratch, 0, sizeof(scratch));
         MallocMessageBuilder message(scratch);
         auto completion = message.getRoot<AnyPointer>();
@@ -2974,7 +2974,7 @@ private:
     // For each capability in `capTable` as of the time when the call returned, this map stores
     // the result of calling `getInnermostClient()` on that capability. This is needed in order
     // to solve the Tribble 4-way race condition described in the documentation for `Disembargo`
-    // in `rpc.capnp`. `PostReturnRpcPipeline`, below, uses this.
+    // in `rpc.zap`. `PostReturnRpcPipeline`, below, uses this.
     //
     // As an optimization, if the innermost client is exactly the same object then nothing is
     // stored in the map.
@@ -3065,9 +3065,9 @@ private:
         return ptr->addRef();
       } else {
         return newBrokenCap(
-            "An RPC call's capnp::PipelineHook object resolved a pipelined capability to a "
+            "An RPC call's zap::PipelineHook object resolved a pipelined capability to a "
             "different final object than what was returned in the actual response. This could "
-            "be a bug in Cap'n Proto, or could be due to a use of context.setPipeline() that "
+            "be a bug in Zap, or could be due to a use of context.setPipeline() that "
             "was inconsistent with the later results.");
       }
     }
@@ -3749,7 +3749,7 @@ private:
 
       if (bootstrap.hasDeprecatedObjectId()) {
         KJ_FAIL_REQUIRE("This vat only supports a bootstrap interface, not the old "
-                        "Cap'n-Proto-0.4-style named exports.") { return; }
+                        "Zap-0.4-style named exports.") { return; }
       } else {
         cap = bootstrapFactory.baseCreateFor(conn.baseGetPeerVatId());
       }
@@ -3964,7 +3964,7 @@ private:
         // somehow.
         KJ_LOG(ERROR,
             "sendForPipeline() was used when sending an RPC to a peer, the parameters of that "
-            "RPC included capabilities, but the peer seems to implement Cap'n Proto at level 0, "
+            "RPC included capabilities, but the peer seems to implement Zap at level 0, "
             "meaning it does not support capability passing (or, at least, it sent a `Return` "
             "with `releaseParamCaps = true`). The capabilities that were sent may have been "
             "leaked (they won't be dropped until the connection closes).");
@@ -4124,7 +4124,7 @@ private:
     if (finish.getRequireEarlyCancellationWorkaround()) {
       // Defer actual cancellation of the call until the end of the event loop queue.
       //
-      // This is needed for compatibility with older versions of Cap'n Proto (0.10 and prior) in
+      // This is needed for compatibility with older versions of Zap (0.10 and prior) in
       // which the default was to prohibit cancellation until it was explicitly allowed. In newer
       // versions (1.0 and later) cancellation is allowed until explicitly prohibited, that is, if
       // we haven't actually delivered the call yet, it can be canceled. This requires less
@@ -4278,7 +4278,7 @@ private:
             // a `Resolve` message.  But `writeTarget` only ever returns non-null when called on
             // a PromiseClient.  The code which sends `Resolve` and `Return` should have replaced
             // any promise with a direct node in order to solve the Tribble 4-way race condition.
-            // See the documentation of Disembargo in rpc.capnp for more.
+            // See the documentation of Disembargo in rpc.zap for more.
             KJ_REQUIRE(redirect == kj::none,
                       "'Disembargo' of type 'senderLoopback' sent to an object that does not "
                       "appear to have been the subject of a previous 'Resolve' message.") {
@@ -4729,7 +4729,7 @@ public:
   }
 
   kj::Promise<void> send(kj::Own<OutgoingRpcMessage> message, kj::Promise<void> ack) override {
-    auto size = message->sizeInWords() * sizeof(capnp::word);
+    auto size = message->sizeInWords() * sizeof(zap::word);
     maxMessageSize = kj::max(size, maxMessageSize);
 
     // We are REQUIRED to send the message NOW to maintain correct ordering.
@@ -4874,4 +4874,4 @@ kj::Function<bool(MessageReader&)> IncomingRpcMessage::getShortLivedCallback() {
   };
 }
 
-}  // namespace capnp
+}  // namespace zap

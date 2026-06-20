@@ -19,12 +19,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// This file contains the parts of dynamic.h that live in capnp-rpc.so.
+// This file contains the parts of dynamic.h that live in zap-rpc.so.
 
 #include "dynamic.h"
 #include <kj/debug.h>
 
-namespace capnp {
+namespace zap {
 
 DynamicCapability::Client DynamicCapability::Client::upcast(InterfaceSchema requestedSchema) {
   KJ_REQUIRE(schema.extends(requestedSchema), "Can't upcast to non-superclass.") {}
@@ -107,4 +107,4 @@ kj::Promise<void> Request<DynamicStruct, DynamicStruct>::sendStreaming() {
   return promise;
 }
 
-}  // namespace capnp
+}  // namespace zap

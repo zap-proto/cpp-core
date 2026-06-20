@@ -24,9 +24,9 @@
 #include "layout.h"
 #include "orphan.h"
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 
 // PointerHelpers is a template class that assists in wrapping/unwrapping the low-level types in
@@ -152,6 +152,6 @@ struct PointerHelpers<UncheckedMessage> {
 };
 
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

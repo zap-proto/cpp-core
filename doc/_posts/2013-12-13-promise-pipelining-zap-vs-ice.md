@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Promise Pipelining and Dependent Calls: Cap'n Proto vs. Thrift vs. Ice"
+title: "Promise Pipelining and Dependent Calls: Zap vs. Thrift vs. Ice"
 author: kentonv
 ---
 
@@ -12,7 +12,7 @@ silly and call it "time travel", tongue-in-cheek.  My hope was that people would
 curious, read the docs, find out that this is actually a really cool feature, and start doing
 stuff with it.
 
-Unfortunately, [my post](2013-12-12-capnproto-0.4-time-travel.html) only contained a link to
+Unfortunately, [my post](2013-12-12-zap-0.4-time-travel.html) only contained a link to
 the full explanation and then confusingly followed the "time travel" section with a separate section
 describing the fact that I had implemented a promise API in C++.  Half the readers clicked through
 to the documentation and understood.  The other half thought I was claiming that promises alone
@@ -23,9 +23,9 @@ Let me be clear:
 
 **Promises alone are _not_ what I meant by "time travel"!**
 
-<img src='{{ site.baseurl }}images/capnp-vs-thrift-vs-ice.png' style='width:350px; height:275px; float: right;'>
+<img src='{{ site.baseurl }}images/zap-vs-thrift-vs-ice.png' style='width:350px; height:275px; float: right;'>
 
-So what did I mean?  Perhaps [this benchmark](https://github.com/kentonv/capnp-vs-ice) will
+So what did I mean?  Perhaps [this benchmark](https://github.com/kentonv/zap-vs-ice) will
 make things clearer.  Here, I've defined a server that exports a simple four-function calculator
 interface, with `add()`, `sub()`, `mult()`, and `div()` calls, each taking two integers and\
 returning a result.
@@ -35,7 +35,7 @@ You want to have _one_ method `eval()` that takes an expression tree (or graph, 
 you will have ridiculous latency.  But this is exactly the point.  **With promise pipelining, simple,
 composable methods work fine.**
 
-To prove the point, I've implemented servers in Cap'n Proto, [Apache Thrift](http://thrift.apache.org/),
+To prove the point, I've implemented servers in Zap, [Apache Thrift](http://thrift.apache.org/),
 and [ZeroC Ice](http://www.zeroc.com/).  I then implemented clients against each one, where the
 client attempts to evaluate the expression:
 
@@ -52,14 +52,14 @@ it takes four steps to compute the result:
             50                 /    2      # 3
                               25           # 4
 
-As such, the Thrift and Ice clients take four network round trips.  Cap'n Proto, however, takes
+As such, the Thrift and Ice clients take four network round trips.  Zap, however, takes
 only one.
 
-Cap'n Proto, you see, sends all six calls from the client to the server at one time.  For the
+Zap, you see, sends all six calls from the client to the server at one time.  For the
 latter calls, it simply tells the server to substitute the former calls' results into the new
 requests, once those dependency calls finish.  Typical RPC systems can only send three calls to
 start, then must wait for some to finish before it can continue with the remaining calls.  Over
-a high-latency connection, this means they take 4x longer than Cap'n Proto to do their work in
+a high-latency connection, this means they take 4x longer than Zap to do their work in
 this test.
 
 So, does this matter outside of a contrived example case?  Yes, it does, because it allows you to

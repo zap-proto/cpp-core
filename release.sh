@@ -44,14 +44,14 @@ update_version() {
   local NEW_NOTAG=${NEW%%-*}
   declare -a NEW_ARR=(${NEW_NOTAG//./ })
   doit sed -i -re "
-      s/^#define CAPNP_VERSION_MAJOR [0-9]+\$/#define CAPNP_VERSION_MAJOR ${NEW_ARR[0]}/g;
-      s/^#define CAPNP_VERSION_MINOR [0-9]+\$/#define CAPNP_VERSION_MINOR ${NEW_ARR[1]}/g;
-      s/^#define CAPNP_VERSION_MICRO [0-9]+\$/#define CAPNP_VERSION_MICRO ${NEW_ARR[2]:-0}/g" \
-      c++/src/capnp/common.h
+      s/^#define ZAP_VERSION_MAJOR [0-9]+\$/#define ZAP_VERSION_MAJOR ${NEW_ARR[0]}/g;
+      s/^#define ZAP_VERSION_MINOR [0-9]+\$/#define ZAP_VERSION_MINOR ${NEW_ARR[1]}/g;
+      s/^#define ZAP_VERSION_MICRO [0-9]+\$/#define ZAP_VERSION_MICRO ${NEW_ARR[2]:-0}/g" \
+      c++/src/zap/common.h
 
   local NEW_COMBINED=$(( ${NEW_ARR[0]} * 1000000 + ${NEW_ARR[1]} * 1000 + ${NEW_ARR[2]:-0 }))
-  doit sed -i -re "s/^#elif CAPNP_VERSION != [0-9]*\$/#elif CAPNP_VERSION != $NEW_COMBINED/g" \
-      c++/src/*/*.capnp.h c++/src/*/*/*.capnp.h
+  doit sed -i -re "s/^#elif ZAP_VERSION != [0-9]*\$/#elif ZAP_VERSION != $NEW_COMBINED/g" \
+      c++/src/*/*.zap.h c++/src/*/*/*.zap.h
 
   doit git commit -a -m "Set $BRANCH_DESC version to $NEW."
 }
@@ -69,24 +69,24 @@ build_packages() {
   doit autoreconf -i
   doit ./configure
   doit make -j$(nproc) distcheck
-  doit mv capnproto-c++-$VERSION.tar.gz ..
+  doit mv zap-c++-$VERSION.tar.gz ..
   doit make distclean
 
   # build windows executables
-  doit ./configure --host=i686-w64-mingw32 --with-external-capnp \
+  doit ./configure --host=i686-w64-mingw32 --with-external-zap \
       --disable-shared CXXFLAGS='-static-libgcc -static-libstdc++'
-  doit make -j$(nproc) capnp.exe capnpc-c++.exe capnpc-capnp.exe
-  doit i686-w64-mingw32-strip capnp.exe capnpc-c++.exe capnpc-capnp.exe
-  doit mkdir capnproto-tools-win32-$VERSION
-  doit mv capnp.exe capnpc-c++.exe capnpc-capnp.exe capnproto-tools-win32-$VERSION
+  doit make -j$(nproc) zap.exe zapc-c++.exe zapc-zap.exe
+  doit i686-w64-mingw32-strip zap.exe zapc-c++.exe zapc-zap.exe
+  doit mkdir zap-tools-win32-$VERSION
+  doit mv zap.exe zapc-c++.exe zapc-zap.exe zap-tools-win32-$VERSION
   doit make maintainer-clean
 
   # repack dist tarball and win32 tools into win32 zip, with DOS line endings
-  doit tar zxf ../capnproto-c++-$VERSION.tar.gz
-  find capnproto-c++-$VERSION -name '*.c++' -o -name '*.h' -o -name '*.capnp' -o -name '*.md' -o -name '*.txt' | grep -v testdata | doit xargs unix2dos
-  doit zip -r ../capnproto-c++-win32-$VERSION.zip capnproto-c++-$VERSION capnproto-tools-win32-$VERSION
+  doit tar zxf ../zap-c++-$VERSION.tar.gz
+  find zap-c++-$VERSION -name '*.c++' -o -name '*.h' -o -name '*.zap' -o -name '*.md' -o -name '*.txt' | grep -v testdata | doit xargs unix2dos
+  doit zip -r ../zap-c++-win32-$VERSION.zip zap-c++-$VERSION zap-tools-win32-$VERSION
 
-  rm -rf capnproto-c++-$VERSION capnproto-tools-win32-$VERSION
+  rm -rf zap-c++-$VERSION zap-tools-win32-$VERSION
   cd ..
 }
 
@@ -108,19 +108,19 @@ done_banner() {
   echo "Done"
   echo "========================================================================="
   echo "Ready to release:"
-  echo "  capnproto-c++-$VERSION.tar.gz"
-  echo "  capnproto-c++-win32-$VERSION.zip"
+  echo "  zap-c++-$VERSION.tar.gz"
+  echo "  zap-c++-win32-$VERSION.zip"
   echo "Don't forget to push changes:"
   echo "  git push origin $PUSH"
 
-  read -s -n 1 -p "Shall I push to git and upload to capnproto.org now? (y/N)" YESNO
+  read -s -n 1 -p "Shall I push to git and upload to zap.org now? (y/N)" YESNO
 
   echo
   case "$YESNO" in
     y | Y )
       doit git push origin $PUSH
-      doit gce-ss copy-files capnproto-c++-$VERSION.tar.gz capnproto-c++-win32-$VERSION.zip \
-          alpha2:/var/www/capnproto.org
+      doit gce-ss copy-files zap-c++-$VERSION.tar.gz zap-c++-win32-$VERSION.zip \
+          alpha2:/var/www/zap.org
 
       if [ "$FINAL" = yes ]; then
         echo "========================================================================="
@@ -135,7 +135,7 @@ done_banner() {
       fi
 
       echo "Release is available at:"
-      echo "  http://capnproto.org/capnproto-c++-$VERSION.tar.gz"
+      echo "  http://zap.org/zap-c++-$VERSION.tar.gz"
       ;;
     * )
       echo "OK, do it yourself then."
@@ -265,9 +265,9 @@ case "${1-}:$BRANCH" in
     echo "Updating version number to $NEW_VERSION..."
     echo "========================================================================="
 
-    doit sed -i -re "s/capnproto-c[+][+]-[0-9]+[.][0-9]+[.][0-9]+([.][0-9]+)?\>/capnproto-c++-$NEW_VERSION/g" doc/install.md
-    doit sed -i -re "s/capnproto-c[+][+]-win32-[0-9]+[.][0-9]+[.][0-9]+([.][0-9]+)?\>/capnproto-c++-win32-$NEW_VERSION/g" doc/install.md
-    doit sed -i -re "s/capnproto-tools-win32-[0-9]+[.][0-9]+[.][0-9]+([.][0-9]+)?\>/capnproto-tools-win32-$NEW_VERSION/g" doc/install.md
+    doit sed -i -re "s/zap-c[+][+]-[0-9]+[.][0-9]+[.][0-9]+([.][0-9]+)?\>/zap-c++-$NEW_VERSION/g" doc/install.md
+    doit sed -i -re "s/zap-c[+][+]-win32-[0-9]+[.][0-9]+[.][0-9]+([.][0-9]+)?\>/zap-c++-win32-$NEW_VERSION/g" doc/install.md
+    doit sed -i -re "s/zap-tools-win32-[0-9]+[.][0-9]+[.][0-9]+([.][0-9]+)?\>/zap-tools-win32-$NEW_VERSION/g" doc/install.md
     update_version $OLD_VERSION $NEW_VERSION "release branch"
 
     doit git tag v$NEW_VERSION
@@ -296,9 +296,9 @@ case "${1-}:$BRANCH" in
     echo "Updating version number to $NEW_VERSION..."
     echo "========================================================================="
 
-    doit sed -i -re "s/capnproto-c[+][+]-[0-9]+[.][0-9]+[.][0-9]+([.][0-9]+)?\>/capnproto-c++-$NEW_VERSION/g" doc/install.md
-    doit sed -i -re "s/capnproto-c[+][+]-win32-[0-9]+[.][0-9]+[.][0-9]+([.][0-9]+)?\>/capnproto-c++-win32-$NEW_VERSION/g" doc/install.md
-    doit sed -i -re "s/capnproto-tools-win32-[0-9]+[.][0-9]+[.][0-9]+([.][0-9]+)?\>/capnproto-tools-win32-$NEW_VERSION/g" doc/install.md
+    doit sed -i -re "s/zap-c[+][+]-[0-9]+[.][0-9]+[.][0-9]+([.][0-9]+)?\>/zap-c++-$NEW_VERSION/g" doc/install.md
+    doit sed -i -re "s/zap-c[+][+]-win32-[0-9]+[.][0-9]+[.][0-9]+([.][0-9]+)?\>/zap-c++-win32-$NEW_VERSION/g" doc/install.md
+    doit sed -i -re "s/zap-tools-win32-[0-9]+[.][0-9]+[.][0-9]+([.][0-9]+)?\>/zap-tools-win32-$NEW_VERSION/g" doc/install.md
     update_version $OLD_VERSION $NEW_VERSION "release branch"
 
     cherry_pick "$@"

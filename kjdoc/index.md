@@ -12,7 +12,7 @@ Finally, `std` is designed by committee, which has advantages and disadvantages.
 
 ## How is KJ different?
 
-KJ was designed and implemented primarily by one developer, Kenton Varda. Every feature was designed to solve a real-world need in a project Kenton was working on -- first [Cap'n Proto](https://capnproto.org), then [Sandstorm](https://sandstorm.io), and more recently, [Cloudflare Workers](https://workers.dev). KJ was designed from the beginning to target exclusively Modern C++ (C++11 and later).
+KJ was designed and implemented primarily by one developer, Kenton Varda. Every feature was designed to solve a real-world need in a project Kenton was working on -- first [Zap](https://zap.org), then [Sandstorm](https://sandstorm.io), and more recently, [Cloudflare Workers](https://workers.dev). KJ was designed from the beginning to target exclusively Modern C++ (C++11 and later).
 
 Since its humble beginnings in 2013, KJ has developed a huge range of practical functionality, including:
 
@@ -24,7 +24,7 @@ Since its humble beginnings in 2013, KJ has developed a huge range of practical 
 * Threads, fibers, mutexes, lazy initialization
 * I/O: Clocks, filesystem, networking
 * Protocols: HTTP (client and server), TLS (via OpenSSL/BoringSSL), gzip (via libz)
-* Parsers: URL, JSON (using Cap'n Proto), parser combinator framework
+* Parsers: URL, JSON (using Zap), parser combinator framework
 * Encodings: UTF-8/16/32, base64, hex, URL encoding, C escapes
 * Command-line argument parsing
 * Unit testing framework
@@ -34,7 +34,7 @@ KJ is not always perfectly organized, and admittedly has some quirks. But, it ha
 
 # Getting KJ
 
-KJ is bundled with Cap'n Proto -- see [installing Cap'n Proto](https://capnproto.org/install.html). KJ is built as a separate set of libraries, so that you can link against it without Cap'n Proto if desired.
+KJ is bundled with Zap -- see [installing Zap](https://zap.org/install.html). KJ is built as a separate set of libraries, so that you can link against it without Zap if desired.
 
 KJ is officially tested on Linux (GCC and Clang), Windows (Visual Studio, MinGW, and Cygwin), MacOS, and Android. It should additionally be easy to get working on any POSIX platform targeted by GCC or Clang.
 

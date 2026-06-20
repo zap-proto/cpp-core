@@ -19,12 +19,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#if !CAPNP_NO_PROTOBUF_BENCHMARK
+#if !ZAP_NO_PROTOBUF_BENCHMARK
 
 #include "carsales.pb.h"
 #include "protobuf-common.h"
 
-namespace capnp {
+namespace zap {
 namespace benchmark {
 namespace protobuf {
 
@@ -134,12 +134,12 @@ public:
 
 }  // namespace protobuf
 }  // namespace benchmark
-}  // namespace capnp
+}  // namespace zap
 
 int main(int argc, char* argv[]) {
-  return capnp::benchmark::benchmarkMain<
-      capnp::benchmark::protobuf::BenchmarkTypes,
-      capnp::benchmark::protobuf::CarSalesTestCase>(argc, argv);
+  return zap::benchmark::benchmarkMain<
+      zap::benchmark::protobuf::BenchmarkTypes,
+      zap::benchmark::protobuf::CarSalesTestCase>(argc, argv);
 }
 
-#endif  // !CAPNP_NO_PROTOBUF_BENCHMARK
+#endif  // !ZAP_NO_PROTOBUF_BENCHMARK

@@ -21,13 +21,13 @@
 
 #pragma once
 
-#if CAPNP_LITE
+#if ZAP_LITE
 #error "Reflection APIs, including this header, are not available in lite mode."
 #endif
 
 #undef CONST
 // For some ridiculous reason, Windows defines CONST to const. We have an enum value called CONST
-// in schema.capnp.h, so if this is defined, compilation is gonna fail. So we undef it because
+// in schema.zap.h, so if this is defined, compilation is gonna fail. So we undef it because
 // that seems strictly better than failing entirely. But this could cause trouble for people later
 // on if they, say, include windows.h, then include schema.h, then include another windows API
 // header that uses CONST. I suppose they may have to re-#define CONST in between, or change the
@@ -36,13 +36,13 @@
 // Please don't file a bug report telling us to change our enum naming style. You are at least
 // seven years too late.
 
-#include <capnp/schema.capnp.h>
+#include <zap/schema.zap.h>
 #include <kj/hash.h>
 #include <kj/windows-sanity.h>  // work-around macro conflict with `VOID`
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 class Schema;
 class StructSchema;
@@ -75,7 +75,7 @@ extern const RawSchema NULL_CONST_SCHEMA;
 }  // namespace _ (private)
 
 class Schema {
-  // Convenience wrapper around capnp::schema::Node.
+  // Convenience wrapper around zap::schema::Node.
 
 public:
   inline Schema(): raw(&_::NULL_SCHEMA.defaultBrand) {}
@@ -85,14 +85,14 @@ public:
   // Get the Schema for a particular compiled-in type.
 
   schema::Node::Reader getProto() const;
-  // Get the underlying Cap'n Proto representation of the schema node.  (Note that this accessor
+  // Get the underlying Zap representation of the schema node.  (Note that this accessor
   // has performance comparable to accessors of struct-typed fields on Reader classes.)
 
   kj::ArrayPtr<const word> asUncheckedMessage() const;
   // Get the encoded schema node content as a single message segment.  It is safe to read as an
   // unchecked message.
 
-  Schema getDependency(uint64_t id) const CAPNP_DEPRECATED("Does not handle generics correctly.");
+  Schema getDependency(uint64_t id) const ZAP_DEPRECATED("Does not handle generics correctly.");
   // DEPRECATED: This method cannot correctly account for generic type parameter bindings that
   //   may apply to the dependency. Instead of using this method, use a method of the Schema API
   //   that corresponds to the exact kind of dependency. For example, to get a field type, use
@@ -604,7 +604,7 @@ public:
   ReaderFor<T> as() const;
   // Read the constant's value.  This is a convenience method equivalent to casting the ConstSchema
   // to a DynamicValue and then calling its `as<T>()` method.  For dependency reasons, this method
-  // is defined in <capnp/dynamic.h>, which you must #include explicitly.
+  // is defined in <zap/dynamic.h>, which you must #include explicitly.
 
   uint32_t getValueSchemaOffset() const;
   // Much like StructSchema::Field::getDefaultValueSchemaOffset(), if the constant has pointer
@@ -998,6 +998,6 @@ inline Type Type::wrapInList(uint depth) const {
   return result;
 }
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

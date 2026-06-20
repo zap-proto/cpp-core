@@ -21,8 +21,8 @@
 
 #pragma once
 
-#ifndef CAPNP_PRIVATE
-#error "This header is only meant to be included by Cap'n Proto's own source code."
+#ifndef ZAP_PRIVATE
+#error "This header is only meant to be included by Zap's own source code."
 #endif
 
 #include <kj/common.h>
@@ -35,17 +35,17 @@
 #include "layout.h"
 #include <kj/map.h>
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 #include "capability.h"
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 class ClientHook;
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 namespace _ {  // private
 
@@ -62,7 +62,7 @@ class ReadLimiter {
   // Used to keep track of how much data has been processed from a message, and cut off further
   // processing if and when a particular limit is reached.  This is primarily intended to guard
   // against maliciously-crafted messages which contain cycles or overlapping structures.  Cycles
-  // and overlapping are not permitted by the Cap'n Proto format because in many cases they could
+  // and overlapping are not permitted by the Zap format because in many cases they could
   // be used to craft a deceptively small message which could consume excessive server resources to
   // process, perhaps even sending it into an infinite loop.  Actually detecting overlaps would be
   // time-consuming, so instead we just keep track of how many words worth of data structures the
@@ -118,16 +118,16 @@ private:
   }
 };
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 class BrokenCapFactory {
   // Callback for constructing broken caps.  We use this so that we can avoid arena.c++ having a
-  // link-time dependency on capability code that lives in libcapnp-rpc.
+  // link-time dependency on capability code that lives in libzap-rpc.
 
 public:
   virtual kj::Own<ClientHook> newBrokenCap(kj::StringPtr description) = 0;
   virtual kj::Own<ClientHook> newNullCap() = 0;
 };
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 class SegmentReader {
 public:
@@ -353,10 +353,10 @@ private:
     uint injectCap(kj::Own<ClientHook>&& cap) override;
     void dropCap(uint index) override;
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
   private:
     kj::Vector<kj::Maybe<kj::Own<ClientHook>>> capTable;
-#endif // ! CAPNP_LITE
+#endif // ! ZAP_LITE
   };
 
   LocalCapTable localCapTable;
@@ -518,6 +518,6 @@ inline bool SegmentBuilder::tryExtend(word* from, word* to) {
 }
 
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

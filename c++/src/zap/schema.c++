@@ -22,13 +22,13 @@
 #include "schema.h"
 #include "message.h"
 #include <kj/debug.h>
-#include <capnp/stream.capnp.h>
+#include <zap/stream.zap.h>
 
-namespace capnp {
+namespace zap {
 
 namespace schema {
   uint KJ_HASHCODE(Type::Which w) { return kj::hashCode(static_cast<uint16_t>(w)); }
-  // TODO(cleanup): Cap'n Proto does not declare stringifiers nor hashers for `Which` enums, unlike
+  // TODO(cleanup): Zap does not declare stringifiers nor hashers for `Which` enums, unlike
   //   all other enums. Fix that and remove this.
 }
 
@@ -36,7 +36,7 @@ namespace _ {  // private
 
 // Null schemas generated using the below schema file with:
 //
-//     capnp eval -Isrc null-schemas.capnp node --flat |
+//     zap eval -Isrc null-schemas.zap node --flat |
 //         hexdump -v -e '8/1 "0x%02x, "' -e '1/8 "\n"'; echo
 //
 // I totally don't understand hexdump format strings and came up with this command based on trial
@@ -44,7 +44,7 @@ namespace _ {  // private
 //
 //     @0x879863d4b2cc4a1e;
 //
-//     using Node = import "/capnp/schema.capnp".Node;
+//     using Node = import "/zap/schema.zap".Node;
 //
 //     const node :Node = (
 //         id = 0x0000000000000000,
@@ -936,4 +936,4 @@ void Type::requireUsableAs(Type expected) const {
   }
 }
 
-}  // namespace capnp
+}  // namespace zap

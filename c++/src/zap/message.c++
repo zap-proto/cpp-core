@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define CAPNP_PRIVATE
+#define ZAP_PRIVATE
 #include "message.h"
 #include <kj/debug.h>
 #include "arena.h"
@@ -27,14 +27,14 @@
 #include <stdlib.h>
 #include <errno.h>
 
-namespace capnp {
+namespace zap {
 
 namespace {
 
 class DummyCapTableReader: public _::CapTableReader {
 public:
   kj::Maybe<kj::Own<ClientHook>> extractCap(uint index) override {
-#if CAPNP_LITE
+#if ZAP_LITE
     KJ_UNIMPLEMENTED("no cap tables in lite mode");
 #else
     return kj::none;
@@ -305,4 +305,4 @@ kj::ArrayPtr<word> FlatMessageBuilder::allocateSegment(uint minimumSize) {
   return array;
 }
 
-}  // namespace capnp
+}  // namespace zap

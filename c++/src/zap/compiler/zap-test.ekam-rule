@@ -25,30 +25,30 @@
 
 set -eu
 
-echo findProvider file:capnp
-read CAPNP
-export CAPNP
+echo findProvider file:zap
+read ZAP
+export ZAP
 
-echo findProvider file:capnp/compiler/capnp-test.sh
-read CAPNP_TEST
+echo findProvider file:zap/compiler/zap-test.sh
+read ZAP_TEST
 
 # Register our interest in the testdata files.
-echo findProvider file:capnp/testdata/binary; read JUNK
-echo findProvider file:capnp/testdata/flat; read JUNK
-echo findProvider file:capnp/testdata/packed; read JUNK
-echo findProvider file:capnp/testdata/segmented; read JUNK
-echo findProvider file:capnp/testdata/segmented-packed; read JUNK
-echo findProvider file:capnp/testdata/pretty.txt; read JUNK
-echo findProvider file:capnp/testdata/short.txt; read JUNK
-echo findProvider file:capnp/testdata/errors.capnp.nobuild; read JUNK
-echo findProvider file:capnp/testdata/errors.txt; read JUNK
-echo findProvider file:capnp/testdata/errors2.capnp.nobuild; read JUNK
-echo findProvider file:capnp/testdata/errors2.txt; read JUNK
+echo findProvider file:zap/testdata/binary; read JUNK
+echo findProvider file:zap/testdata/flat; read JUNK
+echo findProvider file:zap/testdata/packed; read JUNK
+echo findProvider file:zap/testdata/segmented; read JUNK
+echo findProvider file:zap/testdata/segmented-packed; read JUNK
+echo findProvider file:zap/testdata/pretty.txt; read JUNK
+echo findProvider file:zap/testdata/short.txt; read JUNK
+echo findProvider file:zap/testdata/errors.zap.nobuild; read JUNK
+echo findProvider file:zap/testdata/errors.txt; read JUNK
+echo findProvider file:zap/testdata/errors2.zap.nobuild; read JUNK
+echo findProvider file:zap/testdata/errors2.txt; read JUNK
 
 # Register our interest in the schema files.
-echo findProvider file:capnp/c++.capnp
-echo findProvider file:capnp/test.capnp
+echo findProvider file:zap/c++.zap
+echo findProvider file:zap/test.zap
 
-$CAPNP_TEST >&2
+$ZAP_TEST >&2
 
 echo passed

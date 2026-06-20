@@ -25,13 +25,13 @@
 #include <kj/arena.h>
 #include <kj/vector.h>
 #include <kj/debug.h>
-#include <capnp/message.h>
+#include <zap/message.h>
 #include <map>
 #include <set>
 #include <unordered_map>
 #include "node-translator.h"
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 
 typedef std::unordered_map<uint64_t, Orphan<schema::Node::SourceInfo::Reader>> SourceInfoMap;
@@ -278,7 +278,7 @@ public:
 
     MallocMessageBuilder message;
     Orphanage orphanage;
-    // Orphanage for allocating temporary Cap'n Proto objects.
+    // Orphanage for allocating temporary Zap objects.
 
     kj::Arena arena;
     // Arena for allocating temporary native objects.  Note that objects in `arena` may contain
@@ -1071,7 +1071,7 @@ static void findImports(Declaration::ParamList::Reader paramList, std::set<kj::S
       findImports(paramList.getType(), output);
       break;
     case Declaration::ParamList::STREAM:
-      output.insert("/capnp/stream.capnp");
+      output.insert("/zap/stream.zap");
       break;
   }
 }
@@ -1368,9 +1368,9 @@ public:
 Compiler::ErrorIgnorer Compiler::ErrorIgnorer::instance;
 
 kj::Maybe<Type> Compiler::CompiledType::getSchema() {
-  capnp::word scratch[32];
+  zap::word scratch[32];
   memset(&scratch, 0, sizeof(scratch));
-  capnp::MallocMessageBuilder message(scratch);
+  zap::MallocMessageBuilder message(scratch);
   auto builder = message.getRoot<schema::Type>();
 
   {
@@ -1468,4 +1468,4 @@ kj::Maybe<Compiler::CompiledType> Compiler::ModuleScope::evalType(
 }
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap

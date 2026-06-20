@@ -26,7 +26,7 @@
 #include <kj/compat/gtest.h>
 #include "test-util.h"
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -703,4 +703,4 @@ TEST(Stringify, Generics) {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

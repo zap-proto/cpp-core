@@ -31,7 +31,7 @@ set(kj_sources_heavy
   filesystem-disk-win32.c++
   parse/char.c++
 )
-if(NOT CAPNP_LITE)
+if(NOT ZAP_LITE)
   set(kj_sources ${kj_sources_lite} ${kj_sources_heavy})
 else()
   set(kj_sources ${kj_sources_lite})
@@ -76,7 +76,7 @@ set(kj-std_headers
   std/iostream.h
 )
 add_library(kj ${kj_sources})
-add_library(CapnProto::kj ALIAS kj)
+add_library(Zap::kj ALIAS kj)
 target_compile_features(kj PUBLIC cxx_std_23)
 
 if(UNIX AND NOT ANDROID)
@@ -91,14 +91,14 @@ int main() {
   std::atomic<uint32_t> w4;
   std::atomic<uint64_t> w8;
   return ++w1 + ++w2 + ++w4 + ++w8;
-}" CAPNP_BUILDS_WITHOUT_LIBATOMIC)
+}" ZAP_BUILDS_WITHOUT_LIBATOMIC)
 
-if(NOT CAPNP_BUILDS_WITHOUT_LIBATOMIC)
+if(NOT ZAP_BUILDS_WITHOUT_LIBATOMIC)
   target_link_libraries(kj PUBLIC atomic)
 endif()
 
 #make sure the lite flag propagates to all users (internal + external) of this library
-target_compile_definitions(kj PUBLIC ${CAPNP_LITE_FLAG})
+target_compile_definitions(kj PUBLIC ${ZAP_LITE_FLAG})
 #make sure external consumers don't need to manually set the include dirs
 get_filename_component(PARENT_DIR ${CMAKE_CURRENT_SOURCE_DIR} DIRECTORY)
 target_include_directories(kj PUBLIC
@@ -122,7 +122,7 @@ set(kj-test-compat_headers
   compat/gtest.h
 )
 add_library(kj-test ${kj-test_sources})
-add_library(CapnProto::kj-test ALIAS kj-test)
+add_library(Zap::kj-test ALIAS kj-test)
 target_link_libraries(kj-test PUBLIC kj)
 # Ensure the library has a version set to match autotools build
 set_target_properties(kj-test PROPERTIES VERSION ${VERSION})
@@ -152,9 +152,9 @@ set(kj-async_headers
   cidr.h
   timer.h
 )
-if(NOT CAPNP_LITE)
+if(NOT ZAP_LITE)
   add_library(kj-async ${kj-async_sources})
-  add_library(CapnProto::kj-async ALIAS kj-async)
+  add_library(Zap::kj-async ALIAS kj-async)
   target_link_libraries(kj-async PUBLIC kj)
   if(WITH_FIBERS)
     target_compile_definitions(kj-async PUBLIC KJ_USE_FIBERS)
@@ -187,9 +187,9 @@ set(kj-http_headers
   compat/url.h
   compat/http.h
 )
-if(NOT CAPNP_LITE)
+if(NOT ZAP_LITE)
   add_library(kj-http ${kj-http_sources})
-  add_library(CapnProto::kj-http ALIAS kj-http)
+  add_library(Zap::kj-http ALIAS kj-http)
   if(WITH_ZLIB)
     target_compile_definitions(kj-http PRIVATE KJ_HAS_ZLIB)
     target_link_libraries(kj-http PUBLIC kj-async kj ZLIB::ZLIB)
@@ -212,9 +212,9 @@ if(WITH_OPENSSL)
     compat/readiness-io.h
     compat/tls.h
   )
-  if(NOT CAPNP_LITE)
+  if(NOT ZAP_LITE)
     add_library(kj-tls ${kj-tls_sources})
-    add_library(CapnProto::kj-tls ALIAS kj-tls)
+    add_library(Zap::kj-tls ALIAS kj-tls)
     target_link_libraries(kj-tls PUBLIC kj-async)
 
     target_compile_definitions(kj-tls PRIVATE KJ_HAS_OPENSSL)
@@ -239,9 +239,9 @@ if(WITH_ZLIB)
   set(kj-gzip_headers
     compat/gzip.h
   )
-  if(NOT CAPNP_LITE)
+  if(NOT ZAP_LITE)
     add_library(kj-gzip ${kj-gzip_sources})
-    add_library(CapnProto::kj-gzip ALIAS kj-gzip)
+    add_library(Zap::kj-gzip ALIAS kj-gzip)
 
     target_compile_definitions(kj-gzip PRIVATE KJ_HAS_ZLIB)
     target_link_libraries(kj-gzip PUBLIC kj-async kj ZLIB::ZLIB)
@@ -280,7 +280,7 @@ if(BUILD_TESTING)
   add_dependencies(check kj-tests)
   add_test(NAME kj-tests-run COMMAND kj-tests)
 
-  if(NOT CAPNP_LITE)
+  if(NOT ZAP_LITE)
     add_executable(kj-heavy-tests
       async-test.c++
       async-xthread-test.c++
@@ -329,5 +329,5 @@ if(BUILD_TESTING)
     endif()
     add_dependencies(check kj-heavy-tests)
     add_test(NAME kj-heavy-tests-run COMMAND kj-heavy-tests)
-  endif()  # NOT CAPNP_LITE
+  endif()  # NOT ZAP_LITE
 endif()  # BUILD_TESTING

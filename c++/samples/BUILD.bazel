@@ -1,10 +1,10 @@
-load("@capnp-cpp//src/capnp:cc_capnp_library.bzl", "cc_capnp_library")
+load("@zap-cpp//src/zap:cc_zap_library.bzl", "cc_zap_library")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 
-cc_capnp_library(
-    name = "addressbook_capnp",
+cc_zap_library(
+    name = "addressbook_zap",
     srcs = [
-        "addressbook.capnp",
+        "addressbook.zap",
     ],
     include_prefix = ".",
 )
@@ -12,13 +12,13 @@ cc_capnp_library(
 cc_binary(
     name = "addressbook",
     srcs = ["addressbook.c++"],
-    deps = [":addressbook_capnp"],
+    deps = [":addressbook_zap"],
 )
 
-cc_capnp_library(
-    name = "calculator_capnp",
+cc_zap_library(
+    name = "calculator_zap",
     srcs = [
-        "calculator.capnp",
+        "calculator.zap",
     ],
     include_prefix = ".",
 )
@@ -27,8 +27,8 @@ cc_binary(
     name = "calculator-server",
     srcs = ["calculator-server.c++"],
     deps = [
-        ":calculator_capnp",
-        "@capnp-cpp//src/capnp:capnp-rpc",
+        ":calculator_zap",
+        "@zap-cpp//src/zap:zap-rpc",
     ],
 )
 
@@ -36,7 +36,7 @@ cc_binary(
     name = "calculator-client",
     srcs = ["calculator-client.c++"],
     deps = [
-        ":calculator_capnp",
-        "@capnp-cpp//src/capnp:capnp-rpc",
+        ":calculator_zap",
+        "@zap-cpp//src/zap:zap-rpc",
     ],
 )
