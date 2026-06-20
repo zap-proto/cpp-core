@@ -297,9 +297,10 @@ bool isNestedDecl(kj::ArrayPtr<const char> t) {
   // not a declaration, so `using Foo` (field `using` of type `Foo`) stays a field.
   if (afterName.size() == 0) return false;
   char c = afterName[0];
-  if (equals(w, "using"))      return c == '=';
-  if (equals(w, "const"))      return c == ':' || c == '=';
-  /* annotation */             return c == '(' || c == ':';
+  if (equals(w, "using")) return c == '=';
+  if (equals(w, "const")) return c == ':' || c == '=';
+  // annotation: a real decl continues with '(' (its target) or ':' (its type).
+  return c == '(' || c == ':';
 }
 
 // True if `s` is a type NAME optionally followed by a generic parameter list: `<Id>` or
