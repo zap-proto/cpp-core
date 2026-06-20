@@ -8,8 +8,7 @@ on:
     - 'doc/**'
   push:
     branches:
-    - master
-    - v2
+    - main
     - 'release-*'
 
 env:
