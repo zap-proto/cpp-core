@@ -21,6 +21,7 @@
 
 #include "desugar.h"
 #include <kj/vector.h>
+#include <kj/debug.h>
 
 namespace zap {
 namespace compiler {
@@ -37,11 +38,14 @@ inline bool isIdentChar(char c) {
 }
 inline bool isDigit(char c) { return c >= '0' && c <= '9'; }
 
-// Number of leading ' ' (space) characters. Tabs are not treated as indentation
-// (consistent with the lexer, which does not expand tabs); a tab simply stops the count.
-size_t leadingSpaces(kj::ArrayPtr<const char> line) {
+// Number of leading indentation characters. Both ' ' (space) and '\t' (tab) count as
+// one indentation unit each — consistent with the Go and TypeScript desugarers, which
+// treat a tab as a single indent column. Counting tabs is required so a tab-indented
+// body nests under its header (indent > header) rather than collapsing to indent 0,
+// which would orphan every member at file scope. [audit: C3]
+size_t leadingIndent(kj::ArrayPtr<const char> line) {
   size_t n = 0;
-  while (n < line.size() && line[n] == ' ') ++n;
+  while (n < line.size() && (line[n] == ' ' || line[n] == '\t')) ++n;
   return n;
 }
 
@@ -86,15 +90,23 @@ kj::ArrayPtr<const char> firstWord(kj::ArrayPtr<const char> t) {
   return t.first(i);
 }
 
-// Drop a trailing '#' comment (outside double-quoted strings).
-kj::ArrayPtr<const char> stripTrailingComment(kj::ArrayPtr<const char> t) {
+// Index of a trailing '#' comment marker (outside double-quoted strings), or t.size()
+// if the line has no comment. Single source of truth for where code ends / comment begins.
+size_t commentStart(kj::ArrayPtr<const char> t) {
   bool inStr = false;
   for (size_t i = 0; i < t.size(); ++i) {
     char c = t[i];
     if (c == '"') inStr = !inStr;
-    else if (c == '#' && !inStr) return t.first(i);
+    else if (c == '#' && !inStr) return i;
   }
-  return t;
+  return t.size();
+}
+
+// Drop a trailing '#' comment (outside double-quoted strings) — the code part. The member
+// and header emitters split a line at commentStart() directly (to preserve the original
+// whitespace gap before the comment when re-emitting it after the synthesized ';' / '{'). [audit: C1, C2]
+kj::ArrayPtr<const char> stripTrailingComment(kj::ArrayPtr<const char> t) {
+  return t.first(commentStart(t));
 }
 
 // Net brace depth change on a code line (ignoring strings/comments).
@@ -142,7 +154,17 @@ size_t identLen(kj::ArrayPtr<const char> t) {
   return i;
 }
 
+// Cap'n Proto ordinals are 16-bit; the parser rejects any ordinal >= 65536
+// (see parser.c++: "Ordinals cannot be greater than 65535."). The desugar must
+// not emit, nor silently wrap into, an out-of-range ordinal — so it both parses
+// without overflow and validates the range here, at the boundary. [audit: H1]
+constexpr uint32_t kMaxOrdinal = 65535;
+
 // Find explicit `@<digits>` ordinal token (outside strings). Returns true + value.
+// The digit accumulation is overflow-guarded (clamped at kMaxOrdinal + 1 so an
+// astronomically long literal like @99999999999999999999 can never wrap a uint32
+// back into the valid range), and an out-of-range ordinal throws rather than being
+// emitted as bogus brace source the parser would silently miscount. [audit: H1]
 bool explicitOrdinal(kj::ArrayPtr<const char> t, uint32_t& outVal) {
   bool inStr = false;
   for (size_t i = 0; i < t.size(); ++i) {
@@ -151,11 +173,41 @@ bool explicitOrdinal(kj::ArrayPtr<const char> t, uint32_t& outVal) {
     if (c == '@' && !inStr) {
       size_t j = i + 1;
       uint32_t v = 0;
-      while (j < t.size() && isDigit(t[j])) { v = v * 10 + (uint32_t)(t[j] - '0'); ++j; }
-      if (j > i + 1) { outVal = v; return true; }
+      bool overflow = false;
+      while (j < t.size() && isDigit(t[j])) {
+        if (!overflow) {
+          v = v * 10 + (uint32_t)(t[j] - '0');
+          if (v > kMaxOrdinal) overflow = true;  // clamp; exact value no longer needed
+        }
+        ++j;
+      }
+      if (j > i + 1) {
+        KJ_REQUIRE(!overflow && v <= kMaxOrdinal,
+            "ZAP whitespace desugar: ordinal out of range (must be 0..65535)",
+            kj::heapString(t.begin(), t.size()));
+        outVal = v;
+        return true;
+      }
     }
   }
   return false;
+}
+
+// Advance the per-scope ordinal counter past an explicit ordinal N, guarding the
+// N+1 increment so a field declared `@65535` does not wrap `next` to 0 and silently
+// reassign @0 to the following member. N is already validated <= kMaxOrdinal. The
+// successor may legitimately reach kMaxOrdinal + 1 (= 65536); if a subsequent field
+// then needs an auto ordinal it is rejected by validateAutoOrdinal below. [audit: H1]
+void advanceNext(uint32_t& next, uint32_t explicitN) {
+  next = explicitN + 1;  // <= 65536; never wraps a uint32
+}
+
+// An auto-assigned ordinal must also be in range. This fires when a scope already
+// holds 65536 members or the counter was pushed to 65536 by an explicit `@65535`. [audit: H1]
+void validateAutoOrdinal(uint32_t n, kj::ArrayPtr<const char> t) {
+  KJ_REQUIRE(n <= kMaxOrdinal,
+      "ZAP whitespace desugar: auto-assigned ordinal out of range (must be 0..65535)",
+      kj::heapString(t.begin(), t.size()));
 }
 
 // ---- output buffer helpers --------------------------------------------------
@@ -180,15 +232,40 @@ enum class HeaderKind {
   STRUCT, INTERFACE, ENUM, UNION, GROUP, NAMED_UNION, NAMED_GROUP, NONE
 };
 
-HeaderKind classifyHeader(kj::ArrayPtr<const char> t) {
-  auto w = firstWord(t);
-  if (equals(w, "struct")) return HeaderKind::STRUCT;
-  if (equals(w, "interface")) return HeaderKind::INTERFACE;
-  if (equals(w, "enum")) return HeaderKind::ENUM;
-  if (equals(w, "union")) return HeaderKind::UNION;
-  if (equals(w, "group")) return HeaderKind::GROUP;
+// Text following the first whitespace-delimited word, with surrounding space trimmed.
+kj::ArrayPtr<const char> restAfterFirstWord(kj::ArrayPtr<const char> t) {
+  return trim(t.slice(firstWord(t).size(), t.size()));
+}
 
-  // `name :union` / `name :group`
+HeaderKind classifyHeader(kj::ArrayPtr<const char> t) {
+  // A braceless header is keyword + the keyword's own name shape + end-of-line — NOT a
+  // `name type` field line whose name merely happens to be a keyword (e.g. `union Int8`,
+  // a field named `union`, or `struct :group`, a field named `struct`). Strip any trailing
+  // comment first so a commented header (`payload :union # tag`) is still recognized. [audit: C4, H4]
+  t = trim(stripTrailingComment(t));
+  auto w = firstWord(t);
+  auto rest = restAfterFirstWord(t);
+
+  // struct/enum: keyword + exactly one identifier, nothing after.
+  if (equals(w, "struct") && isIdent(rest)) return HeaderKind::STRUCT;
+  if (equals(w, "enum") && isIdent(rest)) return HeaderKind::ENUM;
+
+  // interface: keyword + one identifier, optionally followed by an `extends(...)` clause.
+  if (equals(w, "interface")) {
+    auto name = firstWord(rest);
+    if (isIdent(name)) {
+      auto afterName = trim(rest.slice(name.size(), rest.size()));
+      if (afterName.size() == 0 || startsWith(afterName, "extends")) {
+        return HeaderKind::INTERFACE;
+      }
+    }
+  }
+
+  // union/group: bare keyword (anonymous), nothing after. `union Int8` is a field, not a header.
+  if (equals(w, "union") && rest.size() == 0) return HeaderKind::UNION;
+  if (equals(w, "group") && rest.size() == 0) return HeaderKind::GROUP;
+
+  // `name :union` / `name :group` (named, share the enclosing struct's ordinals).
   for (size_t i = 0; i < t.size(); ++i) {
     if (t[i] == ':') {
       auto before = trim(t.first(i));
@@ -209,7 +286,7 @@ HeaderKind classifyHeader(kj::ArrayPtr<const char> t) {
 void emitField(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& next) {
   uint32_t explicitN;
   if (explicitOrdinal(t, explicitN)) {
-    next = explicitN + 1;
+    advanceNext(next, explicitN);
     put(out, t);
     return;
   }
@@ -218,6 +295,7 @@ void emitField(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& next
   auto name = t.first(nameLen);
   auto rest = trim(t.slice(nameLen, t.size()));
   uint32_t n = next++;
+  validateAutoOrdinal(n, t);
   put(out, name);
   put(out, " @");
   putUInt(out, n);
@@ -238,7 +316,7 @@ void emitField(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& next
 void emitEnumValue(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& next) {
   uint32_t explicitN;
   if (explicitOrdinal(t, explicitN)) {
-    next = explicitN + 1;
+    advanceNext(next, explicitN);
     put(out, t);
     return;
   }
@@ -247,6 +325,7 @@ void emitEnumValue(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& 
   auto name = t.first(nameLen);
   auto rest = trim(t.slice(nameLen, t.size()));
   uint32_t n = next++;
+  validateAutoOrdinal(n, t);
   put(out, name);
   put(out, " @");
   putUInt(out, n);
@@ -257,7 +336,7 @@ void emitEnumValue(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& 
 void emitMethod(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& next) {
   uint32_t explicitN;
   if (explicitOrdinal(t, explicitN)) {
-    next = explicitN + 1;
+    advanceNext(next, explicitN);
     put(out, t);
     return;
   }
@@ -266,6 +345,7 @@ void emitMethod(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& nex
   auto name = t.first(nameLen);
   auto rest = trim(t.slice(nameLen, t.size()));
   uint32_t n = next++;
+  validateAutoOrdinal(n, t);
   put(out, name);
   put(out, " @");
   putUInt(out, n);
@@ -349,7 +429,7 @@ kj::Array<char> desugar(kj::ArrayPtr<const char> input) {
       }
     }
     auto content = raw.first(contentEnd);
-    size_t indent = leadingSpaces(content);
+    size_t indent = leadingIndent(content);
     auto trimmed = rtrim(content.slice(indent, content.size()));
 
     // Transparent lines: blank or full-line comment — no structure. Buffer it.
@@ -398,9 +478,18 @@ kj::Array<char> desugar(kj::ArrayPtr<const char> input) {
 
     HeaderKind hk = classifyHeader(trimmed);
     if (hk != HeaderKind::NONE) {
+      // Open the block with '{' placed BEFORE any trailing comment, so the brace is not
+      // swallowed into the comment (which would leave braces unbalanced). A commented
+      // header `struct S # hi` becomes `struct S { # hi`, matching the TS/Go desugarers.
+      // The original whitespace gap before the comment is preserved. [audit: C1]
+      size_t ci = commentStart(trimmed);
+      auto code = rtrim(trimmed.first(ci));
+      auto gap = trimmed.slice(code.size(), ci);  // whitespace between code and '#'
+      auto comment = trimmed.slice(ci, trimmed.size());
       put(out, leadingWs);
-      put(out, trimmed);
+      put(out, code);
       put(out, " {");
+      if (comment.size() > 0) { put(out, gap); put(out, comment); }
       if (eol.size() > 0) put(out, eol); else out.add('\n');
 
       FrameKind fk;
@@ -429,25 +518,34 @@ kj::Array<char> desugar(kj::ArrayPtr<const char> input) {
       frames.add(Frame { indent, fk, ord });
     } else {
       put(out, leadingWs);
+      // Split off any trailing comment FIRST so the synthesized ';' terminator lands on the
+      // code, not after the comment. A field `a Int8  # doc` becomes `a @0 :Int8;  # doc`
+      // — terminated — instead of `a @0 :Int8  # doc;`, which left the field unterminated.
+      // The original whitespace gap before the comment is preserved. [audit: C2]
+      size_t ci = commentStart(trimmed);
+      auto code = rtrim(trimmed.first(ci));
+      auto gap = trimmed.slice(code.size(), ci);  // whitespace between code and '#'
+      auto comment = trimmed.slice(ci, trimmed.size());
+
       // Members inside struct/enum/interface scopes: the newline is the brace statement
       // terminator, so emit a trailing ';' (unless one is already present). At file level,
       // top-level decls (const/using/@id/annotation) carry their own terminator: pass through.
       bool terminate = (parentKind != FrameKind::FILE);
       size_t before = out.size();
       switch (parentKind) {
-        case FrameKind::ENUM:        emitEnumValue(out, trimmed, ords[parentOrd]); break;
-        case FrameKind::INTERFACE:   emitMethod(out, trimmed, ords[parentOrd]); break;
-        case FrameKind::STRUCT_LIKE: emitField(out, trimmed, ords[parentOrd]); break;
-        case FrameKind::FILE:        put(out, trimmed); break;
+        case FrameKind::ENUM:        emitEnumValue(out, code, ords[parentOrd]); break;
+        case FrameKind::INTERFACE:   emitMethod(out, code, ords[parentOrd]); break;
+        case FrameKind::STRUCT_LIKE: emitField(out, code, ords[parentOrd]); break;
+        case FrameKind::FILE:        put(out, code); break;
       }
       if (terminate) {
-        // Inspect the just-emitted member text (after any trailing '#' comment is ignored)
-        // and add ';' only if not already terminated — never double it.
-        auto emitted = rtrim(stripTrailingComment(out.asPtr().slice(before, out.size())));
+        // Add ';' only if the emitted code isn't already terminated — never double it.
+        auto emitted = rtrim(out.asPtr().slice(before, out.size()));
         if (!(emitted.size() > 0 && emitted[emitted.size() - 1] == ';')) {
           out.add(';');
         }
       }
+      if (comment.size() > 0) { put(out, gap); put(out, comment); }
       if (eol.size() > 0) put(out, eol); else out.add('\n');
     }
   }
