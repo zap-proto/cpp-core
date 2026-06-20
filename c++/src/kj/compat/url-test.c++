@@ -310,7 +310,7 @@ KJ_TEST("parse / stringify URL") {
 
 KJ_TEST("URL percent encoding") {
   parseAndCheck(
-      "https://b%6fb:%61bcd@zapr%6fto.org/f%6fo?b%61r=b%61z#q%75x",
+      "https://b%6fb:%61bcd@zap.%6frg/f%6fo?b%61r=b%61z#q%75x",
       "https://bob:abcd@zap.org/foo?bar=baz#qux");
 
   parseAndCheck(

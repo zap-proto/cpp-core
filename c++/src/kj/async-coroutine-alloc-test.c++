@@ -135,10 +135,13 @@ kj::Promise<size_t> coroFib10(Allocator& alloc, size_t i) {
 }
 
 KJ_TEST("Coroutine Frame sizes") {
-#if defined(__clang__) && __clang_major__ >= 20 && defined(NDEBUG)
+#if defined(__clang__) && __clang_major__ >= 20 && defined(NDEBUG) && !defined(__apple_build_version__)
   // Coroutine size varies between compilers and optimization level. We still want to keep track
   // of coroutine sizes. Thus restrict check to newest clang opt build.
   // We intentionally keep the upper bound open to detect when production compiler deviates.
+  // Apple clang is excluded: its version numbers are decoupled from upstream LLVM (e.g. Apple
+  // clang 21 != LLVM 21) and its coroutine frame layout differs from the calibrated sizes below,
+  // which are tuned for the upstream LLVM clang used in CI.
   #define KJ_EXPECT_CORO_SIZE(...) KJ_EXPECT(__VA_ARGS__)
 #else
   #define KJ_EXPECT_CORO_SIZE(...) 
