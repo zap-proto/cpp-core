@@ -104,6 +104,7 @@ cc_library(
     name = "zapc",
     srcs = [
         "compiler/compiler.c++",
+        "compiler/desugar.c++",
         "compiler/error-reporter.c++",
         "compiler/generics.c++",
         "compiler/grammar.zap.c++",
@@ -117,6 +118,7 @@ cc_library(
     ],
     hdrs = [
         "compiler/compiler.h",
+        "compiler/desugar.h",
         "compiler/error-reporter.h",
         "compiler/generics.h",
         "compiler/grammar.zap.h",
@@ -243,6 +245,7 @@ cc_library(
     "canonicalize-test.c++",
     "common-test.c++",
     "capability-test.c++",
+    "compiler/desugar-test.c++",
     "compiler/evolution-test.c++",
     "compiler/lexer-test.c++",
     "compiler/type-id-test.c++",
