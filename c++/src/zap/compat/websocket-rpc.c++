@@ -19,11 +19,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include <capnp/compat/websocket-rpc.h>
+#include <zap/compat/websocket-rpc.h>
 #include <kj/io.h>
-#include <capnp/serialize.h>
+#include <zap/serialize.h>
 
-namespace capnp {
+namespace zap {
 
 WebSocketMessageStream::WebSocketMessageStream(kj::WebSocket& socket)
   : socket(socket)
@@ -44,7 +44,7 @@ kj::Promise<kj::Maybe<MessageReaderAndFds>> WebSocketMessageStream::tryReadMessa
           break;
         }
         KJ_CASE_ONEOF(bytes, kj::Array<byte>) {
-          kj::Own<capnp::MessageReader> reader;
+          kj::Own<zap::MessageReader> reader;
           size_t sizeInWords = bytes.size() / sizeof(word);
           if (reinterpret_cast<uintptr_t>(bytes.begin()) % alignof(word) == 0) {
             reader = kj::heap<FlatArrayMessageReader>(
@@ -86,7 +86,7 @@ kj::Promise<void> WebSocketMessageStream::writeMessage(
 
   auto stream = kj::heap<kj::VectorOutputStream>(
       computeSerializedSizeInWords(segments) * sizeof(word));
-  capnp::writeMessage(*stream, segments);
+  zap::writeMessage(*stream, segments);
   auto arrayPtr = stream->getArray();
   return socket.send(arrayPtr).attach(kj::mv(stream));
 }
@@ -119,9 +119,9 @@ kj::Promise<void> WebSocketMessageStream::end() {
           // * https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/close
           // * https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent
 
-    "Capnp connection closed" // Similarly not much information to go on here,
+    "Zap connection closed" // Similarly not much information to go on here,
                               // but this at least lets us trace this back to
-                              // capnp.
+                              // zap.
   );
 };
 

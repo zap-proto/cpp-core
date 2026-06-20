@@ -25,9 +25,9 @@
 #include <inttypes.h>
 #include <string.h>  // memcpy
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 
 // WireValue
@@ -37,14 +37,14 @@ namespace _ {  // private
 //
 // Note:  In general, code that depends cares about byte ordering is bad.  See:
 //     http://commandcenter.blogspot.com/2012/04/byte-order-fallacy.html
-//   Cap'n Proto is special because it is essentially doing compiler-like things, fussing over
+//   Zap is special because it is essentially doing compiler-like things, fussing over
 //   allocation and layout of memory, in order to squeeze out every last drop of performance.
 
 #if _MSC_VER
 // Assume Windows is little-endian.
 //
-// TODO(msvc): This is ugly. Maybe refactor later checks to be based on CAPNP_BYTE_ORDER or
-//   CAPNP_SWAP_BYTES or something, and define that in turn based on _MSC_VER or the GCC
+// TODO(msvc): This is ugly. Maybe refactor later checks to be based on ZAP_BYTE_ORDER or
+//   ZAP_SWAP_BYTES or something, and define that in turn based on _MSC_VER or the GCC
 //   intrinsics.
 
 #ifndef __ORDER_BIG_ENDIAN__
@@ -58,17 +58,17 @@ namespace _ {  // private
 #endif
 #endif
 
-#if CAPNP_REVERSE_ENDIAN
-#define CAPNP_WIRE_BYTE_ORDER __ORDER_BIG_ENDIAN__
-#define CAPNP_OPPOSITE_OF_WIRE_BYTE_ORDER __ORDER_LITTLE_ENDIAN__
+#if ZAP_REVERSE_ENDIAN
+#define ZAP_WIRE_BYTE_ORDER __ORDER_BIG_ENDIAN__
+#define ZAP_OPPOSITE_OF_WIRE_BYTE_ORDER __ORDER_LITTLE_ENDIAN__
 #else
-#define CAPNP_WIRE_BYTE_ORDER __ORDER_LITTLE_ENDIAN__
-#define CAPNP_OPPOSITE_OF_WIRE_BYTE_ORDER __ORDER_BIG_ENDIAN__
+#define ZAP_WIRE_BYTE_ORDER __ORDER_LITTLE_ENDIAN__
+#define ZAP_OPPOSITE_OF_WIRE_BYTE_ORDER __ORDER_BIG_ENDIAN__
 #endif
 
 #if defined(__BYTE_ORDER__) && \
-    __BYTE_ORDER__ == CAPNP_WIRE_BYTE_ORDER && \
-    !CAPNP_DISABLE_ENDIAN_DETECTION
+    __BYTE_ORDER__ == ZAP_WIRE_BYTE_ORDER && \
+    !ZAP_DISABLE_ENDIAN_DETECTION
 // CPU is little-endian.  We can just read/write the memory directly.
 
 template <typename T>
@@ -88,8 +88,8 @@ using WireValue = DirectWireValue<T>;
 // one we want to use.
 
 #elif defined(__BYTE_ORDER__) && \
-      __BYTE_ORDER__ == CAPNP_OPPOSITE_OF_WIRE_BYTE_ORDER && \
-      defined(__GNUC__) && !CAPNP_DISABLE_ENDIAN_DETECTION
+      __BYTE_ORDER__ == ZAP_OPPOSITE_OF_WIRE_BYTE_ORDER && \
+      defined(__GNUC__) && !ZAP_DISABLE_ENDIAN_DETECTION
 // Big-endian, but GCC's __builtin_bswap() is available.
 
 // TODO(perf):  Use dedicated instructions to read little-endian data on big-endian CPUs that have
@@ -181,7 +181,7 @@ using WireValue = SwappingWireValue<T>;
 #else
 // Unknown endianness.  Fall back to bit shifts.
 
-#if !CAPNP_DISABLE_ENDIAN_DETECTION
+#if !ZAP_DISABLE_ENDIAN_DETECTION
 #if _MSC_VER
 #pragma message("Couldn't detect endianness of your platform.  Using unoptimized fallback implementation.")
 #pragma message("Consider changing this code to detect your platform and send us a patch!")
@@ -189,7 +189,7 @@ using WireValue = SwappingWireValue<T>;
 #warning "Couldn't detect endianness of your platform.  Using unoptimized fallback implementation."
 #warning "Consider changing this code to detect your platform and send us a patch!"
 #endif
-#endif  // !CAPNP_DISABLE_ENDIAN_DETECTION
+#endif  // !ZAP_DISABLE_ENDIAN_DETECTION
 
 template <typename T, size_t size = sizeof(T)>
 class ShiftingWireValue;
@@ -301,6 +301,6 @@ using WireValue = ShiftingWireValue<T>;
 #endif
 
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

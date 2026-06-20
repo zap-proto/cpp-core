@@ -1,26 +1,26 @@
-;;; capnp-mode.el --- Major mode for editing Capn' Proto Files
+;;; zap-mode.el --- Major mode for editing Capn' Proto Files
 
 ;; This is free and unencumbered software released into the public domain.
 
 ;; Author: Brian Taylor <el.wubo@gmail.com>
 ;; Version: 1.0.0
-;; URL: https://github.com/capnproto/capnproto
+;; URL: https://github.com/zap/zap
 
 ;;; Commentary:
 
-;; Provides basic syntax highlighting for capnp files.
+;; Provides basic syntax highlighting for zap files.
 ;;
 ;; To use:
 ;;
 ;; Add something like this to your .emacs file:
 ;;
-;; (add-to-list 'load-path "~/src/capnproto/highlighting/emacs")
-;; (require 'capnp-mode)
+;; (add-to-list 'load-path "~/src/zap/highlighting/emacs")
+;; (require 'zap-mode)
 ;;
 
 ;;; Code:
 
-(defvar capnp--syntax-table
+(defvar zap--syntax-table
   (let ((syn-table (make-syntax-table)))
 
     ;; bash style comment: “# …”
@@ -28,41 +28,41 @@
     (modify-syntax-entry ?\n "> b" syn-table)
 
     syn-table)
-  "Syntax table for `capnp-mode'.")
+  "Syntax table for `zap-mode'.")
 
-(defvar capnp--keywords
+(defvar zap--keywords
   '("struct" "enum" "interface" "union" "import"
     "using" "const" "annotation" "extends" "in"
     "of" "on" "as" "with" "from" "fixed")
-  "Keywords in `capnp-mode'.")
+  "Keywords in `zap-mode'.")
 
-(defvar capnp--types
+(defvar zap--types
   '("union" "group" "Void" "Bool" "Int8" "Int16"
     "Int32" "Int64" "UInt8" "UInt16" "UInt32"
     "UInt64" "Float32" "Float64" "Text" "Data"
     "AnyPointer" "AnyStruct" "Capability" "List")
-  "Types in `capnp-mode'.")
+  "Types in `zap-mode'.")
 
-(defvar capnp--font-lock-keywords
+(defvar zap--font-lock-keywords
   `(
-    (,(regexp-opt capnp--keywords 'words) . font-lock-keyword-face)
-    (,(regexp-opt capnp--types 'words) . font-lock-type-face)
+    (,(regexp-opt zap--keywords 'words) . font-lock-keyword-face)
+    (,(regexp-opt zap--types 'words) . font-lock-type-face)
     ("@\\w+" . font-lock-constant-face))
-  "Font lock definitions in `capnp-mode'.")
+  "Font lock definitions in `zap-mode'.")
 
 ;;;###autoload
-(define-derived-mode capnp-mode prog-mode
-  "capn-mode is a major mode for editing capnp protocol files"
-  :syntax-table capnp--syntax-table
+(define-derived-mode zap-mode prog-mode
+  "capn-mode is a major mode for editing zap protocol files"
+  :syntax-table zap--syntax-table
 
   (setq-local comment-start "# ")
   (setq-local comment-start-skip "#+\\s-*")
-  (setq font-lock-defaults '((capnp--font-lock-keywords)))
-  (setq mode-name "capnp"))
+  (setq font-lock-defaults '((zap--font-lock-keywords)))
+  (setq mode-name "zap"))
 
 ;;;###autoload
-(add-to-list 'auto-mode-alist '("\\.capnp\\'" . capnp-mode))
+(add-to-list 'auto-mode-alist '("\\.zap\\'" . zap-mode))
 
-(provide 'capnp-mode)
-;;; capnp-mode.el ends here
+(provide 'zap-mode)
+;;; zap-mode.el ends here
 

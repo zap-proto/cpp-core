@@ -25,9 +25,9 @@
 #include <kj/io.h>
 #include "message.h"
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 struct MessageReaderAndFds {
   kj::Own<MessageReader> reader;
@@ -96,7 +96,7 @@ public:
   // Get the size of the underlying send buffer, if applicable. The RPC
   // system uses this as a hint for flow control purposes; see:
   //
-  // https://capnproto.org/news/2020-04-23-capnproto-0.8.html#multi-stream-flow-control
+  // https://zap.org/news/2020-04-23-zap-0.8.html#multi-stream-flow-control
   //
   // ...for a more thorough explanation of how this is used. Implementations
   // may return nullptr if they do not have access to this information, or if
@@ -319,6 +319,6 @@ inline kj::Promise<void> MessageStream::writeMessage(
   return writeMessage(fds, builder.getSegmentsForOutput());
 }
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

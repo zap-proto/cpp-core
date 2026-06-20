@@ -30,7 +30,7 @@ KJ_BEGIN_HEADER
 // pressing need for this for MSVC & writing the write compiler version check is annoying.
 // Checking for clang version is problematic due to the way that XCode lies about __clang_major__.
 // Instead we use __has_builtin as the feature check to check clang.
-// Context: https://github.com/capnproto/capnproto/issues/1305
+// Context: https://github.com/zap/zap/issues/1305
 //
 // TODO(someday): However, both gcc and msvc provide a <source_location> implementation starting
 // in C++20 that we could delegate to, or use directly.

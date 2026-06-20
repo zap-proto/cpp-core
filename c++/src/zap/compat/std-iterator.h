@@ -29,12 +29,12 @@
 #include "../list.h"
 #include <iterator>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
 namespace std {
 
 template <typename Container, typename Element>
-struct iterator_traits<capnp::_::IndexingIterator<Container, Element>> {
+struct iterator_traits<zap::_::IndexingIterator<Container, Element>> {
   using iterator_category = std::random_access_iterator_tag;
   using value_type = Element;
   using difference_type	= int;
@@ -44,4 +44,4 @@ struct iterator_traits<capnp::_::IndexingIterator<Container, Element>> {
 
 }  // namespace std
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

@@ -17,7 +17,7 @@ How to release
 
 * Manually run the pointer fuzz tests under Valgrind. This will take 40-80 minutes.
 
-      valgrind ./capnp-test -fcapnp/fuzz-test.c++
+      valgrind ./zap-test -fzap/fuzz-test.c++
 
 * Manually run the AFL fuzz tests by running `afl-fuzz.sh`. There are three test cases, and ideally each should run for 24 hours or more.
 

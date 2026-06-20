@@ -8,4 +8,4 @@ Description: Basic utility library called KJ (TLS part)
 Version: @VERSION@
 Libs: -L${libdir} -lkj-tls @PTHREAD_CFLAGS@ @PTHREAD_LIBS@ @STDLIB_FLAG@
 Requires: kj-async = @VERSION@
-Cflags: -I${includedir} @PTHREAD_CFLAGS@ @STDLIB_FLAG@ @CAPNP_LITE_FLAG@
+Cflags: -I${includedir} @PTHREAD_CFLAGS@ @STDLIB_FLAG@ @ZAP_LITE_FLAG@

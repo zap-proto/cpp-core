@@ -21,7 +21,7 @@
 
 #include "null-common.h"
 
-namespace capnp {
+namespace zap {
 namespace benchmark {
 namespace null {
 
@@ -158,10 +158,10 @@ public:
 
 }  // namespace null
 }  // namespace benchmark
-}  // namespace capnp
+}  // namespace zap
 
 int main(int argc, char* argv[]) {
-  return capnp::benchmark::benchmarkMain<
-      capnp::benchmark::null::BenchmarkTypes,
-      capnp::benchmark::null::CatRankTestCase>(argc, argv);
+  return zap::benchmark::benchmarkMain<
+      zap::benchmark::null::BenchmarkTypes,
+      zap::benchmark::null::CatRankTestCase>(argc, argv);
 }

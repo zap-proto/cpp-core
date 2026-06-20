@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define CAPNP_TESTING_CAPNP 1
+#define ZAP_TESTING_ZAP 1
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
@@ -32,7 +32,7 @@
 
 #include "rpc-twoparty.h"
 #include "test-util.h"
-#include <capnp/rpc.capnp.h>
+#include <zap/rpc.zap.h>
 #include <kj/debug.h>
 #include <kj/thread.h>
 #include <kj/compat/gtest.h>
@@ -47,15 +47,15 @@
 #endif
 
 // TODO(cleanup): Auto-generate stringification functions for union discriminants.
-namespace capnp {
+namespace zap {
 namespace rpc {
 inline kj::String KJ_STRINGIFY(Message::Which which) {
   return kj::str(static_cast<uint16_t>(which));
 }
 }  // namespace rpc
-}  // namespace capnp
+}  // namespace zap
 
-namespace capnp {
+namespace zap {
 namespace _ {
 namespace {
 
@@ -100,7 +100,7 @@ TEST(TwoPartyNetwork, Basic) {
   int handleCount = 0;
 
   auto serverThread = runServer(*ioContext.provider, callCount, handleCount);
-  TwoPartyVatNetwork network(*serverThread.pipe, rpc::twoparty::Side::CLIENT, capnp::ReaderOptions(), clock);
+  TwoPartyVatNetwork network(*serverThread.pipe, rpc::twoparty::Side::CLIENT, zap::ReaderOptions(), clock);
   auto rpcClient = makeRpcClient(network);
 
   KJ_EXPECT(network.getCurrentQueueCount() == 0);
@@ -516,7 +516,7 @@ KJ_TEST("send FD over RPC") {
     kj::OwnFd in2(pipeFds[0]);
     kj::OwnFd out2(pipeFds[1]);
 
-    capnp::RemotePromise<test::TestMoreStuff::WriteToFdResults> promise = nullptr;
+    zap::RemotePromise<test::TestMoreStuff::WriteToFdResults> promise = nullptr;
     {
       auto req = cap.writeToFdRequest();
 
@@ -566,7 +566,7 @@ KJ_TEST("FD per message limit") {
   kj::OwnFd in2(pipeFds[0]);
   kj::OwnFd out2(pipeFds[1]);
 
-  capnp::RemotePromise<test::TestMoreStuff::WriteToFdResults> promise = nullptr;
+  zap::RemotePromise<test::TestMoreStuff::WriteToFdResults> promise = nullptr;
   {
     auto req = cap.writeToFdRequest();
 
@@ -1237,4 +1237,4 @@ KJ_TEST("Two-hop embargo") {
 
 }  // namespace
 }  // namespace _
-}  // namespace capnp
+}  // namespace zap

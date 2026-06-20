@@ -6,9 +6,9 @@ title: Installation
 # Installation: Tools and C++ Runtime
 
 <div style="float: right"><a class="groups_link" style="color: #fff"
-href="https://groups.google.com/group/capnproto-announce">Get Notified of Updates</a></div>
+href="https://groups.google.com/group/zap-announce">Get Notified of Updates</a></div>
 
-The Cap'n Proto tools, including the compiler (which takes `.capnp` files and generates source code
+The Zap tools, including the compiler (which takes `.zap` files and generates source code
 for them), are written in C++.  Therefore, you must install the C++ package even if your actual
 development language is something else.
 
@@ -18,23 +18,23 @@ This package is licensed under the [MIT License](http://opensource.org/licenses/
 
 ### Supported Compilers
 
-Cap'n Proto makes extensive use of C++20 language features. As a result, it requires a relatively
+Zap makes extensive use of C++20 language features. As a result, it requires a relatively
 new version of a well-supported compiler. The minimum versions are:
 
 * GCC 10.0*
 * Clang 14.0
 * Visual C++ 2022
 
-*: Cap'n Proto 2.0 and above cannot currently compile with GCC due to https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102051
+*: Zap 2.0 and above cannot currently compile with GCC due to https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102051
 
 If your system's default compiler is older that the above, you will need to install a newer
-compiler and set the `CXX` environment variable before trying to build Cap'n Proto. For example,
+compiler and set the `CXX` environment variable before trying to build Zap. For example,
 after installing GCC 10, you could set `CXX=g++-10` to use this compiler.
 
 ### Supported Operating Systems
 
-In theory, Cap'n Proto should work on any POSIX platform supporting one of the above compilers,
-as well as on Windows. We test every Cap'n Proto release on the following platforms:
+In theory, Zap should work on any POSIX platform supporting one of the above compilers,
+as well as on Windows. We test every Zap release on the following platforms:
 
 * Android
 * Linux
@@ -42,8 +42,8 @@ as well as on Windows. We test every Cap'n Proto release on the following platfo
 * Windows - MinGW-w64
 * Windows - Visual C++
 
-**Windows users:** Cap'n Proto requires Visual Studio 2022 or newer. All features
-of Cap'n Proto -- including serialization, dynamic API, RPC, and schema parser -- are now supported.
+**Windows users:** Zap requires Visual Studio 2022 or newer. All features
+of Zap -- including serialization, dynamic API, RPC, and schema parser -- are now supported.
 
 **Mac OS X users:** You should use the latest Xcode with the Xcode command-line
 tools (Xcode menu > Preferences > Downloads).  Alternatively, the command-line tools
@@ -55,28 +55,28 @@ package from [Apple](https://developer.apple.com/downloads/) or compiler builds 
 
 **From Release Tarball**
 
-You may download and install the release version of Cap'n Proto like so:
+You may download and install the release version of Zap like so:
 
-<pre><code>curl -O <a href="https://capnproto.org/capnproto-c++-0.0.0.tar.gz">https://capnproto.org/capnproto-c++-0.0.0.tar.gz</a>
-tar zxf capnproto-c++-0.0.0.tar.gz
-cd capnproto-c++-0.0.0
+<pre><code>curl -O <a href="https://zap.org/zap-c++-0.0.0.tar.gz">https://zap.org/zap-c++-0.0.0.tar.gz</a>
+tar zxf zap-c++-0.0.0.tar.gz
+cd zap-c++-0.0.0
 ./configure
 make -j6 check
 sudo make install</code></pre>
 
-This will install `capnp`, the Cap'n Proto command-line tool.  It will also install `libcapnp`,
-`libcapnpc`, and `libkj` in `/usr/local/lib` and headers in `/usr/local/include/capnp` and
+This will install `zap`, the Zap command-line tool.  It will also install `libzap`,
+`libzapc`, and `libkj` in `/usr/local/lib` and headers in `/usr/local/include/zap` and
 `/usr/local/include/kj`.
 
 **From Package Managers**
 
-Some package managers include Cap'n Proto packages.
+Some package managers include Zap packages.
 
-Note: These packages are not maintained by us and are sometimes not up to date with the latest Cap'n Proto release.
+Note: These packages are not maintained by us and are sometimes not up to date with the latest Zap release.
 
-* Debian / Ubuntu: `apt-get install capnproto`
-* Arch Linux: `sudo pacman -S capnproto`
-* Homebrew (OSX): `brew install capnp`
+* Debian / Ubuntu: `apt-get install zap`
+* Arch Linux: `sudo pacman -S zap`
+* Homebrew (OSX): `brew install zap`
 
 **From Git**
 
@@ -85,8 +85,8 @@ If you download directly from Git, you will need to have the GNU autotools --
 [automake](http://www.gnu.org/software/automake/), and
 [libtool](http://www.gnu.org/software/libtool/) -- installed.
 
-    git clone -b master https://github.com/capnproto/capnproto.git
-    cd capnproto/c++
+    git clone -b master https://github.com/zap/zap.git
+    cd zap/c++
     autoreconf -i
     ./configure
     make -j6 check
@@ -96,39 +96,39 @@ If you download directly from Git, you will need to have the GNU autotools --
 
 **From Release Zip**
 
-1. Download Cap'n Proto Win32 build:
+1. Download Zap Win32 build:
 
-   <pre><a href="https://capnproto.org/capnproto-c++-win32-0.0.0.zip">https://capnproto.org/capnproto-c++-win32-0.0.0.zip</a></pre>
+   <pre><a href="https://zap.org/zap-c++-win32-0.0.0.zip">https://zap.org/zap-c++-win32-0.0.0.zip</a></pre>
 
-2. Find `capnp.exe`, `capnpc-c++.exe`, and `capnpc-capnp.exe` under `capnproto-tools-win32-0.0.0` in
+2. Find `zap.exe`, `zapc-c++.exe`, and `zapc-zap.exe` under `zap-tools-win32-0.0.0` in
    the zip and copy them somewhere.
 
-3. If your `.capnp` files will import any of the `.capnp` files provided by the core project, or
-   if you use the `stream` keyword (which implicitly imports `capnp/stream.capnp`), then you need
-   to put those files somewhere where the capnp compiler can find them. To do this, copy the
-   directory `capnproto-c++-0.0.0/src` to the location of your choice, then make sure to pass the
-   flag `-I <that location>` to `capnp` when you run it.
+3. If your `.zap` files will import any of the `.zap` files provided by the core project, or
+   if you use the `stream` keyword (which implicitly imports `zap/stream.zap`), then you need
+   to put those files somewhere where the zap compiler can find them. To do this, copy the
+   directory `zap-c++-0.0.0/src` to the location of your choice, then make sure to pass the
+   flag `-I <that location>` to `zap` when you run it.
 
 If you don't care about C++ support, you can stop here. The compiler exe can be used with plugins
-provided by projects implementing Cap'n Proto in other languages.
+provided by projects implementing Zap in other languages.
 
-If you want to use Cap'n Proto in C++ with Visual Studio, do the following:
+If you want to use Zap in C++ with Visual Studio, do the following:
 
-1. Make sure that you are using Visual Studio 2022 or newer, with all updates installed. Cap'n
-   Proto uses C++20 language features that did not work in previous versions of Visual Studio,
-   and the updates include many bug fixes that Cap'n Proto requires.
+1. Make sure that you are using Visual Studio 2022 or newer, with all updates installed. Zap
+    uses C++20 language features that did not work in previous versions of Visual Studio,
+   and the updates include many bug fixes that Zap requires.
 
 2. Install [CMake](http://www.cmake.org/) version 3.16 or later.
 
-3. Use CMake to generate Visual Studio project files under `capnproto-c++-0.0.0` in the zip file.
+3. Use CMake to generate Visual Studio project files under `zap-c++-0.0.0` in the zip file.
    You can use the CMake UI for this or run this shell command:
 
        cmake -G "Visual Studio 17 2022"
 
-3. Open the "Cap'n Proto" solution in Visual Studio.
+3. Open the "Zap" solution in Visual Studio.
 
 4. Adjust the project build options (e.g., choice of C++ runtime library, enable/disable exceptions
-   and RTTI) to match the options of the project in which you plan to use Cap'n Proto.
+   and RTTI) to match the options of the project in which you plan to use Zap.
 
 5. Build the solution (`ALL_BUILD`).
 
@@ -136,11 +136,11 @@ If you want to use Cap'n Proto in C++ with Visual Studio, do the following:
    `CMAKE_INSTALL_PREFIX`.
 
    Alternatively, find the compiled `.lib` files in the build directory under
-   `src/{capnp,kj}/{Debug,Release}` and place them somewhere where your project can link against them.
+   `src/{zap,kj}/{Debug,Release}` and place them somewhere where your project can link against them.
    Also add the `src` directory to your search path for `#include`s, or copy all the headers to your
    project's include directory.
 
-Cap'n Proto can also be built with MinGW or Cygwin, using the Unix/autotools build instructions.
+Zap can also be built with MinGW or Cygwin, using the Unix/autotools build instructions.
 
 **From Git**
 

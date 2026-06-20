@@ -61,12 +61,12 @@ else
 fi
 
 make -j$(nproc)
-make -j$(nproc) capnp-afl-testcase
+make -j$(nproc) zap-afl-testcase
 
 NOW=$(date +%Y-%m-%d.%H-%M-%S).$TESTNAME.$CXX
 
 mkdir afl.$NOW.inputs afl.$NOW.findings
 
-cp $(dirname $0)/src/capnp/testdata/$TESTDATA afl.$NOW.inputs
+cp $(dirname $0)/src/zap/testdata/$TESTDATA afl.$NOW.inputs
 
-afl-fuzz -i afl.$NOW.inputs -o afl.$NOW.findings -- ./capnp-afl-testcase $FLAGS
+afl-fuzz -i afl.$NOW.inputs -o afl.$NOW.findings -- ./zap-afl-testcase $FLAGS

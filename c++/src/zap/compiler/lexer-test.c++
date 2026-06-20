@@ -23,7 +23,7 @@
 #include "../message.h"
 #include <kj/compat/gtest.h>
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 namespace {
 
@@ -41,7 +41,7 @@ public:
 
 template <typename LexResult>
 kj::String doLex(kj::StringPtr constText) {
-  // Parse the given string into the given Cap'n Proto struct type using lex(), then stringify the
+  // Parse the given string into the given Zap struct type using lex(), then stringify the
   // result and return that string.  Additionally, single quotes in the input are converted to
   // double quotes, and double quotes in the output are converted to single quotes, to reduce the
   // amount of escaping needed in the test strings.
@@ -370,4 +370,4 @@ TEST(Lexer, Utf8Bom) {
 
 }  // namespace
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap

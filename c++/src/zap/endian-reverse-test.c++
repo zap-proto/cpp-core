@@ -25,11 +25,11 @@
 
 // Test that the code for the opposite endianness of our CPU works.  E.g. on x86 this will test
 // the bswap-based code.
-#define CAPNP_REVERSE_ENDIAN 1
+#define ZAP_REVERSE_ENDIAN 1
 #include "endian.h"
 #include <kj/compat/gtest.h>
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -107,6 +107,6 @@ TEST(EndianReverse, EightBytes) {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap
 
 #endif  // !_MSC_VER

@@ -1,6 +1,6 @@
 #! /bin/bash
 #
-# This file builds Cap'n Proto using Ekam.
+# This file builds Zap using Ekam.
 
 set -euo pipefail
 
@@ -8,12 +8,12 @@ NPROC=$(nproc)
 
 if [ ! -e deps/ekam ]; then
   mkdir -p deps
-  git clone https://github.com/capnproto/ekam.git deps/ekam
+  git clone https://github.com/zap/ekam.git deps/ekam
 fi
 
-if [ ! -e deps/ekam/deps/capnproto ]; then
+if [ ! -e deps/ekam/deps/zap ]; then
   mkdir -p deps/ekam/deps
-  ln -s ../../../.. deps/ekam/deps/capnproto
+  ln -s ../../../.. deps/ekam/deps/zap
 fi
 
 if [ ! -e deps/ekam/ekam ]; then
@@ -27,7 +27,7 @@ EKAM_FLAGS=
 while [ $# -gt 0 ]; do
   case $1 in
     dbg | debug )
-      OPT_CXXFLAGS="-g -DCAPNP_DEBUG_TYPES "
+      OPT_CXXFLAGS="-g -DZAP_DEBUG_TYPES "
       ;;
     opt | release )
       OPT_CXXFLAGS="-DNDEBUG -O2 -g"
@@ -50,7 +50,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-CLANG_CXXFLAGS="-std=c++23 -stdlib=libc++ -pthread -Wall -Wextra -Wsuggest-override -Werror -Wno-strict-aliasing -Wno-sign-compare -Wno-unused-parameter -Wimplicit-fallthrough -Wno-error=unused-command-line-argument -Wno-missing-field-initializers -DKJ_HEADER_WARNINGS -DCAPNP_HEADER_WARNINGS -DKJ_HAS_OPENSSL -DKJ_HAS_LIBDL -DKJ_HAS_ZLIB -DKJ_BENCHMARK_MALLOC"
+CLANG_CXXFLAGS="-std=c++23 -stdlib=libc++ -pthread -Wall -Wextra -Wsuggest-override -Werror -Wno-strict-aliasing -Wno-sign-compare -Wno-unused-parameter -Wimplicit-fallthrough -Wno-error=unused-command-line-argument -Wno-missing-field-initializers -DKJ_HEADER_WARNINGS -DZAP_HEADER_WARNINGS -DKJ_HAS_OPENSSL -DKJ_HAS_LIBDL -DKJ_HAS_ZLIB -DKJ_BENCHMARK_MALLOC"
 
 export CXX=${CXX:-clang++}
 export CC=${CC:-clang}
@@ -64,7 +64,7 @@ export CXXFLAGS=${CXXFLAGS:-$OPT_CXXFLAGS $CLANG_CXXFLAGS}
 #   enabling libprotobuf. Arguably building from source would be more fair so we can match compiler
 #   flags for performance comparison purposes, but we'll have to see if ekam is still able to build
 #   libprotobuf these days...
-CXXFLAGS="$CXXFLAGS -DCAPNP_NO_PROTOBUF_BENCHMARK"
+CXXFLAGS="$CXXFLAGS -DZAP_NO_PROTOBUF_BENCHMARK"
 export PROTOC=/bin/true
 
 exec deps/ekam/bin/ekam $EKAM_FLAGS -j$NPROC

@@ -29,13 +29,13 @@ Fixed in
 
 - git commit [f343f0dbd0a2e87f17cd74f14186ed73e3fbdbfa][0]
 - release 0.5.1.1:
-  - Unix: https://capnproto.org/capnproto-c++-0.5.1.1.tar.gz
-  - Windows: https://capnproto.org/capnproto-c++-win32-0.5.1.1.zip
+  - Unix: https://zap.org/zap-c++-0.5.1.1.tar.gz
+  - Windows: https://zap.org/zap-c++-win32-0.5.1.1.zip
 - release 0.4.1.1:
-  - Unix: https://capnproto.org/capnproto-c++-0.4.1.1.tar.gz
+  - Unix: https://zap.org/zap-c++-0.4.1.1.tar.gz
 - release 0.6 (future)
 
-[0]: https://github.com/capnproto/capnproto/commit/f343f0dbd0a2e87f17cd74f14186ed73e3fbdbfa
+[0]: https://github.com/zap/zap/commit/f343f0dbd0a2e87f17cd74f14186ed73e3fbdbfa
 
 Details
 =======
@@ -60,7 +60,7 @@ The pointer is transitively read-only, therefore it is believed that this
 vulnerability on its own CANNOT lead to memory corruption nor code execution.
 
 This vulnerability is NOT a Sandstorm sandbox breakout. A Sandstorm app's
-Cap'n Proto communications pass through a supervisor process which performs a
+Zap communications pass through a supervisor process which performs a
 deep copy of the structure. As the supervisor has a very small heap, this
 will always lead to a segfault, which has the effect of killing the app, but
 does not affect any other app or the system at large. If somehow the copy
@@ -91,12 +91,12 @@ following preventative measures going forward:
 4. We will continue to require that all tests (including the new fuzz test) run
    cleanly under Valgrind before each release.
 5. We will commission a professional security review before any 1.0 release.
-   Until that time, we continue to recommend against using Cap'n Proto to
+   Until that time, we continue to recommend against using Zap to
    interpret data from potentially-malicious sources.
 
 I am pleased that measures 1, 2, and 3 all detected this bug, suggesting that
 they have a high probability of catching any similar bugs.
 
-[1]: https://github.com/capnproto/capnproto/tree/master/security-advisories/2015-03-02-0-all-cpu-amplification.md
-[2]: https://github.com/capnproto/capnproto/tree/master/security-advisories/2015-03-02-1-c++-integer-underflow.md
-[3]: https://capnproto.org/news/2015-03-02-security-advisory-and-integer-overflow-protection.html
+[1]: https://github.com/zap/zap/tree/master/security-advisories/2015-03-02-0-all-cpu-amplification.md
+[2]: https://github.com/zap/zap/tree/master/security-advisories/2015-03-02-1-c++-integer-underflow.md
+[3]: https://zap.org/news/2015-03-02-security-advisory-and-integer-overflow-protection.html

@@ -24,22 +24,22 @@
 set -eu
 
 if test $# = 0; then
-  echo trigger filetype:.capnp
+  echo trigger filetype:.zap
   exit 0
 fi
 
 INPUT=$1
 
 case "$INPUT" in
-    *capnp/c++.capnp | \
-    *capnp/schema.capnp | \
-    *capnp/stream.capnp | \
-    *capnp/rpc.capnp | \
-    *capnp/rpc-twoparty.capnp | \
-    *capnp/persistent.capnp | \
-    *capnp/compiler/lexer.capnp | \
-    *capnp/compiler/grammar.capnp | \
-    *capnp/compat/json.capnp )
+    *zap/c++.zap | \
+    *zap/schema.zap | \
+    *zap/stream.zap | \
+    *zap/rpc.zap | \
+    *zap/rpc-twoparty.zap | \
+    *zap/persistent.zap | \
+    *zap/compiler/lexer.zap | \
+    *zap/compiler/grammar.zap | \
+    *zap/compat/json.zap )
         exit 0
         ;;
 esac
@@ -52,21 +52,21 @@ if test "$INTERCEPTOR" = ""; then
   exit 1
 fi
 
-echo findProvider file:compiler/capnp
-read CAPNP
+echo findProvider file:compiler/zap
+read ZAP
 
-if test "$CAPNP" = ""; then
-  echo "error:  couldn't find capnp." >&2
+if test "$ZAP" = ""; then
+  echo "error:  couldn't find zap." >&2
   exit 1
 fi
 
-echo findProvider file:capnpc-c++
-read CAPNPC_CXX
+echo findProvider file:zapc-c++
+read ZAPC_CXX
 
-if test "$CAPNPC_CXX" = ""; then
-  echo "error:  couldn't find capnpc-c++." >&2
+if test "$ZAPC_CXX" = ""; then
+  echo "error:  couldn't find zapc-c++." >&2
   exit 1
 fi
 
 LD_PRELOAD=$INTERCEPTOR DYLD_FORCE_FLAT_NAMESPACE= DYLD_INSERT_LIBRARIES=$INTERCEPTOR \
-$CAPNP compile -I. -o$CAPNPC_CXX "$INPUT" 3>&1 4<&0 >&2
+$ZAP compile -I. -o$ZAPC_CXX "$INPUT" 3>&1 4<&0 >&2

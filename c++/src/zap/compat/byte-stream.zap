@@ -1,7 +1,7 @@
 @0x8f5d14e1c273738d;
 
-using Cxx = import "/capnp/c++.capnp";
-$Cxx.namespace("capnp");
+using Cxx = import "/zap/c++.zap";
+$Cxx.namespace("zap");
 $Cxx.allowCancellation;
 
 interface ByteStream {

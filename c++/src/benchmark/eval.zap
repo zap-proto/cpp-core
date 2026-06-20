@@ -19,10 +19,10 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-using Cxx = import "/capnp/c++.capnp";
+using Cxx = import "/zap/c++.zap";
 
 @0xe12dc4c3e70e9eda;
-$Cxx.namespace("capnp::benchmark::capnp");
+$Cxx.namespace("zap::benchmark::zap");
 
 enum Operation {
   add @0;

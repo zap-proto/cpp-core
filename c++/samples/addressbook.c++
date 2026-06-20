@@ -21,14 +21,14 @@
 
 // This sample code appears in the documentation for the C++ implementation.
 //
-// If Cap'n Proto is installed, build the sample like:
-//   capnp compile -oc++ addressbook.capnp
-//   c++ -std=c++23 -Wall addressbook.c++ addressbook.capnp.c++ `pkg-config --cflags --libs capnp` -o addressbook
+// If Zap is installed, build the sample like:
+//   zap compile -oc++ addressbook.zap
+//   c++ -std=c++23 -Wall addressbook.c++ addressbook.zap.c++ `pkg-config --cflags --libs zap` -o addressbook
 //
-// If Cap'n Proto is not installed, but the source is located at $SRC and has been
+// If Zap is not installed, but the source is located at $SRC and has been
 // compiled in $BUILD (often both are simply ".." from here), you can do:
-//   $BUILD/capnp compile -I$SRC/src -o$BUILD/capnpc-c++ addressbook.capnp
-//   c++ -std=c++23 -Wall addressbook.c++ addressbook.capnp.c++ -I$SRC/src -L$BUILD/.libs -lcapnp -lkj -o addressbook
+//   $BUILD/zap compile -I$SRC/src -o$BUILD/zapc-c++ addressbook.zap
+//   c++ -std=c++23 -Wall addressbook.c++ addressbook.zap.c++ -I$SRC/src -L$BUILD/.libs -lzap -lkj -o addressbook
 //
 // Run like:
 //   ./addressbook write | ./addressbook read
@@ -36,26 +36,26 @@
 
 // TODO(test):  Needs cleanup.
 
-#include "addressbook.capnp.h"
-#include <capnp/message.h>
-#include <capnp/serialize-packed.h>
+#include "addressbook.zap.h"
+#include <zap/message.h>
+#include <zap/serialize-packed.h>
 #include <iostream>
 
 using addressbook::Person;
 using addressbook::AddressBook;
 
 void writeAddressBook(int fd) {
-  ::capnp::MallocMessageBuilder message;
+  ::zap::MallocMessageBuilder message;
 
   AddressBook::Builder addressBook = message.initRoot<AddressBook>();
-  ::capnp::List<Person>::Builder people = addressBook.initPeople(2);
+  ::zap::List<Person>::Builder people = addressBook.initPeople(2);
 
   Person::Builder alice = people[0];
   alice.setId(123);
   alice.setName("Alice");
   alice.setEmail("alice@example.com");
   // Type shown for explanation purposes; normally you'd use auto.
-  ::capnp::List<Person::PhoneNumber>::Builder alicePhones =
+  ::zap::List<Person::PhoneNumber>::Builder alicePhones =
       alice.initPhones(1);
   alicePhones[0].setNumber("555-1212");
   alicePhones[0].setType(Person::PhoneNumber::Type::MOBILE);
@@ -76,7 +76,7 @@ void writeAddressBook(int fd) {
 }
 
 void printAddressBook(int fd) {
-  ::capnp::PackedFdMessageReader message(fd);
+  ::zap::PackedFdMessageReader message(fd);
 
   AddressBook::Reader addressBook = message.getRoot<AddressBook>();
 
@@ -113,28 +113,28 @@ void printAddressBook(int fd) {
   }
 }
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 
-#include "addressbook.capnp.h"
-#include <capnp/message.h>
-#include <capnp/serialize-packed.h>
+#include "addressbook.zap.h"
+#include <zap/message.h>
+#include <zap/serialize-packed.h>
 #include <iostream>
-#include <capnp/schema.h>
-#include <capnp/dynamic.h>
+#include <zap/schema.h>
+#include <zap/dynamic.h>
 
-using ::capnp::DynamicValue;
-using ::capnp::DynamicStruct;
-using ::capnp::DynamicEnum;
-using ::capnp::DynamicList;
-using ::capnp::List;
-using ::capnp::Schema;
-using ::capnp::StructSchema;
-using ::capnp::EnumSchema;
+using ::zap::DynamicValue;
+using ::zap::DynamicStruct;
+using ::zap::DynamicEnum;
+using ::zap::DynamicList;
+using ::zap::List;
+using ::zap::Schema;
+using ::zap::StructSchema;
+using ::zap::EnumSchema;
 
-using ::capnp::Void;
-using ::capnp::Text;
-using ::capnp::MallocMessageBuilder;
-using ::capnp::PackedFdMessageReader;
+using ::zap::Void;
+using ::zap::Text;
+using ::zap::MallocMessageBuilder;
+using ::zap::PackedFdMessageReader;
 
 void dynamicWriteAddressBook(int fd, StructSchema schema) {
   // Write a message using the dynamic API to set each
@@ -177,7 +177,7 @@ void dynamicWriteAddressBook(int fd, StructSchema schema) {
   bobPhones[1].setNumber("555-7654");
   bobPhones[1].setType(Person::PhoneNumber::Type::WORK);
   bob.get("employment").as<DynamicStruct>()
-     .set("unemployed", ::capnp::VOID);
+     .set("unemployed", ::zap::VOID);
 
   writePackedMessageToFd(fd, message);
 }
@@ -262,7 +262,7 @@ void dynamicPrintMessage(int fd, StructSchema schema) {
   std::cout << std::endl;
 }
 
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 int main(int argc, char* argv[]) {
   if (argc != 2) {
@@ -272,7 +272,7 @@ int main(int argc, char* argv[]) {
     writeAddressBook(1);
   } else if (strcmp(argv[1], "read") == 0) {
     printAddressBook(0);
-#if !CAPNP_LITE
+#if !ZAP_LITE
   } else if (strcmp(argv[1], "dwrite") == 0) {
     StructSchema schema = Schema::from<AddressBook>();
     dynamicWriteAddressBook(1, schema);

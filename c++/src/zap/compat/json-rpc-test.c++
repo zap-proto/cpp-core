@@ -21,9 +21,9 @@
 
 #include "json-rpc.h"
 #include <kj/test.h>
-#include <capnp/test-util.h>
+#include <zap/test-util.h>
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -97,4 +97,4 @@ KJ_TEST("json-rpc multiple calls") {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

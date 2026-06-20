@@ -34,7 +34,7 @@
 
 using namespace std;
 
-namespace capnp {
+namespace zap {
 namespace benchmark {
 namespace runner {
 
@@ -82,7 +82,7 @@ struct TestResult {
 };
 
 enum class Product {
-  CAPNPROTO,
+  ZAP,
   PROTOBUF,
   NULLCASE
 };
@@ -132,8 +132,8 @@ TestResult runTest(Product product, TestCase testCase, Mode mode, Reuse reuse,
   string progName;
 
   switch (product) {
-    case Product::CAPNPROTO:
-      progName = "capnproto-";
+    case Product::ZAP:
+      progName = "zap-";
       break;
     case Product::PROTOBUF:
       progName = "protobuf-";
@@ -269,7 +269,7 @@ void reportResults(const char* name, uint64_t iters, TestResult results) {
 void reportComparisonHeader() {
   cout << setw(40) << left << "Measure"
        << setw(15) << right << "Protobuf"
-       << setw(15) << right << "Cap'n Proto"
+       << setw(15) << right << "Zap"
        << setw(15) << right << "Improvement"
        << endl;
   cout << setfill('=') << setw(85) << "" << setfill(' ') << endl;
@@ -307,34 +307,34 @@ ostream& operator<<(ostream& os, Gain gain) {
   return os;
 }
 
-void reportComparison(const char* name, double base, double protobuf, double capnproto,
+void reportComparison(const char* name, double base, double protobuf, double zap,
                       uint64_t iters) {
   cout << setw(40) << left << name
        << setw(14) << right << Gain(base, protobuf)
-       << setw(14) << right << Gain(base, capnproto);
+       << setw(14) << right << Gain(base, zap);
 
-  // Since smaller is better, the "improvement" is the "gain" from capnproto to protobuf.
-  cout << setw(14) << right << Gain(capnproto - base, protobuf - base) << endl;
+  // Since smaller is better, the "improvement" is the "gain" from zap to protobuf.
+  cout << setw(14) << right << Gain(zap - base, protobuf - base) << endl;
 }
 
-void reportComparison(const char* name, const char* unit, double protobuf, double capnproto,
+void reportComparison(const char* name, const char* unit, double protobuf, double zap,
                       uint64_t iters) {
   cout << setw(40) << left << name
        << setw(15-strlen(unit)) << fixed << right << setprecision(2) << (protobuf / iters) << unit
-       << setw(15-strlen(unit)) << fixed << right << setprecision(2) << (capnproto / iters) << unit;
+       << setw(15-strlen(unit)) << fixed << right << setprecision(2) << (zap / iters) << unit;
 
-  // Since smaller is better, the "improvement" is the "gain" from capnproto to protobuf.
-  cout << setw(14) << right << Gain(capnproto, protobuf) << endl;
+  // Since smaller is better, the "improvement" is the "gain" from zap to protobuf.
+  cout << setw(14) << right << Gain(zap, protobuf) << endl;
 }
 
-void reportIntComparison(const char* name, const char* unit, uint64_t protobuf, uint64_t capnproto,
+void reportIntComparison(const char* name, const char* unit, uint64_t protobuf, uint64_t zap,
                          uint64_t iters) {
   cout << setw(40) << left << name
        << setw(15-strlen(unit)) << right << (protobuf / iters) << unit
-       << setw(15-strlen(unit)) << right << (capnproto / iters) << unit;
+       << setw(15-strlen(unit)) << right << (zap / iters) << unit;
 
-  // Since smaller is better, the "improvement" is the "gain" from capnproto to protobuf.
-  cout << setw(14) << right << Gain(capnproto, protobuf) << endl;
+  // Since smaller is better, the "improvement" is the "gain" from zap to protobuf.
+  cout << setw(14) << right << Gain(zap, protobuf) << endl;
 }
 
 size_t fileSize(const std::string& name) {
@@ -450,7 +450,7 @@ int main(int argc, char* argv[]) {
       cout << "* no compression" << endl;
       break;
     case Compression::PACKED:
-      cout << "* de-zero packing for Cap'n Proto" << endl;
+      cout << "* de-zero packing for Zap" << endl;
       cout << "* standard packing for Protobuf" << endl;
       break;
     case Compression::SNAPPY:
@@ -472,11 +472,11 @@ int main(int argc, char* argv[]) {
       Product::PROTOBUF, testCase, Mode::OBJECT_SIZE, Reuse::YES, compression, iters).objectSize;
   reportResults("Protobuf pass-by-object", iters, protobufBase);
 
-  TestResult capnpBase = runTest(
-      Product::CAPNPROTO, testCase, Mode::OBJECTS, Reuse::YES, compression, iters);
-  capnpBase.objectSize = runTest(
-      Product::CAPNPROTO, testCase, Mode::OBJECT_SIZE, Reuse::YES, compression, iters).objectSize;
-  reportResults("Cap'n Proto pass-by-object", iters, capnpBase);
+  TestResult zapBase = runTest(
+      Product::ZAP, testCase, Mode::OBJECTS, Reuse::YES, compression, iters);
+  zapBase.objectSize = runTest(
+      Product::ZAP, testCase, Mode::OBJECT_SIZE, Reuse::YES, compression, iters).objectSize;
+  reportResults("Zap pass-by-object", iters, zapBase);
 
   TestResult nullCaseNoReuse = runTest(
       Product::NULLCASE, testCase, Mode::OBJECT_SIZE, Reuse::NO, compression, iters);
@@ -488,44 +488,44 @@ int main(int argc, char* argv[]) {
       Product::PROTOBUF, testCase, Mode::OBJECT_SIZE, Reuse::NO, compression, iters).objectSize;
   reportResults("Protobuf w/o object reuse", iters, protobufNoReuse);
 
-  TestResult capnpNoReuse = runTest(
-      Product::CAPNPROTO, testCase, Mode::OBJECTS, Reuse::NO, compression, iters);
-  capnpNoReuse.objectSize = runTest(
-      Product::CAPNPROTO, testCase, Mode::OBJECT_SIZE, Reuse::NO, compression, iters).objectSize;
-  reportResults("Cap'n Proto w/o object reuse", iters, capnpNoReuse);
+  TestResult zapNoReuse = runTest(
+      Product::ZAP, testCase, Mode::OBJECTS, Reuse::NO, compression, iters);
+  zapNoReuse.objectSize = runTest(
+      Product::ZAP, testCase, Mode::OBJECT_SIZE, Reuse::NO, compression, iters).objectSize;
+  reportResults("Zap w/o object reuse", iters, zapNoReuse);
 
   TestResult protobuf = runTest(
       Product::PROTOBUF, testCase, mode, Reuse::YES, compression, iters);
   protobuf.objectSize = protobufBase.objectSize;
   reportResults("Protobuf I/O", iters, protobuf);
 
-  TestResult capnp = runTest(
-      Product::CAPNPROTO, testCase, mode, Reuse::YES, compression, iters);
-  capnp.objectSize = capnpBase.objectSize;
-  reportResults("Cap'n Proto I/O", iters, capnp);
-  TestResult capnpPacked = runTest(
-      Product::CAPNPROTO, testCase, mode, Reuse::YES, Compression::PACKED, iters);
-  capnpPacked.objectSize = capnpBase.objectSize;
-  reportResults("Cap'n Proto packed I/O", iters, capnpPacked);
+  TestResult zap = runTest(
+      Product::ZAP, testCase, mode, Reuse::YES, compression, iters);
+  zap.objectSize = zapBase.objectSize;
+  reportResults("Zap I/O", iters, zap);
+  TestResult zapPacked = runTest(
+      Product::ZAP, testCase, mode, Reuse::YES, Compression::PACKED, iters);
+  zapPacked.objectSize = zapBase.objectSize;
+  reportResults("Zap packed I/O", iters, zapPacked);
 
   size_t protobufBinarySize = fileSize("protobuf-" + std::string(testCaseName(testCase)));
-  size_t capnpBinarySize = fileSize("capnproto-" + std::string(testCaseName(testCase)));
+  size_t zapBinarySize = fileSize("zap-" + std::string(testCaseName(testCase)));
   size_t protobufCodeSize = fileSize(std::string(testCaseName(testCase)) + ".pb.cc")
                           + fileSize(std::string(testCaseName(testCase)) + ".pb.h");
-  size_t capnpCodeSize = fileSize(std::string(testCaseName(testCase)) + ".capnp.c++")
-                       + fileSize(std::string(testCaseName(testCase)) + ".capnp.h");
+  size_t zapCodeSize = fileSize(std::string(testCaseName(testCase)) + ".zap.c++")
+                       + fileSize(std::string(testCaseName(testCase)) + ".zap.h");
   size_t protobufObjSize = fileSize(std::string(testCaseName(testCase)) + ".pb.o");
-  size_t capnpObjSize = fileSize(std::string(testCaseName(testCase)) + ".capnp.o");
+  size_t zapObjSize = fileSize(std::string(testCaseName(testCase)) + ".zap.o");
 
   TestResult oldNullCase;
   TestResult oldNullCaseNoReuse;
-  TestResult oldCapnpBase;
-  TestResult oldCapnpNoReuse;
-  TestResult oldCapnp;
-  TestResult oldCapnpPacked;
-  size_t oldCapnpBinarySize = 0;
-  size_t oldCapnpCodeSize = 0;
-  size_t oldCapnpObjSize = 0;
+  TestResult oldZapBase;
+  TestResult oldZapNoReuse;
+  TestResult oldZap;
+  TestResult oldZapPacked;
+  size_t oldZapBinarySize = 0;
+  size_t oldZapCodeSize = 0;
+  size_t oldZapObjSize = 0;
   if (oldDir != nullptr) {
     if (chdir(origDir) < 0) {
       perror("chdir");
@@ -540,100 +540,100 @@ int main(int argc, char* argv[]) {
         Product::NULLCASE, testCase, Mode::OBJECT_SIZE, Reuse::YES, compression, iters);
     reportResults("Old theoretical best pass-by-object", iters, nullCase);
 
-    oldCapnpBase = runTest(
-        Product::CAPNPROTO, testCase, Mode::OBJECTS, Reuse::YES, compression, iters);
-    oldCapnpBase.objectSize = runTest(
-        Product::CAPNPROTO, testCase, Mode::OBJECT_SIZE, Reuse::YES, compression, iters)
+    oldZapBase = runTest(
+        Product::ZAP, testCase, Mode::OBJECTS, Reuse::YES, compression, iters);
+    oldZapBase.objectSize = runTest(
+        Product::ZAP, testCase, Mode::OBJECT_SIZE, Reuse::YES, compression, iters)
         .objectSize;
-    reportResults("Old Cap'n Proto pass-by-object", iters, oldCapnpBase);
+    reportResults("Old Zap pass-by-object", iters, oldZapBase);
 
     oldNullCaseNoReuse = runTest(
         Product::NULLCASE, testCase, Mode::OBJECT_SIZE, Reuse::NO, compression, iters);
     reportResults("Old theoretical best w/o object reuse", iters, oldNullCaseNoReuse);
 
-    oldCapnpNoReuse = runTest(
-        Product::CAPNPROTO, testCase, Mode::OBJECTS, Reuse::NO, compression, iters);
-    oldCapnpNoReuse.objectSize = runTest(
-        Product::CAPNPROTO, testCase, Mode::OBJECT_SIZE, Reuse::NO, compression, iters).objectSize;
-    reportResults("Old Cap'n Proto w/o object reuse", iters, oldCapnpNoReuse);
+    oldZapNoReuse = runTest(
+        Product::ZAP, testCase, Mode::OBJECTS, Reuse::NO, compression, iters);
+    oldZapNoReuse.objectSize = runTest(
+        Product::ZAP, testCase, Mode::OBJECT_SIZE, Reuse::NO, compression, iters).objectSize;
+    reportResults("Old Zap w/o object reuse", iters, oldZapNoReuse);
 
-    oldCapnp = runTest(
-        Product::CAPNPROTO, testCase, mode, Reuse::YES, compression, iters);
-    oldCapnp.objectSize = oldCapnpBase.objectSize;
-    reportResults("Old Cap'n Proto I/O", iters, oldCapnp);
-    oldCapnpPacked = runTest(
-        Product::CAPNPROTO, testCase, mode, Reuse::YES, Compression::PACKED, iters);
-    oldCapnpPacked.objectSize = oldCapnpBase.objectSize;
-    reportResults("Old Cap'n Proto packed I/O", iters, oldCapnpPacked);
+    oldZap = runTest(
+        Product::ZAP, testCase, mode, Reuse::YES, compression, iters);
+    oldZap.objectSize = oldZapBase.objectSize;
+    reportResults("Old Zap I/O", iters, oldZap);
+    oldZapPacked = runTest(
+        Product::ZAP, testCase, mode, Reuse::YES, Compression::PACKED, iters);
+    oldZapPacked.objectSize = oldZapBase.objectSize;
+    reportResults("Old Zap packed I/O", iters, oldZapPacked);
 
-    oldCapnpBinarySize = fileSize("capnproto-" + std::string(testCaseName(testCase)));
-    oldCapnpCodeSize = fileSize(std::string(testCaseName(testCase)) + ".capnp.c++")
-                     + fileSize(std::string(testCaseName(testCase)) + ".capnp.h");
-    oldCapnpObjSize = fileSize(std::string(testCaseName(testCase)) + ".capnp.o");
+    oldZapBinarySize = fileSize("zap-" + std::string(testCaseName(testCase)));
+    oldZapCodeSize = fileSize(std::string(testCaseName(testCase)) + ".zap.c++")
+                     + fileSize(std::string(testCaseName(testCase)) + ".zap.h");
+    oldZapObjSize = fileSize(std::string(testCaseName(testCase)) + ".zap.o");
   }
 
   cout << endl;
 
   reportComparisonHeader();
   reportComparison("memory overhead (vs ideal)",
-      nullCase.objectSize, protobufBase.objectSize, capnpBase.objectSize, iters);
+      nullCase.objectSize, protobufBase.objectSize, zapBase.objectSize, iters);
   reportComparison("memory overhead w/o object reuse",
-      nullCaseNoReuse.objectSize, protobufNoReuse.objectSize, capnpNoReuse.objectSize, iters);
+      nullCaseNoReuse.objectSize, protobufNoReuse.objectSize, zapNoReuse.objectSize, iters);
   reportComparison("object manipulation time (us)", "",
       ((int64_t)protobufBase.time.user - (int64_t)nullCase.time.user) / 1000.0,
-      ((int64_t)capnpBase.time.user - (int64_t)nullCase.time.user) / 1000.0, iters);
+      ((int64_t)zapBase.time.user - (int64_t)nullCase.time.user) / 1000.0, iters);
   reportComparison("object manipulation time w/o reuse (us)", "",
       ((int64_t)protobufNoReuse.time.user - (int64_t)nullCaseNoReuse.time.user) / 1000.0,
-      ((int64_t)capnpNoReuse.time.user - (int64_t)nullCaseNoReuse.time.user) / 1000.0, iters);
+      ((int64_t)zapNoReuse.time.user - (int64_t)nullCaseNoReuse.time.user) / 1000.0, iters);
   reportComparison("I/O time (us)", "",
       ((int64_t)protobuf.time.user - (int64_t)protobufBase.time.user) / 1000.0,
-      ((int64_t)capnp.time.user - (int64_t)capnpBase.time.user) / 1000.0, iters);
+      ((int64_t)zap.time.user - (int64_t)zapBase.time.user) / 1000.0, iters);
   reportComparison("packed I/O time (us)", "",
       ((int64_t)protobuf.time.user - (int64_t)protobufBase.time.user) / 1000.0,
-      ((int64_t)capnpPacked.time.user - (int64_t)capnpBase.time.user) / 1000.0, iters);
+      ((int64_t)zapPacked.time.user - (int64_t)zapBase.time.user) / 1000.0, iters);
 
-  reportIntComparison("message size (bytes)", "", protobuf.messageSize, capnp.messageSize, iters);
+  reportIntComparison("message size (bytes)", "", protobuf.messageSize, zap.messageSize, iters);
   reportIntComparison("packed message size (bytes)", "",
-                      protobuf.messageSize, capnpPacked.messageSize, iters);
+                      protobuf.messageSize, zapPacked.messageSize, iters);
 
   reportComparison("binary size (KiB)", "",
-      protobufBinarySize / 1024.0, capnpBinarySize / 1024.0, 1);
+      protobufBinarySize / 1024.0, zapBinarySize / 1024.0, 1);
   reportComparison("generated code size (KiB)", "",
-      protobufCodeSize / 1024.0, capnpCodeSize / 1024.0, 1);
+      protobufCodeSize / 1024.0, zapCodeSize / 1024.0, 1);
   reportComparison("generated obj size (KiB)", "",
-      protobufObjSize / 1024.0, capnpObjSize / 1024.0, 1);
+      protobufObjSize / 1024.0, zapObjSize / 1024.0, 1);
 
   if (oldDir != nullptr) {
     cout << endl;
     reportOldNewComparisonHeader();
 
     reportComparison("memory overhead",
-        oldNullCase.objectSize, oldCapnpBase.objectSize, capnpBase.objectSize, iters);
+        oldNullCase.objectSize, oldZapBase.objectSize, zapBase.objectSize, iters);
     reportComparison("memory overhead w/o object reuse",
-        oldNullCaseNoReuse.objectSize, oldCapnpNoReuse.objectSize, capnpNoReuse.objectSize, iters);
+        oldNullCaseNoReuse.objectSize, oldZapNoReuse.objectSize, zapNoReuse.objectSize, iters);
     reportComparison("object manipulation time (us)", "",
-        ((int64_t)oldCapnpBase.time.user - (int64_t)oldNullCase.time.user) / 1000.0,
-        ((int64_t)capnpBase.time.user - (int64_t)oldNullCase.time.user) / 1000.0, iters);
+        ((int64_t)oldZapBase.time.user - (int64_t)oldNullCase.time.user) / 1000.0,
+        ((int64_t)zapBase.time.user - (int64_t)oldNullCase.time.user) / 1000.0, iters);
     reportComparison("object manipulation time w/o reuse (us)", "",
-        ((int64_t)oldCapnpNoReuse.time.user - (int64_t)oldNullCaseNoReuse.time.user) / 1000.0,
-        ((int64_t)capnpNoReuse.time.user - (int64_t)oldNullCaseNoReuse.time.user) / 1000.0, iters);
+        ((int64_t)oldZapNoReuse.time.user - (int64_t)oldNullCaseNoReuse.time.user) / 1000.0,
+        ((int64_t)zapNoReuse.time.user - (int64_t)oldNullCaseNoReuse.time.user) / 1000.0, iters);
     reportComparison("I/O time (us)", "",
-        ((int64_t)oldCapnp.time.user - (int64_t)oldCapnpBase.time.user) / 1000.0,
-        ((int64_t)capnp.time.user - (int64_t)capnpBase.time.user) / 1000.0, iters);
+        ((int64_t)oldZap.time.user - (int64_t)oldZapBase.time.user) / 1000.0,
+        ((int64_t)zap.time.user - (int64_t)zapBase.time.user) / 1000.0, iters);
     reportComparison("packed I/O time (us)", "",
-        ((int64_t)oldCapnpPacked.time.user - (int64_t)oldCapnpBase.time.user) / 1000.0,
-        ((int64_t)capnpPacked.time.user - (int64_t)capnpBase.time.user) / 1000.0, iters);
+        ((int64_t)oldZapPacked.time.user - (int64_t)oldZapBase.time.user) / 1000.0,
+        ((int64_t)zapPacked.time.user - (int64_t)zapBase.time.user) / 1000.0, iters);
 
-    reportIntComparison("message size (bytes)", "", oldCapnp.messageSize, capnp.messageSize, iters);
+    reportIntComparison("message size (bytes)", "", oldZap.messageSize, zap.messageSize, iters);
     reportIntComparison("packed message size (bytes)", "",
-                        oldCapnpPacked.messageSize, capnpPacked.messageSize, iters);
+                        oldZapPacked.messageSize, zapPacked.messageSize, iters);
 
     reportComparison("binary size (KiB)", "",
-        oldCapnpBinarySize / 1024.0, capnpBinarySize / 1024.0, 1);
+        oldZapBinarySize / 1024.0, zapBinarySize / 1024.0, 1);
     reportComparison("generated code size (KiB)", "",
-        oldCapnpCodeSize / 1024.0, capnpCodeSize / 1024.0, 1);
+        oldZapCodeSize / 1024.0, zapCodeSize / 1024.0, 1);
     reportComparison("generated obj size (KiB)", "",
-        oldCapnpObjSize / 1024.0, capnpObjSize / 1024.0, 1);
+        oldZapObjSize / 1024.0, zapObjSize / 1024.0, 1);
   }
 
   return 0;
@@ -641,8 +641,8 @@ int main(int argc, char* argv[]) {
 
 }  // namespace runner
 }  // namespace benchmark
-}  // namespace capnp
+}  // namespace zap
 
 int main(int argc, char* argv[]) {
-  return capnp::benchmark::runner::main(argc, argv);
+  return zap::benchmark::runner::main(argc, argv);
 }

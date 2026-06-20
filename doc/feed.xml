@@ -5,9 +5,9 @@ layout: none
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
 	<channel>
-		<title>Cap'n Proto News</title>
-		<description>Latest updates on Cap'n Proto</description>
-		<link>https://capnproto.org</link>
+		<title>Zap News</title>
+		<description>Latest updates on Zap</description>
+		<link>https://zap.org</link>
 		<atom:link href="{{ site.baseurl }}feed.xml" rel="self" type="application/rss+xml" />
 		{% for post in site.posts limit:10 %}
 			<item>

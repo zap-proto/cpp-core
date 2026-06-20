@@ -21,15 +21,15 @@
 
 #pragma once
 
-#include <capnp/common.h>
+#include <zap/common.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 namespace kj {
 class ReadableDirectory;
 class PathPtr;
 }
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 class GlobalErrorReporter;
 class Module;
@@ -62,6 +62,6 @@ private:
 };
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

@@ -33,7 +33,7 @@
 #include <fcntl.h>
 #include "test-util.h"
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -402,9 +402,9 @@ int mkstemp(char *tpl) {
 TEST(Serialize, FileDescriptors) {
 #if _WIN32 || __ANDROID__
   // TODO(cleanup): Find the Windows temp directory? Seems overly difficult.
-  char filename[] = "capnproto-serialize-test-XXXXXX";
+  char filename[] = "zap-serialize-test-XXXXXX";
 #else
-  char filename[] = "/tmp/capnproto-serialize-test-XXXXXX";
+  char filename[] = "/tmp/zap-serialize-test-XXXXXX";
 #endif
   kj::OwnFd tmpfile(mkstemp(filename));
   ASSERT_GE(tmpfile.get(), 0);
@@ -496,4 +496,4 @@ TEST(Serialize, SegmentsTable) {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

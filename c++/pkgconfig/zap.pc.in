@@ -3,10 +3,10 @@ exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
 
-Name: Cap'n Proto
+Name: Zap
 Description: Insanely fast serialization system
 Version: @VERSION@
-Libs: -L${libdir} -lcapnp @PTHREAD_CFLAGS@ @PTHREAD_LIBS@ @STDLIB_FLAG@
+Libs: -L${libdir} -lzap @PTHREAD_CFLAGS@ @PTHREAD_LIBS@ @STDLIB_FLAG@
 Libs.private: @LIBS@
 Requires: kj = @VERSION@
-Cflags: -I${includedir} @PTHREAD_CFLAGS@ @STDLIB_FLAG@ @CAPNP_LITE_FLAG@
+Cflags: -I${includedir} @PTHREAD_CFLAGS@ @STDLIB_FLAG@ @ZAP_LITE_FLAG@

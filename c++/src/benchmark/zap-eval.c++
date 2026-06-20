@@ -19,12 +19,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "eval.capnp.h"
-#include "capnproto-common.h"
+#include "eval.zap.h"
+#include "zap-common.h"
 
-namespace capnp {
+namespace zap {
 namespace benchmark {
-namespace capnp {
+namespace zap {
 
 int32_t makeExpression(Expression::Builder exp, uint depth) {
   exp.setOp((Operation)(fastRand((int)Operation::MODULUS + 1)));
@@ -113,12 +113,12 @@ public:
   }
 };
 
-}  // namespace capnp
+}  // namespace zap
 }  // namespace benchmark
-}  // namespace capnp
+}  // namespace zap
 
 int main(int argc, char* argv[]) {
-  return capnp::benchmark::benchmarkMain<
-      capnp::benchmark::capnp::BenchmarkTypes,
-      capnp::benchmark::capnp::ExpressionTestCase>(argc, argv);
+  return zap::benchmark::benchmarkMain<
+      zap::benchmark::zap::BenchmarkTypes,
+      zap::benchmark::zap::ExpressionTestCase>(argc, argv);
 }

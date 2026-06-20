@@ -21,17 +21,17 @@
 
 #pragma once
 
-#include <capnp/orphan.h>
-#include <capnp/compiler/grammar.capnp.h>
-#include <capnp/schema.capnp.h>
-#include <capnp/dynamic.h>
+#include <zap/orphan.h>
+#include <zap/compiler/grammar.zap.h>
+#include <zap/schema.zap.h>
+#include <zap/dynamic.h>
 #include <kj/vector.h>
 #include "error-reporter.h"
 #include "resolver.h"
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 
 struct ImplicitParams;
@@ -225,6 +225,6 @@ private:
 };
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

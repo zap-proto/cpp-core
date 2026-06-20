@@ -20,7 +20,7 @@
 # THE SOFTWARE.
 
 @0xa184c7885cdaf2a1;
-# This file defines the "network-specific parameters" in rpc.capnp to support a network consisting
+# This file defines the "network-specific parameters" in rpc.zap to support a network consisting
 # of two vats.  Each of these vats may in fact be in communication with other vats, but any
 # capabilities they forward must be proxied.  Thus, to each end of the connection, all capabilities
 # received from the other end appear to live in a single vat.
@@ -65,12 +65,12 @@
 # native participant.  In other words, an application which implements only the two-party protocol
 # can be paired with a proxy app in order to participate in any network.
 #
-# So, when implementing Cap'n Proto in a new language, it makes sense to implement only the
+# So, when implementing Zap in a new language, it makes sense to implement only the
 # two-party protocol initially, and then pair applications with an appropriate proxy written in
 # C++, rather than implement other parameterizations of the RPC protocol directly.
 
-using Cxx = import "/capnp/c++.capnp";
-$Cxx.namespace("capnp::rpc::twoparty");
+using Cxx = import "/zap/c++.zap";
+$Cxx.namespace("zap::rpc::twoparty");
 
 # Note: SturdyRef is not specified here. It is up to the application to define semantics of
 # SturdyRefs if desired.

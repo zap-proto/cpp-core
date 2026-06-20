@@ -25,7 +25,7 @@
 #include <kj/test.h>
 #include "test-util.h"
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 using test::TestLists;
 namespace {
@@ -40,8 +40,8 @@ KJ_TEST("canonicalize yields canonical message") {
   auto canonicalWords = canonicalize(root.asReader());
   // Throws an exception on canonicalization failure.
 
-  kj::ArrayPtr<const capnp::word> canonicalSegments[1] = {canonicalWords.asPtr()};
-  capnp::SegmentArrayMessageReader canonicalReader(kj::arrayPtr(canonicalSegments, 1));
+  kj::ArrayPtr<const zap::word> canonicalSegments[1] = {canonicalWords.asPtr()};
+  zap::SegmentArrayMessageReader canonicalReader(kj::arrayPtr(canonicalSegments, 1));
 
   KJ_ASSERT(AnyStruct::Reader(root.asReader()) ==
             AnyStruct::Reader(canonicalReader.getRoot<TestAllTypes>()));
@@ -389,4 +389,4 @@ KJ_TEST("bit list with nonzero padding") {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

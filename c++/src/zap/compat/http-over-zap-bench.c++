@@ -21,11 +21,11 @@
 
 
 #include <benchmark/benchmark.h>
-#include "http-over-capnp.h"
+#include "http-over-zap.h"
 #include <kj/compat/http.h>
 #include <kj/async.h>
 #include <kj/debug.h>
-#include <capnp/rpc-twoparty.h>
+#include <zap/rpc-twoparty.h>
 #include <stdlib.h>
 
 
@@ -380,7 +380,7 @@ static void bm_Http_FullProtocol(benchmark::State &state) {
 
 BENCHMARK(bm_Http_FullProtocol);
 
-static void bm_Http_OverCapnpLocalCall(benchmark::State &state) {
+static void bm_Http_OverZapLocalCall(benchmark::State &state) {
   kj::EventLoop loop;
   kj::WaitScope waitScope(loop);
   Metrics metrics;
@@ -388,26 +388,26 @@ static void bm_Http_OverCapnpLocalCall(benchmark::State &state) {
   kj::HttpHeaderTable::Builder headerTableBuilder;
   MockService service(headerTableBuilder);
   MockSender sender(headerTableBuilder);
-  capnp::HttpOverCapnpFactory::HeaderIdBundle headerIds(headerTableBuilder);
+  zap::HttpOverZapFactory::HeaderIdBundle headerIds(headerTableBuilder);
   auto headerTable = headerTableBuilder.build();
 
-  // Client and server use different HttpOverCapnpFactory instances to block path-shortening.
-  capnp::ByteStreamFactory bsFactory;
-  capnp::HttpOverCapnpFactory hocFactory(bsFactory, headerIds.clone(), capnp::HttpOverCapnpFactory::LEVEL_2);
-  capnp::ByteStreamFactory bsFactory2;
-  capnp::HttpOverCapnpFactory hocFactory2(bsFactory2, kj::mv(headerIds), capnp::HttpOverCapnpFactory::LEVEL_2);
+  // Client and server use different HttpOverZapFactory instances to block path-shortening.
+  zap::ByteStreamFactory bsFactory;
+  zap::HttpOverZapFactory hocFactory(bsFactory, headerIds.clone(), zap::HttpOverZapFactory::LEVEL_2);
+  zap::ByteStreamFactory bsFactory2;
+  zap::HttpOverZapFactory hocFactory2(bsFactory2, kj::mv(headerIds), zap::HttpOverZapFactory::LEVEL_2);
 
-  auto cap = hocFactory.kjToCapnp(kj::attachRef(service));
-  auto roundTrip = hocFactory2.capnpToKj(kj::mv(cap));
+  auto cap = hocFactory.kjToZap(kj::attachRef(service));
+  auto roundTrip = hocFactory2.zapToKj(kj::mv(cap));
 
   for (auto _ : state) {
     sender.sendRequest(*roundTrip).wait(waitScope);
   }
 }
 
-BENCHMARK(bm_Http_OverCapnpLocalCall);
+BENCHMARK(bm_Http_OverZapLocalCall);
 
-static void bm_Http_OverCapnpFullRPC(benchmark::State &state) {
+static void bm_Http_OverZapFullRPC(benchmark::State &state) {
   kj::EventLoop loop;
   kj::WaitScope waitScope(loop);
   Metrics metrics;
@@ -416,29 +416,29 @@ static void bm_Http_OverCapnpFullRPC(benchmark::State &state) {
   kj::HttpHeaderTable::Builder headerTableBuilder;
   MockService service(headerTableBuilder);
   MockSender sender(headerTableBuilder);
-  capnp::HttpOverCapnpFactory::HeaderIdBundle headerIds(headerTableBuilder);
+  zap::HttpOverZapFactory::HeaderIdBundle headerIds(headerTableBuilder);
   auto headerTable = headerTableBuilder.build();
 
-  // Client and server use different HttpOverCapnpFactory instances to block path-shortening.
-  capnp::ByteStreamFactory bsFactory;
-  capnp::HttpOverCapnpFactory hocFactory(bsFactory, headerIds.clone(), capnp::HttpOverCapnpFactory::LEVEL_2);
-  capnp::ByteStreamFactory bsFactory2;
-  capnp::HttpOverCapnpFactory hocFactory2(bsFactory2, kj::mv(headerIds), capnp::HttpOverCapnpFactory::LEVEL_2);
+  // Client and server use different HttpOverZapFactory instances to block path-shortening.
+  zap::ByteStreamFactory bsFactory;
+  zap::HttpOverZapFactory hocFactory(bsFactory, headerIds.clone(), zap::HttpOverZapFactory::LEVEL_2);
+  zap::ByteStreamFactory bsFactory2;
+  zap::HttpOverZapFactory hocFactory2(bsFactory2, kj::mv(headerIds), zap::HttpOverZapFactory::LEVEL_2);
 
-  capnp::TwoPartyServer server(hocFactory.kjToCapnp(kj::attachRef(service)));
+  zap::TwoPartyServer server(hocFactory.kjToZap(kj::attachRef(service)));
 
   auto pipe = kj::newTwoWayPipe();
   auto listenLoop = server.accept(pair.server);
 
-  capnp::TwoPartyClient client(pair.client);
+  zap::TwoPartyClient client(pair.client);
 
-  auto roundTrip = hocFactory2.capnpToKj(client.bootstrap().castAs<capnp::HttpService>());
+  auto roundTrip = hocFactory2.zapToKj(client.bootstrap().castAs<zap::HttpService>());
 
   for (auto _ : state) {
     sender.sendRequest(*roundTrip).wait(waitScope);
   }
 }
 
-BENCHMARK(bm_Http_OverCapnpFullRPC);
+BENCHMARK(bm_Http_OverZapFullRPC);
 
 BENCHMARK_MAIN();

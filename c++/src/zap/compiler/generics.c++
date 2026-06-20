@@ -22,7 +22,7 @@
 #include "generics.h"
 #include "parser.h"  // for expressionString()
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 
 BrandedDecl::BrandedDecl(BrandedDecl& other)
@@ -166,7 +166,7 @@ bool BrandedDecl::compileAsType(
 
       case Declaration::BUILTIN_OBJECT:
         addError(errorReporter,
-            "As of Cap'n Proto 0.4, 'Object' has been renamed to 'AnyPointer'.  Sorry for the "
+            "As of Zap 0.4, 'Object' has been renamed to 'AnyPointer'.  Sorry for the "
             "inconvenience, and thanks for being an early adopter.  :)");
         KJ_FALLTHROUGH;
       case Declaration::BUILTIN_ANY_POINTER:
@@ -681,4 +681,4 @@ kj::Maybe<BrandedDecl> BrandScope::compileDeclExpression(
 }
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap

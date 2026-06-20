@@ -11,17 +11,17 @@ function test_samples() {
   echo "@@@@ ./addressbook (in various configurations)"
   ./addressbook write | ./addressbook read
   ./addressbook dwrite | ./addressbook dread
-  rm -f /tmp/capnp-calculator-example-$$
-  ./calculator-server unix:/tmp/capnp-calculator-example-$$ &
+  rm -f /tmp/zap-calculator-example-$$
+  ./calculator-server unix:/tmp/zap-calculator-example-$$ &
   local SERVER_PID=$!
   sleep 1
-  ./calculator-client unix:/tmp/capnp-calculator-example-$$
+  ./calculator-client unix:/tmp/zap-calculator-example-$$
   # `kill %./calculator-server` doesn't seem to work on recent Cygwins, but we can kill by PID.
   kill -9 $SERVER_PID
   # This `fg` will fail if bash happens to have already noticed the quit and reaped the process
   # before `fg` is invoked, so in that case we just proceed.
   fg %./calculator-server || true
-  rm -f /tmp/capnp-calculator-example-$$
+  rm -f /tmp/zap-calculator-example-$$
 }
 
 QUICK=
@@ -116,10 +116,10 @@ while [ $# -gt 0 ]; do
       echo "Pushing code to $HOST..."
       echo "========================================================================="
       BRANCH=$(git rev-parse --abbrev-ref HEAD)
-      ssh $HOST '(chmod -fR +w tmp-test-capnp || true) && rm -rf tmp-test-capnp && mkdir tmp-test-capnp && git init tmp-test-capnp'
-      git push ssh://$HOST/~/tmp-test-capnp "$BRANCH:test"
-      ssh $HOST "cd tmp-test-capnp && git checkout test"
-      exec ssh $HOST "cd tmp-test-capnp && ./super-test.sh $@ && cd .. && rm -rf tmp-test-capnp"
+      ssh $HOST '(chmod -fR +w tmp-test-zap || true) && rm -rf tmp-test-zap && mkdir tmp-test-zap && git init tmp-test-zap'
+      git push ssh://$HOST/~/tmp-test-zap "$BRANCH:test"
+      ssh $HOST "cd tmp-test-zap && git checkout test"
+      exec ssh $HOST "cd tmp-test-zap && ./super-test.sh $@ && cd .. && rm -rf tmp-test-zap"
       ;;
     compiler )
       if [ "$#" -lt 2 ]; then
@@ -166,7 +166,7 @@ while [ $# -gt 0 ]; do
       # To install Android SDK:
       # - Download command-line tools: https://developer.android.com/studio/index.html#command-tools
       # - Run $SDK_HOME/tools/bin/sdkmanager platform-tools 'platforms;android-25' 'system-images;android-25;google_apis;armeabi-v7a' emulator 'build-tools;25.0.2' ndk-bundle
-      # - Run $SDK_HOME/tools/bin/avdmanager create avd -n capnp -k 'system-images;android-25;google_apis;armeabi-v7a' -b google_apis/armeabi-v7a
+      # - Run $SDK_HOME/tools/bin/avdmanager create avd -n zap -k 'system-images;android-25;google_apis;armeabi-v7a' -b google_apis/armeabi-v7a
       if [ "$#" -ne 4 ]; then
         echo "usage: $0 android SDK_HOME CROSS_HOST COMPILER_PREFIX" >&2
         echo
@@ -183,34 +183,34 @@ while [ $# -gt 0 ]; do
       test -e configure || doit autoreconf -i
       test ! -e Makefile || (echo "ERROR: Directory unclean!" >&2 && false)
       doit ./configure --disable-shared $CONFIGURE_FLAGS
-      doit make -j$PARALLEL capnp capnpc-c++
+      doit make -j$PARALLEL zap zapc-c++
 
-      cp capnp capnp-host
-      cp capnpc-c++ capnpc-c++-host
+      cp zap zap-host
+      cp zapc-c++ zapc-c++-host
 
       export PATH="$SDK_HOME/ndk-bundle/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
       doit make distclean
-      doit ./configure --host="$CROSS_HOST" CC="$COMPILER_PREFIX-clang" CXX="$COMPILER_PREFIX-clang++" --with-external-capnp --disable-shared CXXFLAGS="-fPIE $CPP_FEATURES" LDFLAGS='-pie' LIBS="-static-libstdc++ -static-libgcc -ldl $EXTRA_LIBS" CAPNP=./capnp-host CAPNPC_CXX=./capnpc-c++-host $CONFIGURE_FLAGS
+      doit ./configure --host="$CROSS_HOST" CC="$COMPILER_PREFIX-clang" CXX="$COMPILER_PREFIX-clang++" --with-external-zap --disable-shared CXXFLAGS="-fPIE $CPP_FEATURES" LDFLAGS='-pie' LIBS="-static-libstdc++ -static-libgcc -ldl $EXTRA_LIBS" ZAP=./zap-host ZAPC_CXX=./zapc-c++-host $CONFIGURE_FLAGS
 
       doit make -j$PARALLEL
-      doit make -j$PARALLEL capnp-test
+      doit make -j$PARALLEL zap-test
 
       echo "Starting emulator..."
       trap 'kill $(jobs -p)' EXIT
       # TODO(someday): Speed up with KVM? Then maybe we won't have to skip fuzz tests?
-      $SDK_HOME/emulator/emulator -avd capnp -no-window &
+      $SDK_HOME/emulator/emulator -avd zap -no-window &
       $SDK_HOME/platform-tools/adb 'wait-for-device'
       echo "Waiting for localhost to be resolvable..."
       doit $SDK_HOME/platform-tools/adb shell 'while ! ping -c 1 localhost > /dev/null 2>&1; do sleep 1; done'
       # TODO(cleanup): With 'adb shell' I find I cannot put files anywhere, so I'm using 'su' a
       #   lot here. There is probably a better way.
-      doit $SDK_HOME/platform-tools/adb shell 'su 0 tee /data/capnp-test > /dev/null' < capnp-test
-      doit $SDK_HOME/platform-tools/adb shell 'su 0 chmod a+rx /data/capnp-test'
-      doit $SDK_HOME/platform-tools/adb shell 'cd /data && CAPNP_SKIP_FUZZ_TEST=1 su 0 /data/capnp-test && echo ANDROID_""TESTS_PASSED' | tee android-test.log
+      doit $SDK_HOME/platform-tools/adb shell 'su 0 tee /data/zap-test > /dev/null' < zap-test
+      doit $SDK_HOME/platform-tools/adb shell 'su 0 chmod a+rx /data/zap-test'
+      doit $SDK_HOME/platform-tools/adb shell 'cd /data && ZAP_SKIP_FUZZ_TEST=1 su 0 /data/zap-test && echo ANDROID_""TESTS_PASSED' | tee android-test.log
       grep -q ANDROID_TESTS_PASSED android-test.log
 
       doit make distclean
-      rm -f capnp-host capnpc-c++-host
+      rm -f zap-host zapc-c++-host
       exit 0
       ;;
     cmake )
@@ -223,7 +223,7 @@ while [ $# -gt 0 ]; do
       exit 0
       ;;
     cmake-package )
-      # Test that a particular configuration of Cap'n Proto can be discovered and configured against
+      # Test that a particular configuration of Zap can be discovered and configured against
       # by a CMake project using the find_package() command. This is currently implemented by
       # building the samples against the desired configuration.
       #
@@ -261,7 +261,7 @@ while [ $# -gt 0 ]; do
         cmake-shared )
           doit cmake $SOURCE_DIR -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$WORKSPACE/inst" \
               -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=ON
-          # The CMake build does not currently set the rpath of the capnp compiler tools.
+          # The CMake build does not currently set the rpath of the zap compiler tools.
           export LD_LIBRARY_PATH="$WORKSPACE/inst/lib"
           ;;
         cmake-static )
@@ -280,13 +280,13 @@ while [ $# -gt 0 ]; do
       # Configure, build, and execute the samples.
       cd $WORKSPACE/build-samples
       doit cmake $SOURCE_DIR/samples -G "Unix Makefiles" -DCMAKE_PREFIX_PATH="$WORKSPACE/inst" \
-          -DCAPNPC_FLAGS=--no-standard-import -DCAPNPC_IMPORT_DIRS="$WORKSPACE/inst/include"
+          -DZAPC_FLAGS=--no-standard-import -DZAPC_IMPORT_DIRS="$WORKSPACE/inst/include"
       doit make -j$PARALLEL
 
       test_samples
 
       echo "========================================================================="
-      echo "Cap'n Proto ($CONFIGURATION) installs a working CMake config package."
+      echo "Zap ($CONFIGURATION) installs a working CMake config package."
       echo "========================================================================="
 
       exit 0
@@ -323,8 +323,8 @@ while [ $# -gt 0 ]; do
       if [ -e Makefile ]; then
         doit make maintainer-clean
       fi
-      rm -f capnproto-*.tar.gz samples/addressbook samples/addressbook.capnp.c++ \
-            samples/addressbook.capnp.h
+      rm -f zap-*.tar.gz samples/addressbook samples/addressbook.zap.c++ \
+            samples/addressbook.zap.h
       exit 0
       ;;
     help )
@@ -357,7 +357,7 @@ done
 # sign-compare warnings than probably all other warnings combined and I've never seen it flag a
 # real problem. Disable unused parameters because it's stupidly noisy and never a real problem.
 # Enable expensive release-gating tests.
-export CXXFLAGS="-O2 -DDEBUG -Wall -Wextra ${WERROR} -Werror -Wsuggest-override -Wno-strict-aliasing -Wno-sign-compare -Wno-unused-parameter -DCAPNP_EXPENSIVE_TESTS=1 ${CPP_FEATURES}"
+export CXXFLAGS="-O2 -DDEBUG -Wall -Wextra ${WERROR} -Werror -Wsuggest-override -Wno-strict-aliasing -Wno-sign-compare -Wno-unused-parameter -DZAP_EXPENSIVE_TESTS=1 ${CPP_FEATURES}"
 export LIBS="$EXTRA_LIBS"
 
 if [ "${CXX:-}" != "g++-5" ]; then
@@ -438,10 +438,10 @@ doit ./configure --prefix="$STAGING" $CONFIGURE_FLAGS || (cat config.log && exit
 doit make -j$PARALLEL check
 
 if [ $IS_CLANG = no ]; then
-  # Verify that generated code compiles with pedantic warnings.  Make sure to treat capnp headers
+  # Verify that generated code compiles with pedantic warnings.  Make sure to treat zap headers
   # as system headers so warnings in them are ignored.
   doit ${CXX:-g++} -isystem src -std=c++23 -fno-permissive -pedantic -Wall -Wextra -Werror \
-      -c src/capnp/test.capnp.c++ -o /dev/null
+      -c src/zap/test.zap.c++ -o /dev/null
 fi
 
 echo "========================================================================="
@@ -450,31 +450,31 @@ echo "========================================================================="
 
 doit make install
 
-test "x$(which capnp)" = "x$STAGING/bin/capnp"
-test "x$(which capnpc-c++)" = "x$STAGING/bin/capnpc-c++"
+test "x$(which zap)" = "x$STAGING/bin/zap"
+test "x$(which zapc-c++)" = "x$STAGING/bin/zapc-c++"
 
 cd samples
 
-doit capnp compile -oc++ addressbook.capnp -I"$STAGING"/include --no-standard-import
-doit ${CXX:-g++} -std=c++23 addressbook.c++ addressbook.capnp.c++ -o addressbook \
-    $CXXFLAGS $(pkg-config --cflags --libs capnp)
+doit zap compile -oc++ addressbook.zap -I"$STAGING"/include --no-standard-import
+doit ${CXX:-g++} -std=c++23 addressbook.c++ addressbook.zap.c++ -o addressbook \
+    $CXXFLAGS $(pkg-config --cflags --libs zap)
 
-doit capnp compile -oc++ calculator.capnp -I"$STAGING"/include --no-standard-import
-doit ${CXX:-g++} -std=c++23 calculator-client.c++ calculator.capnp.c++ -o calculator-client \
-    $CXXFLAGS $(pkg-config --cflags --libs capnp-rpc)
-doit ${CXX:-g++} -std=c++23 calculator-server.c++ calculator.capnp.c++ -o calculator-server \
-    $CXXFLAGS $(pkg-config --cflags --libs capnp-rpc)
+doit zap compile -oc++ calculator.zap -I"$STAGING"/include --no-standard-import
+doit ${CXX:-g++} -std=c++23 calculator-client.c++ calculator.zap.c++ -o calculator-client \
+    $CXXFLAGS $(pkg-config --cflags --libs zap-rpc)
+doit ${CXX:-g++} -std=c++23 calculator-server.c++ calculator.zap.c++ -o calculator-server \
+    $CXXFLAGS $(pkg-config --cflags --libs zap-rpc)
 
 test_samples
-rm addressbook addressbook.capnp.c++ addressbook.capnp.h
-rm calculator-client calculator-server calculator.capnp.c++ calculator.capnp.h
+rm addressbook addressbook.zap.c++ addressbook.zap.h
+rm calculator-client calculator-server calculator.zap.c++ calculator.zap.h
 
 rm -rf cmake-build
 mkdir cmake-build
 cd cmake-build
 
 doit cmake .. -G "Unix Makefiles" -DCMAKE_PREFIX_PATH="$STAGING" \
-    -DCAPNPC_FLAGS=--no-standard-import -DCAPNPC_IMPORT_DIRS="$STAGING/include"
+    -DZAPC_FLAGS=--no-standard-import -DZAPC_IMPORT_DIRS="$STAGING/include"
 doit make -j$PARALLEL
 
 test_samples
@@ -488,12 +488,12 @@ if [ "$QUICK" = quick ]; then
 fi
 
 echo "========================================================================="
-echo "Testing --with-external-capnp and --disable-reflection"
+echo "Testing --with-external-zap and --disable-reflection"
 echo "========================================================================="
 
 doit make distclean
 doit ./configure --prefix="$STAGING" --disable-shared --disable-reflection \
-    --with-external-capnp CAPNP=$STAGING/bin/capnp $CONFIGURE_FLAGS
+    --with-external-zap ZAP=$STAGING/bin/zap $CONFIGURE_FLAGS
 doit make -j$PARALLEL check
 doit make distclean
 
@@ -532,7 +532,7 @@ echo "========================================================================="
 
 doit make -j$PARALLEL distcheck
 doit make distclean
-rm capnproto-*.tar.gz
+rm zap-*.tar.gz
 
 if [ "x`uname`" = xLinux ]; then
   echo "========================================================================="
@@ -563,11 +563,11 @@ if [ "x`uname`" = xLinux ] && [ $IS_CLANG = no ]; then
 
   doit ./configure --disable-shared CXXFLAGS="-g $CPP_FEATURES" $CONFIGURE_FLAGS
   doit make -j$PARALLEL
-  doit make -j$PARALLEL capnp-test
+  doit make -j$PARALLEL zap-test
   # Running the fuzz tests under Valgrind is a great thing to do -- but it takes
   # some 40 minutes. So, it needs to be done as a separate step of the release
   # process, perhaps along with the AFL tests.
-  CAPNP_SKIP_FUZZ_TEST=1 doit valgrind --leak-check=full --track-fds=yes --error-exitcode=1 --child-silent-after-fork=yes --sim-hints=lax-ioctls --suppressions=valgrind.supp ./capnp-test
+  ZAP_SKIP_FUZZ_TEST=1 doit valgrind --leak-check=full --track-fds=yes --error-exitcode=1 --child-silent-after-fork=yes --sim-hints=lax-ioctls --suppressions=valgrind.supp ./zap-test
 fi
 
 doit make maintainer-clean

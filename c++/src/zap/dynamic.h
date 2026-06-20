@@ -38,9 +38,9 @@
 #include "capability.h"
 #include <kj/windows-sanity.h>  // work-around macro conflict with `VOID`
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 class MessageReader;
 class MessageBuilder;
@@ -51,7 +51,7 @@ struct DynamicValue {
   enum Type {
     UNKNOWN,
     // Means that the value has unknown type and content because it comes from a newer version of
-    // the schema, or from a newer version of Cap'n Proto that has new features that this version
+    // the schema, or from a newer version of Zap that has new features that this version
     // doesn't understand.
 
     VOID,
@@ -238,8 +238,8 @@ private:
   friend struct DynamicList;
   friend class MessageReader;
   friend class MessageBuilder;
-  template <typename T, ::capnp::Kind k>
-  friend struct ::capnp::ToDynamic_;
+  template <typename T, ::zap::Kind k>
+  friend struct ::zap::ToDynamic_;
   friend kj::StringTree _::structString(
       _::StructReader reader, const _::RawBrandedSchema& schema);
   friend class Orphanage;
@@ -331,8 +331,8 @@ private:
   friend struct DynamicList;
   friend class MessageReader;
   friend class MessageBuilder;
-  template <typename T, ::capnp::Kind k>
-  friend struct ::capnp::ToDynamic_;
+  template <typename T, ::zap::Kind k>
+  friend struct ::zap::ToDynamic_;
   friend class Orphanage;
   friend class Orphan<DynamicStruct>;
   friend class Orphan<DynamicValue>;
@@ -406,8 +406,8 @@ private:
   friend struct _::PointerHelpers;
   friend struct DynamicStruct;
   friend class DynamicList::Builder;
-  template <typename T, ::capnp::Kind k>
-  friend struct ::capnp::ToDynamic_;
+  template <typename T, ::zap::Kind k>
+  friend struct ::zap::ToDynamic_;
   friend class Orphanage;
   friend class Orphan<DynamicList>;
   friend class Orphan<DynamicValue>;
@@ -458,8 +458,8 @@ private:
   template <typename T, Kind k>
   friend struct _::PointerHelpers;
   friend struct DynamicStruct;
-  template <typename T, ::capnp::Kind k>
-  friend struct ::capnp::ToDynamic_;
+  template <typename T, ::zap::Kind k>
+  friend struct ::zap::ToDynamic_;
   friend class Orphanage;
   template <typename T, Kind k>
   friend struct _::OrphanGetImpl;
@@ -525,7 +525,7 @@ public:
 
   struct Options {
     bool allowCancellation = false;
-    // See the `allowCancellation` annotation defined in `c++.capnp`.
+    // See the `allowCancellation` annotation defined in `c++.zap`.
     //
     // This option applies to all calls made to this server object. The annotation in the schema
     // is NOT used for dynamic servers.
@@ -666,7 +666,7 @@ public:
 
   template <typename T>
   inline ReaderFor<T> as() const { return AsImpl<T>::apply(*this); }
-  // Use to interpret the value as some Cap'n Proto type.  Allowed types are:
+  // Use to interpret the value as some Zap type.  Allowed types are:
   // - Void, bool, [u]int{8,16,32,64}_t, float, double, any enum:  Returns the raw value.
   // - Text, Data, AnyPointer, any struct type:  Returns the corresponding Reader.
   // - List<T> for any T listed above:  Returns List<T>::Reader.
@@ -1318,7 +1318,7 @@ typename DynamicTypeFor<FromServer<T>>::Client toDynamic(kj::Own<T>&& value) {
 inline DynamicValue::Reader::Reader(decltype(nullptr)): type(UNKNOWN) {}
 inline DynamicValue::Builder::Builder(decltype(nullptr)): type(UNKNOWN) {}
 
-#define CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(cppType, typeTag, fieldName) \
+#define ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(cppType, typeTag, fieldName) \
 inline DynamicValue::Reader::Reader(cppType value) \
     : type(typeTag), fieldName##Value(value) {} \
 inline DynamicValue::Builder::Builder(cppType value) \
@@ -1326,37 +1326,37 @@ inline DynamicValue::Builder::Builder(cppType value) \
 inline Orphan<DynamicValue>::Orphan(cppType value) \
     : type(DynamicValue::typeTag), fieldName##Value(value) {}
 
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(Void, VOID, void);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(bool, BOOL, bool);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(char, INT, int);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(signed char, INT, int);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(short, INT, int);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(int, INT, int);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(long, INT, int);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(long long, INT, int);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(unsigned char, UINT, uint);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(unsigned short, UINT, uint);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(unsigned int, UINT, uint);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(unsigned long, UINT, uint);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(unsigned long long, UINT, uint);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(float, FLOAT, float);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(double, FLOAT, float);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(DynamicEnum, ENUM, enum);
-#undef CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(Void, VOID, void);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(bool, BOOL, bool);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(char, INT, int);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(signed char, INT, int);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(short, INT, int);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(int, INT, int);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(long, INT, int);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(long long, INT, int);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(unsigned char, UINT, uint);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(unsigned short, UINT, uint);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(unsigned int, UINT, uint);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(unsigned long, UINT, uint);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(unsigned long long, UINT, uint);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(float, FLOAT, float);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(double, FLOAT, float);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(DynamicEnum, ENUM, enum);
+#undef ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR
 
-#define CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(cppType, typeTag, fieldName) \
+#define ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(cppType, typeTag, fieldName) \
 inline DynamicValue::Reader::Reader(const cppType::Reader& value) \
     : type(typeTag), fieldName##Value(value) {} \
 inline DynamicValue::Builder::Builder(cppType::Builder value) \
     : type(typeTag), fieldName##Value(value) {}
 
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(Text, TEXT, text);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(Data, DATA, data);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(DynamicList, LIST, list);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(DynamicStruct, STRUCT, struct);
-CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(AnyPointer, ANY_POINTER, anyPointer);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(Text, TEXT, text);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(Data, DATA, data);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(DynamicList, LIST, list);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(DynamicStruct, STRUCT, struct);
+ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR(AnyPointer, ANY_POINTER, anyPointer);
 
-#undef CAPNP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR
+#undef ZAP_DECLARE_DYNAMIC_VALUE_CONSTRUCTOR
 
 inline DynamicValue::Reader::Reader(DynamicCapability::Client& value)
     : type(CAPABILITY), capabilityValue(value) {}
@@ -1372,7 +1372,7 @@ inline DynamicValue::Builder::Builder(DynamicCapability::Client&& value)
 
 inline DynamicValue::Reader::Reader(const char* value): Reader(Text::Reader(value)) {}
 
-#define CAPNP_DECLARE_TYPE(discrim, typeName) \
+#define ZAP_DECLARE_TYPE(discrim, typeName) \
 template <> \
 struct DynamicValue::Reader::AsImpl<typeName> { \
   static ReaderFor<typeName> apply(const Reader& reader); \
@@ -1382,29 +1382,29 @@ struct DynamicValue::Builder::AsImpl<typeName> { \
   static BuilderFor<typeName> apply(Builder& builder); \
 };
 
-//CAPNP_DECLARE_TYPE(VOID, Void)
-CAPNP_DECLARE_TYPE(BOOL, bool)
-CAPNP_DECLARE_TYPE(INT8, int8_t)
-CAPNP_DECLARE_TYPE(INT16, int16_t)
-CAPNP_DECLARE_TYPE(INT32, int32_t)
-CAPNP_DECLARE_TYPE(INT64, int64_t)
-CAPNP_DECLARE_TYPE(UINT8, uint8_t)
-CAPNP_DECLARE_TYPE(UINT16, uint16_t)
-CAPNP_DECLARE_TYPE(UINT32, uint32_t)
-CAPNP_DECLARE_TYPE(UINT64, uint64_t)
-CAPNP_DECLARE_TYPE(FLOAT32, float)
-CAPNP_DECLARE_TYPE(FLOAT64, double)
+//ZAP_DECLARE_TYPE(VOID, Void)
+ZAP_DECLARE_TYPE(BOOL, bool)
+ZAP_DECLARE_TYPE(INT8, int8_t)
+ZAP_DECLARE_TYPE(INT16, int16_t)
+ZAP_DECLARE_TYPE(INT32, int32_t)
+ZAP_DECLARE_TYPE(INT64, int64_t)
+ZAP_DECLARE_TYPE(UINT8, uint8_t)
+ZAP_DECLARE_TYPE(UINT16, uint16_t)
+ZAP_DECLARE_TYPE(UINT32, uint32_t)
+ZAP_DECLARE_TYPE(UINT64, uint64_t)
+ZAP_DECLARE_TYPE(FLOAT32, float)
+ZAP_DECLARE_TYPE(FLOAT64, double)
 
-CAPNP_DECLARE_TYPE(TEXT, Text)
-CAPNP_DECLARE_TYPE(DATA, Data)
-CAPNP_DECLARE_TYPE(LIST, DynamicList)
-CAPNP_DECLARE_TYPE(STRUCT, DynamicStruct)
-CAPNP_DECLARE_TYPE(INTERFACE, DynamicCapability)
-CAPNP_DECLARE_TYPE(ENUM, DynamicEnum)
-CAPNP_DECLARE_TYPE(ANY_POINTER, AnyPointer)
-#undef CAPNP_DECLARE_TYPE
+ZAP_DECLARE_TYPE(TEXT, Text)
+ZAP_DECLARE_TYPE(DATA, Data)
+ZAP_DECLARE_TYPE(LIST, DynamicList)
+ZAP_DECLARE_TYPE(STRUCT, DynamicStruct)
+ZAP_DECLARE_TYPE(INTERFACE, DynamicCapability)
+ZAP_DECLARE_TYPE(ENUM, DynamicEnum)
+ZAP_DECLARE_TYPE(ANY_POINTER, AnyPointer)
+#undef ZAP_DECLARE_TYPE
 
-// CAPNP_DECLARE_TYPE(Void) causes gcc 4.7 to segfault.  If I do it manually and remove the
+// ZAP_DECLARE_TYPE(Void) causes gcc 4.7 to segfault.  If I do it manually and remove the
 // ReaderFor<> and BuilderFor<> wrappers, it works.
 template <>
 struct DynamicValue::Reader::AsImpl<Void> {
@@ -1685,6 +1685,6 @@ ReaderFor<T> ConstSchema::as() const {
   return DynamicValue::Reader(*this).as<T>();
 }
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

@@ -21,21 +21,21 @@
 
 #pragma once
 
-#include <capnp/test.capnp.h>
+#include <zap/test.zap.h>
 #include <initializer_list>
-#include <capnp/blob.h>
+#include <zap/blob.h>
 #include <kj/compat/gtest.h>
 
-#if !CAPNP_LITE
-#include <capnp/dynamic.h>
+#if !ZAP_LITE
+#include <zap/dynamic.h>
 #include <kj/io.h>
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
 // TODO(cleanup): Auto-generate stringification functions for union discriminants.
-namespace capnproto_test {
-namespace capnp {
+namespace zap_test {
+namespace zap {
 namespace test {
 inline kj::String KJ_STRINGIFY(TestUnion::Union0::Which which) {
   return kj::str(static_cast<uint16_t>(which));
@@ -59,29 +59,29 @@ inline kj::String KJ_STRINGIFY(TestInterleavedGroups::Group1::Which which) {
   return kj::str(static_cast<uint16_t>(which));
 }
 }  // namespace test
-}  // namespace capnp
-}  // namespace capnproto_test
+}  // namespace zap
+}  // namespace zap_test
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 
 inline Data::Reader data(const char* str) {
   return Data::Reader(reinterpret_cast<const byte*>(str), strlen(str));
 }
 
-namespace test = capnproto_test::capnp::test;
+namespace test = zap_test::zap::test;
 
 // We don't use "using namespace" to pull these in because then things would still compile
 // correctly if they were generated in the global namespace.
-using ::capnproto_test::capnp::test::TestAllTypes;
-using ::capnproto_test::capnp::test::TestDefaults;
-using ::capnproto_test::capnp::test::TestEnum;
-using ::capnproto_test::capnp::test::TestUnion;
-using ::capnproto_test::capnp::test::TestUnionDefaults;
-using ::capnproto_test::capnp::test::TestNestedTypes;
-using ::capnproto_test::capnp::test::TestUsing;
-using ::capnproto_test::capnp::test::TestListDefaults;
-using ::capnproto_test::capnp::test::TestInterleavedGroups;
+using ::zap_test::zap::test::TestAllTypes;
+using ::zap_test::zap::test::TestDefaults;
+using ::zap_test::zap::test::TestEnum;
+using ::zap_test::zap::test::TestUnion;
+using ::zap_test::zap::test::TestUnionDefaults;
+using ::zap_test::zap::test::TestNestedTypes;
+using ::zap_test::zap::test::TestUsing;
+using ::zap_test::zap::test::TestListDefaults;
+using ::zap_test::zap::test::TestInterleavedGroups;
 
 void initTestMessage(TestAllTypes::Builder builder);
 void initTestMessage(TestDefaults::Builder builder);
@@ -98,7 +98,7 @@ void checkTestMessage(TestListDefaults::Reader reader);
 void checkTestMessageAllZero(TestAllTypes::Builder builder);
 void checkTestMessageAllZero(TestAllTypes::Reader reader);
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 void initDynamicTestMessage(DynamicStruct::Builder builder);
 void initDynamicTestLists(DynamicStruct::Builder builder);
 void checkDynamicTestMessage(DynamicStruct::Builder builder);
@@ -107,7 +107,7 @@ void checkDynamicTestMessage(DynamicStruct::Reader reader);
 void checkDynamicTestLists(DynamicStruct::Reader reader);
 void checkDynamicTestMessageAllZero(DynamicStruct::Builder builder);
 void checkDynamicTestMessageAllZero(DynamicStruct::Reader reader);
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 template <typename T>
 inline void checkElement(T a, T b) {
@@ -159,7 +159,7 @@ inline void expectPrimitiveEq(double a, double b) { EXPECT_DOUBLE_EQ(a, b); }
 inline void expectPrimitiveEq(Text::Reader a, Text::Builder b) { EXPECT_EQ(a, b); }
 inline void expectPrimitiveEq(Data::Reader a, Data::Builder b) { EXPECT_EQ(a, b); }
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 template <typename Element, typename T>
 void checkList(T reader, std::initializer_list<ReaderFor<Element>> expected) {
   auto list = reader.as<DynamicList>();
@@ -174,14 +174,14 @@ void checkList(T reader, std::initializer_list<ReaderFor<Element>> expected) {
     expectPrimitiveEq(expected.begin()[i], typed[i]);
   }
 }
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 #undef as
 
 // =======================================================================================
 // Interface implementations.
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 
 class TestInterfaceImpl final: public test::TestInterface::Server {
 public:
@@ -367,9 +367,9 @@ public:
   }
 };
 
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

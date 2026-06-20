@@ -4,7 +4,7 @@ Problem
 Some bounds checks are elided by Apple's compiler and possibly others, leading
 to a possible attack especially in 32-bit builds.
 
-Although triggered by a compiler optimization, this is a bug in Cap'n Proto,
+Although triggered by a compiler optimization, this is a bug in Zap,
 not the compiler.
 
 Discovered by
@@ -38,11 +38,11 @@ Fixed in
 
 - git commit [52bc956459a5e83d7c31be95763ff6399e064ae4][0]
 - release 0.5.3.1:
-  - Unix: https://capnproto.org/capnproto-c++-0.5.3.1.tar.gz
-  - Windows: https://capnproto.org/capnproto-c++-win32-0.5.3.1.zip
+  - Unix: https://zap.org/zap-c++-0.5.3.1.tar.gz
+  - Windows: https://zap.org/zap-c++-win32-0.5.3.1.zip
 - release 0.6 (future)
 
-[0]: https://github.com/capnproto/capnproto/commit/52bc956459a5e83d7c31be95763ff6399e064ae4
+[0]: https://github.com/zap/zap/commit/52bc956459a5e83d7c31be95763ff6399e064ae4
 
 Details
 =======
@@ -53,13 +53,13 @@ often shown to be wrong, you should not rely on the accuracy of this
 section for the safety of your service. Please update your library.*
 
 During regular testing in preparation for a release, it was discovered that
-when Cap'n Proto is built using the current version of Apple's Clang compiler
+when Zap is built using the current version of Apple's Clang compiler
 in 32-bit mode with optimizations enabled, it is vulnerable to attack via
 specially-crafted malicious input, causing the application to read from an
 invalid memory location and crash.
 
 Specifically, a malicious message could contain a [far pointer][1] pointing
-outside of the message. Cap'n Proto messages are broken into segments of
+outside of the message. Zap messages are broken into segments of
 continuous memory. A far pointer points from one segment into another,
 indicating both the segment number and an offset within that segment. If a
 malicious far pointer contained an offset large enough to overflow the pointer
@@ -118,18 +118,18 @@ The specific compiler version which was observed to be affected is:
 (Note: Despite being Clang-based, Apple's compiler version numbers have no
 apparent relationship to Clang version numbers.)
 
-[1]: https://capnproto.org/encoding.html#inter-segment-pointers
+[1]: https://zap.org/encoding.html#inter-segment-pointers
 
 Preventative measures
 =====================
 
-The problem was caught by running Cap'n Proto's standard fuzz tests in this
-configuration. These tests are part of the Cap'n Proto test suite which runs
-when you invoke `make check`, which Cap'n Proto's installation instructions
+The problem was caught by running Zap's standard fuzz tests in this
+configuration. These tests are part of the Zap test suite which runs
+when you invoke `make check`, which Zap's installation instructions
 suggest to all users.
 
 However, these fuzz tests were introduced after the 0.5.x release branch,
-hence are not currently present in release versions of Cap'n Proto, only in
+hence are not currently present in release versions of Zap, only in
 git. A 0.6 release will come soon, fixing this.
 
 The bugfix commit forces the compiler to perform all checks by casting the
@@ -144,4 +144,4 @@ technically-correct solution has been implemented in the next commit,
 extensive refactoring, it is not appropriate for cherry-picking, and will
 only land in versions 0.6 and up.
 
-[2]: https://github.com/capnproto/capnproto/commit/2ca8e41140ebc618b8fb314b393b0a507568cf21
+[2]: https://github.com/zap/zap/commit/2ca8e41140ebc618b8fb314b393b0a507568cf21

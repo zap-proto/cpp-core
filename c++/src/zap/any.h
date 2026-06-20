@@ -27,9 +27,9 @@
 #include <kj/windows-sanity.h>  // work-around macro conflict with `VOID`
 #include <kj/hash.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 namespace _ {
   class PointerBuilder;
 }
@@ -115,21 +115,21 @@ struct AnyPointer {
 
     template <typename T>
     inline ReaderFor<T> getAs(StructSchema schema) const;
-    // Only valid for T = DynamicStruct.  Requires `#include <capnp/dynamic.h>`.
+    // Only valid for T = DynamicStruct.  Requires `#include <zap/dynamic.h>`.
 
     template <typename T>
     inline ReaderFor<T> getAs(ListSchema schema) const;
-    // Only valid for T = DynamicList.  Requires `#include <capnp/dynamic.h>`.
+    // Only valid for T = DynamicList.  Requires `#include <zap/dynamic.h>`.
 
     template <typename T>
     inline ReaderFor<T> getAs(InterfaceSchema schema) const;
-    // Only valid for T = DynamicCapability.  Requires `#include <capnp/dynamic.h>`.
+    // Only valid for T = DynamicCapability.  Requires `#include <zap/dynamic.h>`.
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
     kj::Own<ClientHook> getPipelinedCap(kj::ArrayPtr<const PipelineOp> ops) const;
     // Used by RPC system to implement pipelining.  Applications generally shouldn't use this
     // directly.
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
   private:
     _::PointerReader reader;
@@ -173,15 +173,15 @@ struct AnyPointer {
 
     template <typename T>
     inline BuilderFor<T> getAs(StructSchema schema);
-    // Only valid for T = DynamicStruct.  Requires `#include <capnp/dynamic.h>`.
+    // Only valid for T = DynamicStruct.  Requires `#include <zap/dynamic.h>`.
 
     template <typename T>
     inline BuilderFor<T> getAs(ListSchema schema);
-    // Only valid for T = DynamicList.  Requires `#include <capnp/dynamic.h>`.
+    // Only valid for T = DynamicList.  Requires `#include <zap/dynamic.h>`.
 
     template <typename T>
     inline BuilderFor<T> getAs(InterfaceSchema schema);
-    // Only valid for T = DynamicCapability.  Requires `#include <capnp/dynamic.h>`.
+    // Only valid for T = DynamicCapability.  Requires `#include <zap/dynamic.h>`.
 
     template <typename T>
     inline BuilderFor<T> initAs();
@@ -193,11 +193,11 @@ struct AnyPointer {
 
     template <typename T>
     inline BuilderFor<T> initAs(StructSchema schema);
-    // Only valid for T = DynamicStruct.  Requires `#include <capnp/dynamic.h>`.
+    // Only valid for T = DynamicStruct.  Requires `#include <zap/dynamic.h>`.
 
     template <typename T>
     inline BuilderFor<T> initAs(ListSchema schema, uint elementCount);
-    // Only valid for T = DynamicList.  Requires `#include <capnp/dynamic.h>`.
+    // Only valid for T = DynamicList.  Requires `#include <zap/dynamic.h>`.
 
     inline AnyList::Builder initAsAnyList(ElementSize elementSize, uint elementCount);
     // Note: Does not accept INLINE_COMPOSITE for elementSize.
@@ -210,7 +210,7 @@ struct AnyPointer {
     template <typename T>
     inline void setAs(ReaderFor<T> value);
     // Valid for ReaderType = T::Reader for T = any generated struct type, List<U>, Text, Data,
-    // DynamicStruct, or DynamicList (the dynamic types require `#include <capnp/dynamic.h>`).
+    // DynamicStruct, or DynamicList (the dynamic types require `#include <zap/dynamic.h>`).
 
     template <typename T>
     inline void setAs(std::initializer_list<ReaderFor<ListElementType<T>>> list);
@@ -227,7 +227,7 @@ struct AnyPointer {
     template <typename T>
     inline void adopt(Orphan<T>&& orphan);
     // Valid for T = any generated struct type, List<U>, Text, Data, DynamicList, DynamicStruct,
-    // or DynamicValue (the dynamic types require `#include <capnp/dynamic.h>`).
+    // or DynamicValue (the dynamic types require `#include <zap/dynamic.h>`).
 
     template <typename T>
     inline Orphan<T> disownAs();
@@ -235,15 +235,15 @@ struct AnyPointer {
 
     template <typename T>
     inline Orphan<T> disownAs(StructSchema schema);
-    // Only valid for T = DynamicStruct.  Requires `#include <capnp/dynamic.h>`.
+    // Only valid for T = DynamicStruct.  Requires `#include <zap/dynamic.h>`.
 
     template <typename T>
     inline Orphan<T> disownAs(ListSchema schema);
-    // Only valid for T = DynamicList.  Requires `#include <capnp/dynamic.h>`.
+    // Only valid for T = DynamicList.  Requires `#include <zap/dynamic.h>`.
 
     template <typename T>
     inline Orphan<T> disownAs(InterfaceSchema schema);
-    // Only valid for T = DynamicCapability.  Requires `#include <capnp/dynamic.h>`.
+    // Only valid for T = DynamicCapability.  Requires `#include <zap/dynamic.h>`.
 
     inline Orphan<AnyPointer> disown();
     // Disown without a type.
@@ -258,7 +258,7 @@ struct AnyPointer {
     friend struct _::PointerHelpers<AnyPointer>;
   };
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
   class Pipeline {
   public:
     typedef AnyPointer Pipelines;
@@ -280,7 +280,7 @@ struct AnyPointer {
     inline kj::Own<PipelineHook> releasePipelineHook() { return kj::mv(hook); }
     // For use by RPC implementations.
 
-    template <typename T, typename = kj::EnableIf<CAPNP_KIND(FromClient<T>) == Kind::INTERFACE>>
+    template <typename T, typename = kj::EnableIf<ZAP_KIND(FromClient<T>) == Kind::INTERFACE>>
     inline operator T() { return T(asCap()); }
 
   private:
@@ -294,7 +294,7 @@ struct AnyPointer {
     friend class PipelineHook;
     friend class AnyStruct::Pipeline;
   };
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 };
 
 template <>
@@ -365,7 +365,7 @@ template <> struct AnyTypeFor_<Kind::STRUCT> { typedef AnyStruct Type; };
 template <> struct AnyTypeFor_<Kind::LIST> { typedef AnyList Type; };
 
 template <typename T>
-using AnyTypeFor = typename AnyTypeFor_<CAPNP_KIND(T)>::Type;
+using AnyTypeFor = typename AnyTypeFor_<ZAP_KIND(T)>::Type;
 
 template <typename T>
 inline ReaderFor<AnyTypeFor<FromReader<T>>> toAny(T&& value) {
@@ -455,7 +455,7 @@ public:
   Reader() = default;
   inline Reader(_::StructReader reader): _reader(reader) {}
 
-  template <typename T, typename = kj::EnableIf<CAPNP_KIND(FromReader<T>) == Kind::STRUCT>>
+  template <typename T, typename = kj::EnableIf<ZAP_KIND(FromReader<T>) == Kind::STRUCT>>
   inline Reader(T&& value)
       : _reader(_::PointerHelpers<FromReader<T>>::getInternalReader(kj::fwd<T>(value))) {}
 
@@ -501,7 +501,7 @@ public:
   inline Builder(_::StructBuilder builder): _builder(builder) {}
 
 #if !_MSC_VER || defined(__clang__) // TODO(msvc): MSVC ICEs on this. Try restoring when compiler improves.
-  template <typename T, typename = kj::EnableIf<CAPNP_KIND(FromBuilder<T>) == Kind::STRUCT>>
+  template <typename T, typename = kj::EnableIf<ZAP_KIND(FromBuilder<T>) == Kind::STRUCT>>
   inline Builder(T&& value)
       : _builder(_::PointerHelpers<FromBuilder<T>>::getInternalBuilder(kj::fwd<T>(value))) {}
 #endif
@@ -539,7 +539,7 @@ private:
   friend class CapBuilderContext;
 };
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 class AnyStruct::Pipeline {
 public:
   inline Pipeline(decltype(nullptr)): typeless(nullptr) {}
@@ -558,7 +558,7 @@ public:
 private:
   AnyPointer::Pipeline typeless;
 };
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 class List<AnyStruct, Kind::OTHER>::Reader {
 public:
@@ -630,7 +630,7 @@ public:
   inline Reader(_::ListReader reader): _reader(reader) {}
 
 #if !_MSC_VER || defined(__clang__) // TODO(msvc): MSVC ICEs on this. Try restoring when compiler improves.
-  template <typename T, typename = kj::EnableIf<CAPNP_KIND(FromReader<T>) == Kind::LIST>>
+  template <typename T, typename = kj::EnableIf<ZAP_KIND(FromReader<T>) == Kind::LIST>>
   inline Reader(T&& value)
       : _reader(_::PointerHelpers<FromReader<T>>::getInternalReader(kj::fwd<T>(value))) {}
 #endif
@@ -667,7 +667,7 @@ public:
   inline Builder(_::ListBuilder builder): _builder(builder) {}
 
 #if !_MSC_VER || defined(__clang__) // TODO(msvc): MSVC ICEs on this. Try restoring when compiler improves.
-  template <typename T, typename = kj::EnableIf<CAPNP_KIND(FromBuilder<T>) == Kind::LIST>>
+  template <typename T, typename = kj::EnableIf<ZAP_KIND(FromBuilder<T>) == Kind::LIST>>
   inline Builder(T&& value)
       : _builder(_::PointerHelpers<FromBuilder<T>>::getInternalBuilder(kj::fwd<T>(value))) {}
 #endif
@@ -700,10 +700,10 @@ private:
 // These relate to capabilities, but we don't declare them in capability.h because generated code
 // for structs needs to know about these, even in files that contain no interfaces.
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 
 struct PipelineOp {
-  // Corresponds to rpc.capnp's PromisedAnswer.Op.
+  // Corresponds to rpc.zap's PromisedAnswer.Op.
 
   enum Type {
     NOOP,  // for convenience
@@ -760,7 +760,7 @@ private:
   template <typename T> struct FromImpl;
 };
 
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 // =======================================================================================
 // Inline implementation details
@@ -1071,7 +1071,7 @@ struct OrphanGetImpl<AnyList, Kind::OTHER> {
 
 }  // namespace _ (private)
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 
 template <typename T>
 struct PipelineHook::FromImpl {
@@ -1103,8 +1103,8 @@ inline PipelineHook& PipelineHook::from(Pipeline& pipeline) {
   return FromImpl<T>::apply(pipeline);
 }
 
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

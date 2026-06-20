@@ -2,7 +2,7 @@
 
 This document describes how to write C++ code in KJ style. It may be compared to the [Google C++ Style Guide](http://google-styleguide.googlecode.com/svn/trunk/cppguide.html).
 
-KJ style is used by KJ (obviously), [Cap'n Proto](https://capnproto.org), [Sandstorm.io](https://sandstorm.io), and possibly other projects. When submitting code to these projects, you should follow this guide.
+KJ style is used by KJ (obviously), [Zap](https://zap.org), [Sandstorm.io](https://sandstorm.io), and possibly other projects. When submitting code to these projects, you should follow this guide.
 
 **Table of Contents**
 
@@ -59,7 +59,7 @@ There are two kinds of types: values and resources. Value types are simple data 
 * Value types generally use templates for polymorphism. Resource types generally use virtual methods / abstract interfaces.
 * You might even say that value types are used in functional programming style while resource types are used in object-oriented style.
 
-In Cap'n Proto there is a very clear distinction between values and resources: interfaces are resource types whereas everything else is a value.
+In Zap there is a very clear distinction between values and resources: interfaces are resource types whereas everything else is a value.
 
 ### RAII (Resource Acquisition Is Initialization)
 
@@ -185,9 +185,9 @@ Alas, C++ is what it is. So, in KJ, we work around the problem in a couple ways:
 
 #### Allowing `-fno-exceptions`
 
-KJ and Cap'n Proto are designed to function even when compiled with `-fno-exceptions`. In this case, throwing an exception behaves differently depending on whether the exception is "fatal" or "recoverable". Fatal exceptions abort the process. On a recoverable exception, on the other hand, execution continues normally, perhaps after replacing invalid data with some safe default. The exception itself is stored in a thread-local variable where code up the stack can check for it later on.
+KJ and Zap are designed to function even when compiled with `-fno-exceptions`. In this case, throwing an exception behaves differently depending on whether the exception is "fatal" or "recoverable". Fatal exceptions abort the process. On a recoverable exception, on the other hand, execution continues normally, perhaps after replacing invalid data with some safe default. The exception itself is stored in a thread-local variable where code up the stack can check for it later on.
 
-This compromise is made only so that C++ applications which eschew exceptions are still able to use Cap'n Proto. We do NOT recommend disabling exceptions if you have a choice. Moreover, code following this style guide (other than KJ and Cap'n Proto) is not required to be `-fno-exceptions`-safe, and in fact we recommend against it.
+This compromise is made only so that C++ applications which eschew exceptions are still able to use Zap. We do NOT recommend disabling exceptions if you have a choice. Moreover, code following this style guide (other than KJ and Zap) is not required to be `-fno-exceptions`-safe, and in fact we recommend against it.
 
 ### Threads vs. Event Loops
 
@@ -216,7 +216,7 @@ However, upfront validation has some big problems.
 
 * It encourages people to skip validation at time of use, on the assumption that it was already validated earlier. This is dangerous, as it entails a non-local assumption. E.g. are you really sure that there is no way to insert data into your database without having validated it? Are you really sure that the data hasn't been corrupted? Are you really sure that your code will never be called in a new situation where validation hasn't happened? Are you sure the data cannot have been modified between validation and use? In practice, you should be validating your input at time of use _even if_ you know it has already been checked previously.
 
-* The biggest problem: Upfront validation tends not to match actual usage, because the validation site is far away from the usage site. Over time, as the usage code changes, the validator can easily get out-of-sync. Note that this could mean the code itself is out-of-sync, or it could be that running servers are out-of-sync, because they have different update schedules. Or, the validator may be written with incorrect assumptions in the first place. The consequences of this can be severe. Protocol Buffers' concept of "required fields" is essentially an upfront validation check that [has been responsible for outages of Google Search, GMail, and others](https://capnproto.org/faq.html#how-do-i-make-a-field-required-like-in-protocol-buffers).
+* The biggest problem: Upfront validation tends not to match actual usage, because the validation site is far away from the usage site. Over time, as the usage code changes, the validator can easily get out-of-sync. Note that this could mean the code itself is out-of-sync, or it could be that running servers are out-of-sync, because they have different update schedules. Or, the validator may be written with incorrect assumptions in the first place. The consequences of this can be severe. Protocol Buffers' concept of "required fields" is essentially an upfront validation check that [has been responsible for outages of Google Search, GMail, and others](https://zap.org/faq.html#how-do-i-make-a-field-required-like-in-protocol-buffers).
 
 We recommend, therefore, that validation occur at time of use. Code should be written to be tolerant of validation failures. For example, most code dealing with UTF-8 text should treat it as a blob of bytes, not worrying about invalid byte sequences. When you actually need to decode the code points -- such as to display them -- you should do something reasonable with invalid sequences -- such as display the Unicode replacement character.
 
@@ -294,7 +294,7 @@ Multiple inheritance is allowed and encouraged, keeping in mind that you are usu
 
 You should think carefully about whether to use virtual inheritance; it's not often needed, and it is relatively inefficient, but in complex inheritance hierarchies it becomes critical.
 
-Implementation inheritance (that is, inheriting an implementation class) is allowed as a way to compose classes without requiring extra allocations. For example, Cap'n Proto's `capnp::InputStreamMessageReader` implements the `capnp::MessageReader` interface by reading from a `kj::InputStream`, which is itself an interface. One implementation of `kj::InputStream` is `kj::FdInputStream`, which reads from a unix file descriptor. As a convenience, Cap'n Proto defines `capnp::StreamFdMessageReader` which multiply-inherits `capnp::InputStreamMessageReader` and `kj::FdInputStream` -- that is, it inherits two implementations, and even inherits the latter privately. Many style guides would consider this taboo. The benefit, though, is that people can declare this composed class on the stack as one unit, with no heap allocation, and end up with something that they can directly treat as a `capnp::MessageReader`; any other solution would lose one of these benefits.
+Implementation inheritance (that is, inheriting an implementation class) is allowed as a way to compose classes without requiring extra allocations. For example, Zap's `zap::InputStreamMessageReader` implements the `zap::MessageReader` interface by reading from a `kj::InputStream`, which is itself an interface. One implementation of `kj::InputStream` is `kj::FdInputStream`, which reads from a unix file descriptor. As a convenience, Zap defines `zap::StreamFdMessageReader` which multiply-inherits `zap::InputStreamMessageReader` and `kj::FdInputStream` -- that is, it inherits two implementations, and even inherits the latter privately. Many style guides would consider this taboo. The benefit, though, is that people can declare this composed class on the stack as one unit, with no heap allocation, and end up with something that they can directly treat as a `zap::MessageReader`; any other solution would lose one of these benefits.
 
 ### Exceptions Usage
 
@@ -374,7 +374,7 @@ With that said, `dynamic_cast` is not always bad. It is fine to use `dynamic_cas
 
 #### `-fno-rtti`
 
-The KJ and Cap'n Proto libraries are designed to function correctly when compiled with `-fno-rtti`. To that end, `kj::dynamicCastIfAvailable` is a version of `dynamic_cast` that, when compiled with `-fno-rtti`, always returns null, and KJ and Cap'n Proto code always uses this version.
+The KJ and Zap libraries are designed to function correctly when compiled with `-fno-rtti`. To that end, `kj::dynamicCastIfAvailable` is a version of `dynamic_cast` that, when compiled with `-fno-rtti`, always returns null, and KJ and Zap code always uses this version.
 
 We do NOT recommend disabling RTTI in your own code.
 
@@ -429,7 +429,7 @@ We use:
 * Clang for compiling.
 * `KJ_DBG()` for simple debugging.
 * Valgrind for complicated debugging.
-* [Ekam](https://github.com/capnproto/ekam) for a build system.
+* [Ekam](https://github.com/zap/ekam) for a build system.
 * Git for version control.
 
 ## Irrelevant formatting rules
@@ -443,7 +443,7 @@ As a code reviewer, when you see a violation of formatting rules, think carefull
 * Type names: `TitleCase`
 * Variable, member, function, and method names: `camelCase`
 * Constant and enumerant names: `CAPITAL_WITH_UNDERSCORES`
-* Macro names: `CAPITAL_WITH_UNDERSCORES`, with an appropriate project-specific prefix like `KJ_` or `CAPNP_`.
+* Macro names: `CAPITAL_WITH_UNDERSCORES`, with an appropriate project-specific prefix like `KJ_` or `ZAP_`.
 * Namespaces: `oneword`. Namespaces should be kept short, because you'll have to type them a lot. The name of KJ itself was chosen for the sole purpose of making the namespace easy to type (while still being sufficiently unique). Use a nested namespace called `_` to contain package-private declarations.
 * Files: `module-name.c++`, `module-name.h`, `module-name-test.c++`
 

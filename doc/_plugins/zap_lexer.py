@@ -3,10 +3,10 @@
 from pygments.lexer import RegexLexer
 from pygments.token import *
 
-class CapnpLexer(RegexLexer):
-    name = "Cap'n Proto lexer"
-    aliases = ['capnp']
-    filenames = ['*.capnp']
+class ZapLexer(RegexLexer):
+    name = "Zap lexer"
+    aliases = ['zap']
+    filenames = ['*.zap']
 
     tokens = {
         'root': [
@@ -57,8 +57,8 @@ class CapnpLexer(RegexLexer):
 
 if __name__ == "__main__":
     from setuptools import setup, find_packages
-    setup(name = "CapnpPygmentsLexer",
+    setup(name = "ZapPygmentsLexer",
           version = "0.1",
           packages = find_packages(),
-          py_modules = [ 'capnp_lexer' ],
-          entry_points = {'pygments.lexers': 'capnp = capnp_lexer:CapnpLexer'})
+          py_modules = [ 'zap_lexer' ],
+          entry_points = {'pygments.lexers': 'zap = zap_lexer:ZapLexer'})

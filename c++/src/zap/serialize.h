@@ -19,7 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// This file implements a simple serialization format for Cap'n Proto messages.  The format
+// This file implements a simple serialization format for Zap messages.  The format
 // is as follows:
 //
 // * 32-bit little-endian segment count (4 bytes).
@@ -43,9 +43,9 @@
 #include "message.h"
 #include <kj/io.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 class FlatArrayMessageReader: public MessageReader {
   // Parses a message from a flat array.  Note that it makes sense to use this together with mmap()
@@ -92,7 +92,7 @@ kj::Array<word> messageToFlatArray(MessageBuilder& builder);
 // `asBytes()` returns an ArrayPtr, so you have to save the Array as well to prevent it from being
 // deleted. For example:
 //
-//     kj::Array<capnp::word> words = messageToFlatArray(myMessage);
+//     kj::Array<zap::word> words = messageToFlatArray(myMessage);
 //     kj::ArrayPtr<kj::byte> bytes = words.asBytes();
 //     write(fd, bytes.begin(), bytes.size());
 
@@ -233,6 +233,6 @@ inline void writeMessageToFd(int fd, MessageBuilder& builder) {
   writeMessageToFd(fd, builder.getSegmentsForOutput());
 }
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

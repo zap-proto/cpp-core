@@ -9,14 +9,14 @@ title: Encoding Spec
 
 ### 64-bit Words
 
-For the purpose of Cap'n Proto, a "word" is defined as 8 bytes, or 64 bits.  Since alignment of
+For the purpose of Zap, a "word" is defined as 8 bytes, or 64 bits.  Since alignment of
 data is important, all objects (structs, lists, and blobs) are aligned to word boundaries, and
 sizes are usually expressed in terms of words.  (Primitive values are aligned to a multiple of
 their size within a struct or list.)
 
 ### Messages
 
-The unit of communication in Cap'n Proto is a "message".  A message is a tree of objects, with
+The unit of communication in Zap is a "message".  A message is a tree of objects, with
 the root always being a struct.
 
 Physically, messages may be split into several "segments", each of which is a flat blob of bytes.
@@ -40,7 +40,7 @@ root struct.
 
 ### Objects
 
-Each segment in a message contains a series of objects.  For the purpose of Cap'n Proto, an "object"
+Each segment in a message contains a series of objects.  For the purpose of Zap, an "object"
 is any value which may have a pointer pointing to it.  Pointers can only point to the beginning of
 objects, not into the middle, and no more than one pointer can point at each object.  Thus, objects
 and the pointers connecting them form a tree, not a graph.  An object is itself composed of
@@ -115,7 +115,7 @@ Fields are positioned within the struct according to an algorithm with the follo
 * Unions and groups need not occupy contiguous memory.  Indeed, they may have to be split into
   multiple slots if new fields are added later on.
 
-Field offsets are computed by the Cap'n Proto compiler.  The precise algorithm is too complicated
+Field offsets are computed by the Zap compiler.  The precise algorithm is too complicated
 to describe here, but you need not implement it yourself, as the compiler can produce a compiled
 schema format which includes offset information.
 
@@ -127,7 +127,7 @@ for pointer fields check for null and return a pointer to their default value in
 
 There are several reasons why this is desirable:
 
-* Cap'n Proto messages are often "packed" with a simple compression algorithm that deflates
+* Zap messages are often "packed" with a simple compression algorithm that deflates
   zero-value bytes.
 * Newly-allocated structs only need to be zero-initialized, which is fast and requires no knowledge
   of the struct type except its size.
@@ -250,7 +250,7 @@ set to point to new objects, not existing ones.
 
 ### Capabilities (Interfaces)
 
-When using Cap'n Proto for [RPC](rpc.html), every message has an associated "capability table"
+When using Zap for [RPC](rpc.html), every message has an associated "capability table"
 which is a flat list of all capabilities present in the message body.  The details of what this
 table contains and where it is stored are the responsibility of the RPC system; in some cases, the
 table may not even be part of the message content.
@@ -268,7 +268,7 @@ A capability pointer, then, simply contains an index into the separate capabilit
     C (32 bits) = Index of the capability in the message's capability
         table.
 
-In [rpc.capnp](https://github.com/capnproto/capnproto/blob/master/c++/src/capnp/rpc.capnp), the
+In [rpc.zap](https://github.com/zap/zap/blob/master/c++/src/zap/rpc.zap), the
 capability table is encoded as a list of `CapDescriptors`, appearing along-side the message content
 in the `Payload` struct.  However, some use cases may call for different approaches.  A message
 that is built and consumed within the same process need not encode the capability table at all
@@ -280,9 +280,9 @@ would need to store a table of `SturdyRef`s instead of `CapDescriptor`s.
 When transmitting a message, the segments must be framed in some way, i.e. to communicate the
 number of segments and their sizes before communicating the actual data.  The best framing approach
 may differ depending on the medium -- for example, messages read via `mmap` or shared memory may
-call for a different approach than messages sent over a socket or a pipe.  Cap'n Proto does not
+call for a different approach than messages sent over a socket or a pipe.  Zap does not
 attempt to specify a framing format for every situation.  However, since byte streams are by far
-the most common transmission medium, Cap'n Proto does define and implement a recommended framing
+the most common transmission medium, Zap does define and implement a recommended framing
 format for them.
 
 When transmitting over a stream, the following should be sent.  All integers are unsigned and
@@ -295,8 +295,8 @@ little-endian.
 
 ### Packing
 
-For cases where bandwidth usage matters, Cap'n Proto defines a simple compression scheme called
-"packing".  This scheme is based on the observation that Cap'n Proto messages contain lots of
+For cases where bandwidth usage matters, Zap defines a simple compression scheme called
+"packing".  This scheme is based on the observation that Zap messages contain lots of
 zero bytes: padding bytes, unset fields, and high-order bytes of small-valued integers.
 
 In packed format, each word of the message is reduced to a tag byte followed by zero to eight
@@ -304,7 +304,7 @@ content bytes.  The bits of the tag byte correspond to the bytes of the unpacked
 least-significant bit corresponding to the first byte.  Each zero bit indicates that the
 corresponding byte is zero.  The non-zero bytes are packed following the tag.
 
-For example, here is some typical Cap'n Proto data (a struct pointer (offset = 2, data size = 3,
+For example, here is some typical Zap data (a struct pointer (offset = 2, data size = 3,
 pointer count = 2) followed by a text pointer (offset = 6, length = 53)) and its packed form:
 
     unpacked (hex):  08 00 00 00 03 00 02 00   19 00 00 00 aa 01 00 00
@@ -350,22 +350,22 @@ section.
 
 ### Compression
 
-When Cap'n Proto messages may contain repetitive data (especially, large text blobs), it makes sense
+When Zap messages may contain repetitive data (especially, large text blobs), it makes sense
 to apply a standard compression algorithm in addition to packing. When CPU time is scarce, we
 recommend [LZ4 compression](https://code.google.com/p/lz4/). Otherwise, [zlib](http://www.zlib.net)
 is slower but will compress more.
 
 ## Canonicalization
 
-Cap'n Proto messages have a well-defined canonical form. Cap'n Proto encoders are NOT required to
+Zap messages have a well-defined canonical form. Zap encoders are NOT required to
 output messages in canonical form, and in fact they will almost never do so by default. However,
-it is possible to write code which canonicalizes a Cap'n Proto message without knowing its schema.
+it is possible to write code which canonicalizes a Zap message without knowing its schema.
 
-A canonical Cap'n Proto message must adhere to the following rules:
+A canonical Zap message must adhere to the following rules:
 
 * The object tree must be encoded in preorder (with respect to the order of the pointers within
   each object).
-* The message must be encoded as a single segment. (When signing or hashing a canonical Cap'n Proto
+* The message must be encoded as a single segment. (When signing or hashing a canonical Zap
   message, the segment table shall not be included, because it would be redundant.)
 * Trailing zero-valued words in a struct's data or pointer segments must be truncated. Since zero
   represents a default value, this does not change the struct's meaning. This rule is important
@@ -381,8 +381,8 @@ A canonical Cap'n Proto message must adhere to the following rules:
 * Canonical messages are not packed. However, packing can still be applied for transmission
   purposes; the message must simply be unpacked before checking signatures.
 
-Note that Cap'n Proto 0.5 introduced the rule that struct lists must always be encoded using
-C = 7 in the [list pointer](#lists). Prior versions of Cap'n Proto allowed struct lists to be
+Note that Zap 0.5 introduced the rule that struct lists must always be encoded using
+C = 7 in the [list pointer](#lists). Prior versions of Zap allowed struct lists to be
 encoded using any element size, so that small structs could be compacted to take less than a word
 per element, and many encoders in fact implemented this. Unfortunately, this "optimization" made
 canonicalization impossible without knowing the schema, which is a significant obstacle. Therefore,
@@ -391,13 +391,13 @@ canonicalize.
 
 ## Security Considerations
 
-A naive implementation of a Cap'n Proto reader may be vulnerable to attacks based on various kinds
+A naive implementation of a Zap reader may be vulnerable to attacks based on various kinds
 of malicious input. Implementations MUST guard against these.
 
 ### Pointer Validation
 
-Cap'n Proto readers must validate pointers, e.g. to check that the target object is within the
-bounds of its segment. To avoid an upfront scan of the message (which would defeat Cap'n Proto's
+Zap readers must validate pointers, e.g. to check that the target object is within the
+bounds of its segment. To avoid an upfront scan of the message (which would defeat Zap's
 O(1) parsing performance), validation should occur lazily when the getter method for a pointer is
 called, throwing an exception or returning a default value if the pointer is invalid.
 
@@ -415,7 +415,7 @@ different limit if desired. Another reasonable strategy is to set the limit to s
 the original message size; however, most applications should place limits on overall message sizes
 anyway, so it makes sense to have one check cover both.
 
-**List amplification:** A list of `Void` values or zero-size structs can have a very large element count while taking constant space on the wire. If the receiving application expects a list of structs, it will see these zero-sized elements as valid structs set to their default values. If it iterates through the list processing each element, it could spend a large amount of CPU time or other resources despite the message being small. To defend against this, the "traversal limit" should count a list of zero-sized elements as if each element were one word instead. This rule was introduced in the C++ implementation in [commit 1048706](https://github.com/capnproto/capnproto/commit/104870608fde3c698483fdef6b97f093fc15685d).
+**List amplification:** A list of `Void` values or zero-size structs can have a very large element count while taking constant space on the wire. If the receiving application expects a list of structs, it will see these zero-sized elements as valid structs set to their default values. If it iterates through the list processing each element, it could spend a large amount of CPU time or other resources despite the message being small. To defend against this, the "traversal limit" should count a list of zero-sized elements as if each element were one word instead. This rule was introduced in the C++ implementation in [commit 1048706](https://github.com/zap/zap/commit/104870608fde3c698483fdef6b97f093fc15685d).
 
 ### Stack overflow DoS attack
 

@@ -30,37 +30,37 @@
 #include <kj/memory.h>
 #include <kj/windows-sanity.h>  // work-around macro conflict with `VOID`
 
-#if CAPNP_DEBUG_TYPES
+#if ZAP_DEBUG_TYPES
 #include <kj/units.h>
 #endif
 
-#if !defined(CAPNP_HEADER_WARNINGS) || !CAPNP_HEADER_WARNINGS
-#define CAPNP_BEGIN_HEADER KJ_BEGIN_SYSTEM_HEADER
-#define CAPNP_END_HEADER KJ_END_SYSTEM_HEADER
+#if !defined(ZAP_HEADER_WARNINGS) || !ZAP_HEADER_WARNINGS
+#define ZAP_BEGIN_HEADER KJ_BEGIN_SYSTEM_HEADER
+#define ZAP_END_HEADER KJ_END_SYSTEM_HEADER
 #else
-#define CAPNP_BEGIN_HEADER
-#define CAPNP_END_HEADER
+#define ZAP_BEGIN_HEADER
+#define ZAP_END_HEADER
 #endif
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
-#define CAPNP_VERSION_MAJOR 2
-#define CAPNP_VERSION_MINOR 0
-#define CAPNP_VERSION_MICRO 0
+#define ZAP_VERSION_MAJOR 2
+#define ZAP_VERSION_MINOR 0
+#define ZAP_VERSION_MICRO 0
 
-#define CAPNP_VERSION \
-  (CAPNP_VERSION_MAJOR * 1000000 + CAPNP_VERSION_MINOR * 1000 + CAPNP_VERSION_MICRO)
+#define ZAP_VERSION \
+  (ZAP_VERSION_MAJOR * 1000000 + ZAP_VERSION_MINOR * 1000 + ZAP_VERSION_MICRO)
 
-#ifndef CAPNP_LITE
-#define CAPNP_LITE 0
+#ifndef ZAP_LITE
+#define ZAP_LITE 0
 #endif
 
-#if CAPNP_TESTING_CAPNP  // defined in Cap'n Proto's own unit tests; others should not define this
-#define CAPNP_DEPRECATED(reason)
+#if ZAP_TESTING_ZAP  // defined in Zap's own unit tests; others should not define this
+#define ZAP_DEPRECATED(reason)
 #else
-#define CAPNP_DEPRECATED KJ_DEPRECATED
+#define ZAP_DEPRECATED KJ_DEPRECATED
 #endif
 
 typedef unsigned int uint;
@@ -90,7 +90,7 @@ enum class Kind: uint8_t {
   LIST,
 
   OTHER
-  // Some other type which is often a type parameter to Cap'n Proto templates, but which needs
+  // Some other type which is often a type parameter to Zap templates, but which needs
   // special handling. This includes types like AnyPointer, Dynamic*, etc.
 };
 
@@ -153,10 +153,10 @@ template <> struct Kind_<double> { static constexpr Kind kind = Kind::PRIMITIVE;
 template <> struct Kind_<Text> { static constexpr Kind kind = Kind::BLOB; };
 template <> struct Kind_<Data> { static constexpr Kind kind = Kind::BLOB; };
 
-template <typename T> struct Kind_<T, kj::VoidSfinae<typename T::_capnpPrivate::IsStruct>> {
+template <typename T> struct Kind_<T, kj::VoidSfinae<typename T::_zapPrivate::IsStruct>> {
   static constexpr Kind kind = Kind::STRUCT;
 };
-template <typename T> struct Kind_<T, kj::VoidSfinae<typename T::_capnpPrivate::IsInterface>> {
+template <typename T> struct Kind_<T, kj::VoidSfinae<typename T::_zapPrivate::IsInterface>> {
   static constexpr Kind kind = Kind::INTERFACE;
 };
 template <typename T> struct Kind_<T, kj::VoidSfinae<typename schemas::EnumInfo<T>::IsEnum>> {
@@ -174,17 +174,17 @@ inline constexpr Kind kind() {
 
 #if _MSC_VER && !defined(__clang__)
 
-#define CAPNP_KIND(T) ::capnp::_::Kind_<T>::kind
+#define ZAP_KIND(T) ::zap::_::Kind_<T>::kind
 // Avoid constexpr methods in MSVC (it remains buggy in many situations).
 
 #else  // _MSC_VER
 
-#define CAPNP_KIND(T) ::capnp::kind<T>()
+#define ZAP_KIND(T) ::zap::kind<T>()
 // Use this macro rather than kind<T>() in any code which must work in MSVC.
 
 #endif  // _MSC_VER, else
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 
 template <typename T, Kind k = kind<T>()>
 inline constexpr Style style() {
@@ -193,9 +193,9 @@ inline constexpr Style style() {
        : k == Kind::INTERFACE ? Style::CAPABILITY : Style::POINTER;
 }
 
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
-template <typename T, Kind k = CAPNP_KIND(T)>
+template <typename T, Kind k = ZAP_KIND(T)>
 struct List;
 
 #if _MSC_VER && !defined(__clang__)
@@ -219,25 +219,25 @@ template <typename T, Kind k> struct Kind_<List<T, k>> {
 };
 }  // namespace _ (private)
 
-template <typename T, Kind k = CAPNP_KIND(T)> struct ReaderFor_ { typedef typename T::Reader Type; };
+template <typename T, Kind k = ZAP_KIND(T)> struct ReaderFor_ { typedef typename T::Reader Type; };
 template <typename T> struct ReaderFor_<T, Kind::PRIMITIVE> { typedef T Type; };
 template <typename T> struct ReaderFor_<T, Kind::ENUM> { typedef T Type; };
 template <typename T> struct ReaderFor_<T, Kind::INTERFACE> { typedef typename T::Client Type; };
 template <typename T> using ReaderFor = typename ReaderFor_<T>::Type;
 // The type returned by List<T>::Reader::operator[].
 
-template <typename T, Kind k = CAPNP_KIND(T)> struct BuilderFor_ { typedef typename T::Builder Type; };
+template <typename T, Kind k = ZAP_KIND(T)> struct BuilderFor_ { typedef typename T::Builder Type; };
 template <typename T> struct BuilderFor_<T, Kind::PRIMITIVE> { typedef T Type; };
 template <typename T> struct BuilderFor_<T, Kind::ENUM> { typedef T Type; };
 template <typename T> struct BuilderFor_<T, Kind::INTERFACE> { typedef typename T::Client Type; };
 template <typename T> using BuilderFor = typename BuilderFor_<T>::Type;
 // The type returned by List<T>::Builder::operator[].
 
-template <typename T, Kind k = CAPNP_KIND(T)> struct PipelineFor_ { typedef typename T::Pipeline Type;};
+template <typename T, Kind k = ZAP_KIND(T)> struct PipelineFor_ { typedef typename T::Pipeline Type;};
 template <typename T> struct PipelineFor_<T, Kind::INTERFACE> { typedef typename T::Client Type; };
 template <typename T> using PipelineFor = typename PipelineFor_<T>::Type;
 
-template <typename T, Kind k = CAPNP_KIND(T)> struct TypeIfEnum_;
+template <typename T, Kind k = ZAP_KIND(T)> struct TypeIfEnum_;
 template <typename T> struct TypeIfEnum_<T, Kind::ENUM> { typedef T Type; };
 
 template <typename T>
@@ -245,23 +245,23 @@ using TypeIfEnum = typename TypeIfEnum_<kj::Decay<T>>::Type;
 
 template <typename T>
 using FromReader = typename kj::Decay<T>::Reads;
-// FromReader<MyType::Reader> = MyType (for any Cap'n Proto type).
+// FromReader<MyType::Reader> = MyType (for any Zap type).
 
 template <typename T>
 using FromBuilder = typename kj::Decay<T>::Builds;
-// FromBuilder<MyType::Builder> = MyType (for any Cap'n Proto type).
+// FromBuilder<MyType::Builder> = MyType (for any Zap type).
 
 template <typename T>
 using FromPipeline = typename kj::Decay<T>::Pipelines;
-// FromBuilder<MyType::Pipeline> = MyType (for any Cap'n Proto type).
+// FromBuilder<MyType::Pipeline> = MyType (for any Zap type).
 
 template <typename T>
 using FromClient = typename kj::Decay<T>::Calls;
-// FromReader<MyType::Client> = MyType (for any Cap'n Proto interface type).
+// FromReader<MyType::Client> = MyType (for any Zap interface type).
 
 template <typename T>
 using FromServer = typename kj::Decay<T>::Serves;
-// FromBuilder<MyType::Server> = MyType (for any Cap'n Proto interface type).
+// FromBuilder<MyType::Server> = MyType (for any Zap interface type).
 
 template <typename T, typename = void>
 struct FromAny_;
@@ -299,7 +299,7 @@ struct FromAny_<T,
 
 template <typename T>
 using FromAny = typename FromAny_<T>::Type;
-// Given any Cap'n Proto value type as an input, return the Cap'n Proto base type. That is:
+// Given any Zap value type as an input, return the Zap base type. That is:
 //
 //     Foo::Reader -> Foo
 //     Foo::Builder -> Foo
@@ -310,7 +310,7 @@ using FromAny = typename FromAny_<T>::Type;
 
 namespace _ {  // private
 
-template <typename T, Kind k = CAPNP_KIND(T)>
+template <typename T, Kind k = ZAP_KIND(T)>
 struct PointerHelpers;
 
 #if _MSC_VER && !defined(__clang__)
@@ -367,14 +367,14 @@ private:
 static_assert(sizeof(byte) == 1, "uint8_t is not one byte?");
 static_assert(sizeof(word) == 8, "uint64_t is not 8 bytes?");
 
-#if CAPNP_DEBUG_TYPES
-// Set CAPNP_DEBUG_TYPES to 1 to use kj::Quantity for "count" types.  Otherwise, plain integers are
+#if ZAP_DEBUG_TYPES
+// Set ZAP_DEBUG_TYPES to 1 to use kj::Quantity for "count" types.  Otherwise, plain integers are
 // used.  All the code should still operate exactly the same, we just lose compile-time checking.
 // Note that this will also change symbol names, so it's important that the library and any clients
 // be compiled with the same setting here.
 //
 // We disable this by default to reduce symbol name size and avoid any possibility of the compiler
-// failing to fully-optimize the types, but anyone modifying Cap'n Proto itself should enable this
+// failing to fully-optimize the types, but anyone modifying Zap itself should enable this
 // during development and testing.
 
 namespace _ { class BitLabel; class ElementLabel; struct WirePointer; }
@@ -745,11 +745,11 @@ inline constexpr kj::ArrayPtr<U> arrayPtr(U* ptr, T size) {
 
 #endif
 
-}  // namespace capnp
+}  // namespace zap
 
 namespace kj {
-template <> constexpr bool canMemcpy<capnp::word>() { return true; }
-// capnp::word can (and should) be copied with memcpy.
+template <> constexpr bool canMemcpy<zap::word>() { return true; }
+// zap::word can (and should) be copied with memcpy.
 }  // namespace kj
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

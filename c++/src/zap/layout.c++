@@ -19,24 +19,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define CAPNP_PRIVATE
+#define ZAP_PRIVATE
 #include "layout.h"
 #include <kj/debug.h>
 #include "arena.h"
 #include <string.h>
 #include <stdlib.h>
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 #include "capability.h"
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 static BrokenCapFactory* globalBrokenCapFactory = nullptr;
 // Horrible hack:  We need to be able to construct broken caps without any capability context,
-// but we can't have a link-time dependency on libcapnp-rpc.
+// but we can't have a link-time dependency on libzap-rpc.
 
 void setGlobalBrokenCapFactoryForLayoutCpp(BrokenCapFactory& factory) {
   // Called from capability.c++ when the capability API is used, to make sure that layout.c++
@@ -53,7 +53,7 @@ void setGlobalBrokenCapFactoryForLayoutCpp(BrokenCapFactory& factory) {
 static BrokenCapFactory* readGlobalBrokenCapFactoryForLayoutCpp() {
 #if __GNUC__ || defined(__clang__)
   // Thread-sanitizer doesn't have the right information to know this is safe without doing an
-  // atomic read. https://groups.google.com/g/capnproto/c/634juhn5ap0/m/pyRiwWl1AAAJ
+  // atomic read. https://groups.google.com/g/zap/c/634juhn5ap0/m/pyRiwWl1AAAJ
   return __atomic_load_n(&globalBrokenCapFactory, __ATOMIC_RELAXED);
 #else
   return globalBrokenCapFactory;
@@ -68,9 +68,9 @@ const uint ClientHook::BROKEN_CAPABILITY_BRAND = 0;
 
 namespace _ {  // private
 
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
-#if CAPNP_DEBUG_TYPES
+#if ZAP_DEBUG_TYPES
 #define G(n) bounded<n>()
 #else
 #define G(n) n
@@ -311,7 +311,7 @@ struct WirePointer {
 
 };
 static_assert(sizeof(WirePointer) == sizeof(word),
-    "capnp::WirePointer is not exactly one word.  This will probably break everything.");
+    "zap::WirePointer is not exactly one word.  This will probably break everything.");
 static_assert(unboundAs<size_t>(POINTERS * WORDS_PER_POINTER * BYTES_PER_WORD / BYTES) ==
               sizeof(WirePointer),
     "WORDS_PER_POINTER is wrong.");
@@ -324,7 +324,7 @@ static_assert(unboundAs<size_t>(POINTERS * BITS_PER_POINTER / BITS_PER_BYTE / BY
 #define OUT_OF_BOUNDS_ERROR_DETAIL \
     "This usually indicates that " \
     "the input data was corrupted, used a different encoding than specified (e.g. " \
-    "packed vs. non-packed), or was not a Cap'n Proto message to begin with. Note " \
+    "packed vs. non-packed), or was not a Zap message to begin with. Note " \
     "that this error is NOT due to a schema mismatch; the input is invalid " \
     "regardless of schema."
 
@@ -350,7 +350,7 @@ struct SegmentAnd {
 }  // namespace
 
 struct WireHelpers {
-#if CAPNP_DEBUG_TYPES
+#if ZAP_DEBUG_TYPES
   template <uint64_t maxN, typename T>
   static KJ_ALWAYS_INLINE(
       kj::Quantity<kj::Bounded<(maxN + 7) / 8, T>, word> roundBytesUpToWords(
@@ -654,11 +654,11 @@ struct WireHelpers {
       }
       case WirePointer::OTHER:
         if (ref->isCapability()) {
-#if CAPNP_LITE
+#if ZAP_LITE
           KJ_FAIL_ASSERT("Capability encountered in builder in lite mode?") { break; }
-#else  // CAPNP_LINE
+#else  // ZAP_LINE
           capTable->dropCap(ref->capRef.index.get());
-#endif  // CAPNP_LITE, else
+#endif  // ZAP_LITE, else
         } else {
           KJ_FAIL_REQUIRE("Unknown pointer type.") { break; }
         }
@@ -1822,7 +1822,7 @@ struct WireHelpers {
     return { segment, ptr };
   }
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
   static void setCapabilityPointer(
       SegmentBuilder* segment, CapTableBuilder* capTable, WirePointer* ref,
       kj::Own<ClientHook>&& cap) {
@@ -1835,7 +1835,7 @@ struct WireHelpers {
       ref->setCap(capTable->injectCap(kj::mv(cap)));
     }
   }
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
   static SegmentAnd<word*> setListPointer(
       SegmentBuilder* segment, CapTableBuilder* capTable, WirePointer* ref, ListReader value,
@@ -1977,7 +1977,7 @@ struct WireHelpers {
     switch (src->kind()) {
       case WirePointer::STRUCT:
         KJ_REQUIRE(nestingLimit > 0,
-              "Message is too deeply-nested or contains cycles.  See capnp::ReaderOptions.") {
+              "Message is too deeply-nested or contains cycles.  See zap::ReaderOptions.") {
           goto useDefault;
         }
 
@@ -1998,7 +1998,7 @@ struct WireHelpers {
         ElementSize elementSize = src->listRef.elementSize();
 
         KJ_REQUIRE(nestingLimit > 0,
-              "Message is too deeply-nested or contains cycles.  See capnp::ReaderOptions.") {
+              "Message is too deeply-nested or contains cycles.  See zap::ReaderOptions.") {
           goto useDefault;
         }
 
@@ -2087,19 +2087,19 @@ struct WireHelpers {
             break;
           }
         }
-#if !CAPNP_LITE
+#if !ZAP_LITE
         KJ_IF_SOME(cap, srcCapTable->extractCap(src->capRef.index.get())) {
           setCapabilityPointer(dstSegment, dstCapTable, dst, kj::mv(cap));
           // Return dummy non-null pointer so OrphanBuilder doesn't end up null.
           return { dstSegment, reinterpret_cast<word*>(1) };
         } else {
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
           KJ_FAIL_REQUIRE("Message contained invalid capability pointer.") {
             goto useDefault;
           }
-#if !CAPNP_LITE
+#if !ZAP_LITE
         }
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
       }
     }
 
@@ -2184,7 +2184,7 @@ struct WireHelpers {
     }
 
     KJ_REQUIRE(nestingLimit > 0,
-               "Message is too deeply-nested or contains cycles.  See capnp::ReaderOptions.") {
+               "Message is too deeply-nested or contains cycles.  See zap::ReaderOptions.") {
       goto useDefault;
     }
 
@@ -2215,7 +2215,7 @@ struct WireHelpers {
         nestingLimit - 1);
   }
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
   static KJ_ALWAYS_INLINE(kj::Own<ClientHook> readCapabilityPointer(
       SegmentReader* segment, CapTableReader* capTable,
       const WirePointer* ref, int nestingLimit)) {
@@ -2226,7 +2226,7 @@ struct WireHelpers {
     KJ_REQUIRE(brokenCapFactory != nullptr,
                "Trying to read capabilities without ever having created a capability context.  "
                "To read capabilities from a message, you must imbue it with CapReaderContext, or "
-               "use the Cap'n Proto RPC system.");
+               "use the Zap RPC system.");
 
     if (ref->isNull()) {
       return brokenCapFactory->newNullCap();
@@ -2247,7 +2247,7 @@ struct WireHelpers {
       return brokenCapFactory->newBrokenCap("Calling invalid capability pointer.");
     }
   }
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
   static KJ_ALWAYS_INLINE(ListReader readListPointer(
       SegmentReader* segment, CapTableReader* capTable,
@@ -2275,7 +2275,7 @@ struct WireHelpers {
     }
 
     KJ_REQUIRE(nestingLimit > 0,
-               "Message is too deeply-nested or contains cycles.  See capnp::ReaderOptions.") {
+               "Message is too deeply-nested or contains cycles.  See zap::ReaderOptions.") {
       goto useDefault;
     }
 
@@ -2612,7 +2612,7 @@ void PointerBuilder::setList(const ListReader& value, bool canonical) {
   WireHelpers::setListPointer(segment, capTable, pointer, value, nullptr, canonical);
 }
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 kj::Own<ClientHook> PointerBuilder::getCapability() {
   return WireHelpers::readCapabilityPointer(
       segment, capTable, pointer, kj::maxValue);
@@ -2621,7 +2621,7 @@ kj::Own<ClientHook> PointerBuilder::getCapability() {
 void PointerBuilder::setCapability(kj::Own<ClientHook>&& cap) {
   WireHelpers::setCapabilityPointer(segment, capTable, pointer, kj::mv(cap));
 }
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 void PointerBuilder::adopt(OrphanBuilder&& value) {
   WireHelpers::adopt(segment, capTable, pointer, kj::mv(value));
@@ -2743,12 +2743,12 @@ Data::Reader PointerReader::getBlob<Data>(const void* defaultValue, ByteCount de
       assertMaxBits<BLOB_SIZE_BITS>(defaultSize, ThrowOverflow()));
 }
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 kj::Own<ClientHook> PointerReader::getCapability() const {
   const WirePointer* ref = pointer == nullptr ? &zero.pointer : pointer;
   return WireHelpers::readCapabilityPointer(segment, capTable, ref, nestingLimit);
 }
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 const word* PointerReader::getUnchecked() const {
   KJ_REQUIRE(segment == nullptr, "getUncheckedPointer() only allowed on unchecked messages.");
@@ -3163,7 +3163,7 @@ kj::ArrayPtr<const byte> ListReader::asRawBytes() const {
 
 StructReader ListReader::getStructElement(ElementCount index) const {
   KJ_REQUIRE(nestingLimit > 0,
-             "Message is too deeply-nested or contains cycles.  See capnp::ReaderOptions.") {
+             "Message is too deeply-nested or contains cycles.  See zap::ReaderOptions.") {
     return StructReader();
   }
 
@@ -3450,7 +3450,7 @@ OrphanBuilder OrphanBuilder::copy(
   return result;
 }
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 OrphanBuilder OrphanBuilder::copy(
     BuilderArena* arena, CapTableBuilder* capTable, kj::Own<ClientHook> copyFrom) {
   OrphanBuilder result;
@@ -3460,7 +3460,7 @@ OrphanBuilder OrphanBuilder::copy(
   result.location = &result.tag;  // dummy to make location non-null
   return result;
 }
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 OrphanBuilder OrphanBuilder::concat(
     BuilderArena* arena, CapTableBuilder* capTable,
@@ -3660,11 +3660,11 @@ ListReader OrphanBuilder::asListReaderAnySize() const {
       kj::maxValue);
 }
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 kj::Own<ClientHook> OrphanBuilder::asCapability() const {
   return WireHelpers::readCapabilityPointer(segment, capTable, tagAsPtr(), kj::maxValue);
 }
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 Text::Reader OrphanBuilder::asTextReader() const {
   KJ_DASSERT(tagAsPtr()->isNull() == (location == nullptr));
@@ -3890,4 +3890,4 @@ void OrphanBuilder::euthanize() {
 }
 
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

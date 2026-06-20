@@ -24,21 +24,21 @@
 #include "dynamic.h"
 #include <kj/string-tree.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 kj::StringTree prettyPrint(DynamicStruct::Reader value);
 kj::StringTree prettyPrint(DynamicStruct::Builder value);
 kj::StringTree prettyPrint(DynamicList::Reader value);
 kj::StringTree prettyPrint(DynamicList::Builder value);
-// Print the given Cap'n Proto struct or list with nice indentation.  Note that you can pass any
+// Print the given Zap struct or list with nice indentation.  Note that you can pass any
 // struct or list reader or builder type to this method, since they can be implicitly converted
 // to one of the dynamic types.
 //
 // If you don't want indentation, just use the value's KJ stringifier (e.g. pass it to kj::str(),
 // any of the KJ debug macros, etc.).
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

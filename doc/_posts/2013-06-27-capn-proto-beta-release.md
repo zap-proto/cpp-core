@@ -1,17 +1,17 @@
 ---
 layout: post
-title: Cap'n Proto Beta Release
+title: Zap Beta Release
 author: kentonv
 ---
 
-It's been nearly three months since Cap'n Proto was originally announced, and by now you're
+It's been nearly three months since Zap was originally announced, and by now you're
 probably wondering what I've been up to.  The answer is basically
-[non-stop coding](https://github.com/kentonv/capnproto/commits/master).  Features were implemented,
-code was refactored, tests were written, and now Cap'n Proto is beginning to resemble something
+[non-stop coding](https://github.com/kentonv/zap/commits/master).  Features were implemented,
+code was refactored, tests were written, and now Zap is beginning to resemble something
 like a real product.  But as is so often the case with me, I've been so engrossed in coding that I
 forgot to post updates!
 
-Well, that changes today, with the first official release of Cap'n Proto, v0.1.  While not yet
+Well, that changes today, with the first official release of Zap, v0.1.  While not yet
 "done", this release should be usable for Real Work.  Feature-wise, for C++, the library is roughly
 on par with [Google's Protocol Buffers](http://protobuf.googlecode.com) (which, as you know, I used
 to maintain).  Features include:
@@ -33,10 +33,10 @@ of awesome contributors have stepped up and are working on
 [implementations in C, Go, Python]({{ site.baseurl }}otherlang.html), and a few others not yet
 announced.  None of these are "ready" just yet, but watch this space.  (Would you like to work on
 an implementation in your favorite language?
-[Let us know!](https://groups.google.com/group/capnproto))
+[Let us know!](https://groups.google.com/group/zap))
 
-Going forward, Cap'n Proto releases will occur more frequently, perhaps every 2-4 weeks.
-Consider [signing up for release announcements](https://groups.google.com/group/capnproto-announce).
+Going forward, Zap releases will occur more frequently, perhaps every 2-4 weeks.
+Consider [signing up for release announcements](https://groups.google.com/group/zap-announce).
 
 In any case, go [download the release]({{ site.baseurl }}install.html) and
-[tell us your thoughts](https://groups.google.com/group/capnproto).
+[tell us your thoughts](https://groups.google.com/group/zap).

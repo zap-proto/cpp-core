@@ -593,7 +593,7 @@ KJ_TEST("Simple network test with coroutine") {
 }
 
 Promise<Own<AsyncIoStream>> httpClientConnect(AsyncIoContext& io) {
-  auto addr = co_await io.provider->getNetwork().parseAddress("capnproto.org", 80);
+  auto addr = co_await io.provider->getNetwork().parseAddress("zap.org", 80);
   co_return co_await addr->connect();
 }
 
@@ -604,23 +604,23 @@ Promise<void> httpClient(Own<AsyncIoStream> connection) {
   auto client = newHttpClient(table, *connection);
 
   HttpHeaders headers(table);
-  headers.setPtr(HttpHeaderId::HOST, "capnproto.org");
+  headers.setPtr(HttpHeaderId::HOST, "zap.org");
 
   auto response = co_await client->request(HttpMethod::GET, "/", headers).response;
   KJ_EXPECT(response.statusCode / 100 == 3);
   auto location = KJ_ASSERT_NONNULL(response.headers->get(HttpHeaderId::LOCATION));
-  KJ_EXPECT(location == "https://capnproto.org/");
+  KJ_EXPECT(location == "https://zap.org/");
 
   auto body = co_await response.body->readAllText();
 }
 
-KJ_TEST("HttpClient to capnproto.org with a coroutine") {
+KJ_TEST("HttpClient to zap.org with a coroutine") {
   auto io = setupAsyncIo();
 
   auto promise = httpClientConnect(io).then([](Own<AsyncIoStream> connection) {
     return httpClient(kj::mv(connection));
   }, [](Exception&&) {
-    KJ_LOG(WARNING, "skipping test because couldn't connect to capnproto.org");
+    KJ_LOG(WARNING, "skipping test because couldn't connect to zap.org");
   });
 
   promise.wait(io.waitScope);

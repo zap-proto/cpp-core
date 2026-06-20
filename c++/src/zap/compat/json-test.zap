@@ -21,9 +21,9 @@
 
 @0xc9d405cf4333e4c9;
 
-using Json = import "/capnp/compat/json.capnp";
+using Json = import "/zap/compat/json.zap";
 
-$import "/capnp/c++.capnp".namespace("capnp");
+$import "/zap/c++.zap".namespace("zap");
 
 struct TestJsonAnnotations {
   someField @0 :Text $Json.name("names-can_contain!anything Really");

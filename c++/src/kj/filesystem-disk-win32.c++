@@ -376,7 +376,7 @@ public:
         // Probably WINE.
         break;
       case ERROR_INVALID_PARAMETER:
-        // Probably VeraCrypt. See https://github.com/capnproto/capnproto/issues/2176
+        // Probably VeraCrypt. See https://github.com/zap/zap/issues/2176
         break;
       default:
         KJ_FAIL_WIN32("GetFileInformationByHandleEx(FileCompressionInfo)", error) { break; }

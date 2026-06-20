@@ -1,17 +1,17 @@
 load("@bazel_skylib//rules:common_settings.bzl", "bool_flag")
 
-def capnp_configure():
-    """Generates set of flag, settings for capnp configuration.
+def zap_configure():
+    """Generates set of flag, settings for zap configuration.
     """
 
-    # Define some methods for generated capnp code in source file instead of header, reducing
+    # Define some methods for generated zap code in source file instead of header, reducing
     # header parsing overhead but reducing inlining opportunities. Recommended for debug builds.
     bool_flag(
-        name = "capnp_no_inline_accessors",
+        name = "zap_no_inline_accessors",
         build_setting_default = False,
     )
 
-    # Generate rust capnp libraries
+    # Generate rust zap libraries
     bool_flag(
         name = "gen_rust",
         build_setting_default = False,
@@ -19,8 +19,8 @@ def capnp_configure():
 
     # Settings to use in select() expressions
     native.config_setting(
-        name = "capnp_no_inline_accessors_true",
-        flag_values = {"capnp_no_inline_accessors": "True"},
+        name = "zap_no_inline_accessors_true",
+        flag_values = {"zap_no_inline_accessors": "True"},
         visibility = ["//visibility:public"],
     )
     native.config_setting(

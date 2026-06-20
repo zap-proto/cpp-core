@@ -21,14 +21,14 @@
 
 #pragma once
 
-#include <capnp/compiler/lexer.capnp.h>
+#include <zap/compiler/lexer.zap.h>
 #include <kj/parse/common.h>
 #include <kj/arena.h>
 #include "error-reporter.h"
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 
 bool lex(kj::ArrayPtr<const char> input, LexedStatements::Builder result,
@@ -48,7 +48,7 @@ class Lexer {
 
 public:
   Lexer(Orphanage orphanage, ErrorReporter& errorReporter);
-  // `orphanage` is used to allocate Cap'n Proto message objects in the result.  `inputStart` is
+  // `orphanage` is used to allocate Zap message objects in the result.  `inputStart` is
   // a pointer to the beginning of the input, used to compute byte offsets.
 
   ~Lexer() noexcept(false);
@@ -94,6 +94,6 @@ private:
 };
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

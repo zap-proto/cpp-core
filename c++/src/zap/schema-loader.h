@@ -25,19 +25,19 @@
 #include <kj/memory.h>
 #include <kj/mutex.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 class SchemaLoader {
   // Class which can be used to construct Schema objects from schema::Nodes as defined in
-  // schema.capnp.
+  // schema.zap.
   //
   // It is a bad idea to use this class on untrusted input with exceptions disabled -- you may
   // be exposing yourself to denial-of-service attacks, as attackers can easily construct schemas
   // that are subtly inconsistent in a way that causes exceptions to be thrown either by
   // SchemaLoader or by the dynamic API when the schemas are subsequently used.  If you enable and
-  // properly catch exceptions, you should be OK -- assuming no bugs in the Cap'n Proto
+  // properly catch exceptions, you should be OK -- assuming no bugs in the Zap
   // implementation, of course.
 
 public:
@@ -124,7 +124,7 @@ public:
   // - Content of default/constant values of pointer type.  (Validating these would require knowing
   //   their schema, but even if the schemas are available at validation time, they could be
   //   updated by a subsequent load(), invalidating existing values.  Instead, these values are
-  //   validated at the time they are used, as usual for Cap'n Proto objects.)
+  //   validated at the time they are used, as usual for Zap objects.)
   //
   // Also note that unknown types are not considered invalid.  Instead, the dynamic API returns
   // a DynamicValue with type UNKNOWN for these.
@@ -178,6 +178,6 @@ inline void SchemaLoader::loadCompiledTypeAndDependencies() {
   loadNative(&_::rawSchema<T>());
 }
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

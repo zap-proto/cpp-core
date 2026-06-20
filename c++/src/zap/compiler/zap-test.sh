@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-# Tests the `capnp` tool's various commands, other than `compile`.
+# Tests the `zap` tool's various commands, other than `compile`.
 
 set -eu
 
@@ -29,16 +29,16 @@ fail() {
   exit 1
 }
 
-if test -f ./capnp; then
-  CAPNP=${CAPNP:-./capnp}
-elif test -f ./capnp.exe; then
-  CAPNP=${CAPNP:-./capnp.exe}
+if test -f ./zap; then
+  ZAP=${ZAP:-./zap}
+elif test -f ./zap.exe; then
+  ZAP=${ZAP:-./zap.exe}
 else
-  CAPNP=${CAPNP:-capnp}
+  ZAP=${ZAP:-zap}
 fi
 
-SCHEMA=`dirname "$0"`/../test.capnp
-JSON_SCHEMA=`dirname "$0"`/../compat/json-test.capnp
+SCHEMA=`dirname "$0"`/../test.zap
+JSON_SCHEMA=`dirname "$0"`/../compat/json-test.zap
 TESTDATA=`dirname "$0"`/../testdata
 SRCDIR=`dirname "$0"`/../..
 
@@ -52,61 +52,61 @@ fi
 # ========================================================================================
 # convert
 
-$CAPNP convert text:binary $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/binary - || fail encode
-$CAPNP convert text:flat $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/flat - || fail encode flat
-$CAPNP convert text:packed $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/packed - || fail encode packed
-$CAPNP convert text:flat-packed $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/packedflat - || fail encode packedflat
-$CAPNP convert text:binary $SCHEMA TestAllTypes < $TESTDATA/pretty.txt | cmp $TESTDATA/binary - || fail parse pretty
+$ZAP convert text:binary $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/binary - || fail encode
+$ZAP convert text:flat $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/flat - || fail encode flat
+$ZAP convert text:packed $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/packed - || fail encode packed
+$ZAP convert text:flat-packed $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/packedflat - || fail encode packedflat
+$ZAP convert text:binary $SCHEMA TestAllTypes < $TESTDATA/pretty.txt | cmp $TESTDATA/binary - || fail parse pretty
 
-$CAPNP convert binary:text $SCHEMA TestAllTypes < $TESTDATA/binary | cmp $TESTDATA/pretty.txt - || fail decode
-$CAPNP convert flat:text $SCHEMA TestAllTypes < $TESTDATA/flat | cmp $TESTDATA/pretty.txt - || fail decode flat
-$CAPNP convert packed:text $SCHEMA TestAllTypes < $TESTDATA/packed | cmp $TESTDATA/pretty.txt - || fail decode packed
-$CAPNP convert flat-packed:text $SCHEMA TestAllTypes < $TESTDATA/packedflat | cmp $TESTDATA/pretty.txt - || fail decode packedflat
-$CAPNP convert binary:text --short $SCHEMA TestAllTypes < $TESTDATA/binary | cmp $TESTDATA/short.txt - || fail decode short
+$ZAP convert binary:text $SCHEMA TestAllTypes < $TESTDATA/binary | cmp $TESTDATA/pretty.txt - || fail decode
+$ZAP convert flat:text $SCHEMA TestAllTypes < $TESTDATA/flat | cmp $TESTDATA/pretty.txt - || fail decode flat
+$ZAP convert packed:text $SCHEMA TestAllTypes < $TESTDATA/packed | cmp $TESTDATA/pretty.txt - || fail decode packed
+$ZAP convert flat-packed:text $SCHEMA TestAllTypes < $TESTDATA/packedflat | cmp $TESTDATA/pretty.txt - || fail decode packedflat
+$ZAP convert binary:text --short $SCHEMA TestAllTypes < $TESTDATA/binary | cmp $TESTDATA/short.txt - || fail decode short
 
-$CAPNP convert binary:text $SCHEMA TestAllTypes < $TESTDATA/segmented | cmp $TESTDATA/pretty.txt - || fail decode segmented
-$CAPNP convert packed:text $SCHEMA TestAllTypes < $TESTDATA/segmented-packed | cmp $TESTDATA/pretty.txt - || fail decode segmented-packed
+$ZAP convert binary:text $SCHEMA TestAllTypes < $TESTDATA/segmented | cmp $TESTDATA/pretty.txt - || fail decode segmented
+$ZAP convert packed:text $SCHEMA TestAllTypes < $TESTDATA/segmented-packed | cmp $TESTDATA/pretty.txt - || fail decode segmented-packed
 
-$CAPNP convert binary:packed < $TESTDATA/binary | cmp $TESTDATA/packed - || fail binary to packed
-$CAPNP convert packed:binary < $TESTDATA/packed | cmp $TESTDATA/binary - || fail packed to binary
+$ZAP convert binary:packed < $TESTDATA/binary | cmp $TESTDATA/packed - || fail binary to packed
+$ZAP convert packed:binary < $TESTDATA/packed | cmp $TESTDATA/binary - || fail packed to binary
 
-$CAPNP convert binary:json $SCHEMA TestAllTypes < $TESTDATA/binary | cmp $TESTDATA/pretty.json - || fail binary to json
-$CAPNP convert binary:json --short $SCHEMA TestAllTypes < $TESTDATA/binary | cmp $TESTDATA/short.json - || fail binary to short json
+$ZAP convert binary:json $SCHEMA TestAllTypes < $TESTDATA/binary | cmp $TESTDATA/pretty.json - || fail binary to json
+$ZAP convert binary:json --short $SCHEMA TestAllTypes < $TESTDATA/binary | cmp $TESTDATA/short.json - || fail binary to short json
 
-$CAPNP convert json:binary $SCHEMA TestAllTypes < $TESTDATA/pretty.json | cmp $TESTDATA/binary - || fail json to binary
-$CAPNP convert json:binary $SCHEMA TestAllTypes < $TESTDATA/short.json | cmp $TESTDATA/binary - || fail short json to binary
+$ZAP convert json:binary $SCHEMA TestAllTypes < $TESTDATA/pretty.json | cmp $TESTDATA/binary - || fail json to binary
+$ZAP convert json:binary $SCHEMA TestAllTypes < $TESTDATA/short.json | cmp $TESTDATA/binary - || fail short json to binary
 
-$CAPNP convert json:binary $JSON_SCHEMA TestJsonAnnotations -I"$SRCDIR" < $TESTDATA/annotated.json | cmp $TESTDATA/annotated-json.binary - || fail annotated json to binary
-$CAPNP convert binary:json $JSON_SCHEMA TestJsonAnnotations -I"$SRCDIR" < $TESTDATA/annotated-json.binary | cmp $TESTDATA/annotated.json - || fail annotated binary to json
+$ZAP convert json:binary $JSON_SCHEMA TestJsonAnnotations -I"$SRCDIR" < $TESTDATA/annotated.json | cmp $TESTDATA/annotated-json.binary - || fail annotated json to binary
+$ZAP convert binary:json $JSON_SCHEMA TestJsonAnnotations -I"$SRCDIR" < $TESTDATA/annotated-json.binary | cmp $TESTDATA/annotated.json - || fail annotated binary to json
 
-[ "$(echo '(foo = (text = "abc"))' | $CAPNP convert text:text "$SRCDIR/capnp/test.capnp" BrandedAlias)" = '(foo = (text = "abc"), uv = void)' ]  || fail branded alias
-[ "$(echo '(foo = (text = "abc"))' | $CAPNP convert text:text "$SRCDIR/capnp/test.capnp" BrandedAlias.Inner)" = '(foo = (text = "abc"))' ]  || fail branded alias
-[ "$(echo '(foo = (text = "abc"))' | $CAPNP convert text:text "$SRCDIR/capnp/test.capnp" 'TestGenerics(BoxedText, Text)')" = '(foo = (text = "abc"), uv = void)' ]  || fail branded alias
-[ "$(echo '(baz = (text = "abc"))' | $CAPNP convert text:text "$SRCDIR/capnp/test.capnp" 'TestGenerics(TestAllTypes, List(Int32)).Inner2(BoxedText)')" = '(baz = (text = "abc"))' ]  || fail branded alias
+[ "$(echo '(foo = (text = "abc"))' | $ZAP convert text:text "$SRCDIR/zap/test.zap" BrandedAlias)" = '(foo = (text = "abc"), uv = void)' ]  || fail branded alias
+[ "$(echo '(foo = (text = "abc"))' | $ZAP convert text:text "$SRCDIR/zap/test.zap" BrandedAlias.Inner)" = '(foo = (text = "abc"))' ]  || fail branded alias
+[ "$(echo '(foo = (text = "abc"))' | $ZAP convert text:text "$SRCDIR/zap/test.zap" 'TestGenerics(BoxedText, Text)')" = '(foo = (text = "abc"), uv = void)' ]  || fail branded alias
+[ "$(echo '(baz = (text = "abc"))' | $ZAP convert text:text "$SRCDIR/zap/test.zap" 'TestGenerics(TestAllTypes, List(Int32)).Inner2(BoxedText)')" = '(baz = (text = "abc"))' ]  || fail branded alias
 
 # ========================================================================================
 # DEPRECATED encode/decode
 
-$CAPNP encode $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/binary - || fail encode
-$CAPNP encode --flat $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/flat - || fail encode flat
-$CAPNP encode --packed $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/packed - || fail encode packed
-$CAPNP encode --packed --flat $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/packedflat - || fail encode packedflat
-$CAPNP encode $SCHEMA TestAllTypes < $TESTDATA/pretty.txt | cmp $TESTDATA/binary - || fail parse pretty
+$ZAP encode $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/binary - || fail encode
+$ZAP encode --flat $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/flat - || fail encode flat
+$ZAP encode --packed $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/packed - || fail encode packed
+$ZAP encode --packed --flat $SCHEMA TestAllTypes < $TESTDATA/short.txt | cmp $TESTDATA/packedflat - || fail encode packedflat
+$ZAP encode $SCHEMA TestAllTypes < $TESTDATA/pretty.txt | cmp $TESTDATA/binary - || fail parse pretty
 
-$CAPNP decode $SCHEMA TestAllTypes < $TESTDATA/binary | cmp $TESTDATA/pretty.txt - || fail decode
-$CAPNP decode --flat $SCHEMA TestAllTypes < $TESTDATA/flat | cmp $TESTDATA/pretty.txt - || fail decode flat
-$CAPNP decode --packed $SCHEMA TestAllTypes < $TESTDATA/packed | cmp $TESTDATA/pretty.txt - || fail decode packed
-$CAPNP decode --packed --flat $SCHEMA TestAllTypes < $TESTDATA/packedflat | cmp $TESTDATA/pretty.txt - || fail decode packedflat
-$CAPNP decode --short $SCHEMA TestAllTypes < $TESTDATA/binary | cmp $TESTDATA/short.txt - || fail decode short
+$ZAP decode $SCHEMA TestAllTypes < $TESTDATA/binary | cmp $TESTDATA/pretty.txt - || fail decode
+$ZAP decode --flat $SCHEMA TestAllTypes < $TESTDATA/flat | cmp $TESTDATA/pretty.txt - || fail decode flat
+$ZAP decode --packed $SCHEMA TestAllTypes < $TESTDATA/packed | cmp $TESTDATA/pretty.txt - || fail decode packed
+$ZAP decode --packed --flat $SCHEMA TestAllTypes < $TESTDATA/packedflat | cmp $TESTDATA/pretty.txt - || fail decode packedflat
+$ZAP decode --short $SCHEMA TestAllTypes < $TESTDATA/binary | cmp $TESTDATA/short.txt - || fail decode short
 
-$CAPNP decode $SCHEMA TestAllTypes < $TESTDATA/segmented | cmp $TESTDATA/pretty.txt - || fail decode segmented
-$CAPNP decode --packed $SCHEMA TestAllTypes < $TESTDATA/segmented-packed | cmp $TESTDATA/pretty.txt - || fail decode segmented-packed
+$ZAP decode $SCHEMA TestAllTypes < $TESTDATA/segmented | cmp $TESTDATA/pretty.txt - || fail decode segmented
+$ZAP decode --packed $SCHEMA TestAllTypes < $TESTDATA/segmented-packed | cmp $TESTDATA/pretty.txt - || fail decode segmented-packed
 
 # ========================================================================================
 # eval
 
 test_eval() {
-  test "x`$CAPNP eval $SCHEMA $1 | tr -d '\r'`" = "x$2" || fail eval "$1 == $2"
+  test "x`$ZAP eval $SCHEMA $1 | tr -d '\r'`" = "x$2" || fail eval "$1 == $2"
 }
 
 test_eval TestDefaults.uInt32Field 3456789012
@@ -117,13 +117,13 @@ test_eval globalPrintableStruct '(someText = "foo")'
 test_eval TestConstants.enumConst corge
 test_eval 'TestListDefaults.lists.int32ListList[2][0]' 12341234
 
-test "x`$CAPNP eval $SCHEMA -ojson globalPrintableStruct | tr -d '\r'`" = "x{\"someText\": \"foo\"}" || fail eval json "globalPrintableStruct == {someText = \"foo\"}"
+test "x`$ZAP eval $SCHEMA -ojson globalPrintableStruct | tr -d '\r'`" = "x{\"someText\": \"foo\"}" || fail eval json "globalPrintableStruct == {someText = \"foo\"}"
 
-$CAPNP eval $TESTDATA/no-file-id.capnp.nobuild foo >/dev/null || fail eval "file without file ID can be parsed"
-test "x`$CAPNP eval $TESTDATA/no-file-id.capnp.nobuild foo | tr -d '\r'`" = 'x"bar"' || fail eval "file without file ID parsed correctly"
+$ZAP eval $TESTDATA/no-file-id.zap.nobuild foo >/dev/null || fail eval "file without file ID can be parsed"
+test "x`$ZAP eval $TESTDATA/no-file-id.zap.nobuild foo | tr -d '\r'`" = 'x"bar"' || fail eval "file without file ID parsed correctly"
 
-$CAPNP compile --no-standard-import --src-prefix="$PREFIX" -ofoo $TESTDATA/errors.capnp.nobuild 2>&1 | sed -e "s,^.*errors[.]capnp[.]nobuild:,file:,g" | tr -d '\r' |
+$ZAP compile --no-standard-import --src-prefix="$PREFIX" -ofoo $TESTDATA/errors.zap.nobuild 2>&1 | sed -e "s,^.*errors[.]zap[.]nobuild:,file:,g" | tr -d '\r' |
     diff -u $TESTDATA/errors.txt - || fail error output
 
-$CAPNP compile --no-standard-import --src-prefix="$PREFIX" -ofoo $TESTDATA/errors2.capnp.nobuild 2>&1 | sed -e "s,^.*errors2[.]capnp[.]nobuild:,file:,g" | tr -d '\r' |
+$ZAP compile --no-standard-import --src-prefix="$PREFIX" -ofoo $TESTDATA/errors2.zap.nobuild 2>&1 | sed -e "s,^.*errors2[.]zap[.]nobuild:,file:,g" | tr -d '\r' |
     diff -u $TESTDATA/errors2.txt - || fail error2 output

@@ -20,15 +20,15 @@
 // THE SOFTWARE.
 
 #include "json.h"
-#include <capnp/test-util.h>
-#include <capnp/message.h>
-#include <capnp/compat/json.capnp.h>
-#include <capnp/compat/json-test.capnp.h>
+#include <zap/test-util.h>
+#include <zap/message.h>
+#include <zap/compat/json.zap.h>
+#include <zap/compat/json-test.zap.h>
 #include <kj/debug.h>
 #include <kj/string.h>
 #include <kj/test.h>
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -934,16 +934,16 @@ R"({
   "names-can_contain!anything Really": "foo"
 })"_kj;
 
-class PrefixAdder: public JsonCodec::Handler<capnp::Text> {
+class PrefixAdder: public JsonCodec::Handler<zap::Text> {
 public:
-  void encode(const JsonCodec& codec, capnp::Text::Reader input,
+  void encode(const JsonCodec& codec, zap::Text::Reader input,
               JsonValue::Builder output) const override {
     output.setString(kj::str("add-prefix-", input));
   }
 
-  Orphan<capnp::Text> decode(const JsonCodec& codec, JsonValue::Reader input,
+  Orphan<zap::Text> decode(const JsonCodec& codec, JsonValue::Reader input,
                              Orphanage orphanage) const override {
-    return orphanage.newOrphanCopy(capnp::Text::Reader(input.getString().slice(11)));
+    return orphanage.newOrphanCopy(zap::Text::Reader(input.getString().slice(11)));
   }
 };
 
@@ -1049,7 +1049,7 @@ KJ_TEST("base64 union encoded correctly") {
 
 KJ_TEST("JSON encode bench") {
   // Example test based on basic json encoding benchmark.
-  capnp::JsonCodec json;
+  zap::JsonCodec json;
 
   doBenchmark([&]() {
     KJ_EXPECT(json.encode(VOID) == "null");
@@ -1063,10 +1063,10 @@ KJ_TEST("JSON encode bench") {
 
     json.setPrettyPrint(false);
     kj::byte bytes[] = {12, 34, 56};
-    KJ_EXPECT(json.encode(capnp::Data::Reader(bytes, 3)) == "[12,34,56]");
+    KJ_EXPECT(json.encode(zap::Data::Reader(bytes, 3)) == "[12,34,56]");
 
     json.setPrettyPrint(true);
-    KJ_EXPECT(json.encode(capnp::Data::Reader(bytes, 3)) == "[12, 34, 56]");
+    KJ_EXPECT(json.encode(zap::Data::Reader(bytes, 3)) == "[12, 34, 56]");
   });
 }
 
@@ -1088,4 +1088,4 @@ KJ_TEST("JSON parse bench") {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

@@ -21,13 +21,13 @@
 
 #pragma once
 
-#include <capnp/schema.h>
-#include <capnp/dynamic.h>
-#include <capnp/compat/json.capnp.h>
+#include <zap/schema.h>
+#include <zap/dynamic.h>
+#include <zap/compat/json.zap.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 typedef json::Value JsonValue;
 // For backwards-compatibility.
@@ -35,7 +35,7 @@ typedef json::Value JsonValue;
 // TODO(cleanup): Consider replacing all uses of JsonValue with json::Value?
 
 class JsonCodec {
-  // Flexible class for encoding Cap'n Proto types as JSON, and decoding JSON back to Cap'n Proto.
+  // Flexible class for encoding Zap types as JSON, and decoding JSON back to Zap.
   //
   // Typical usage:
   //
@@ -92,7 +92,7 @@ public:
 
   template <typename T>
   kj::String encode(T&& value) const;
-  // Encode any Cap'n Proto value to JSON, including primitives and
+  // Encode any Zap value to JSON, including primitives and
   // Dynamic{Enum,Struct,List,Capability}, but not DynamicValue (see below).
 
   kj::String encode(DynamicValue::Reader value, Type type) const;
@@ -104,12 +104,12 @@ public:
   // Decode JSON text directly into a struct builder. This only works for structs since lists
   // need to be allocated with the correct size in advance.
   //
-  // (Remember that any Cap'n Proto struct reader type can be implicitly cast to
+  // (Remember that any Zap struct reader type can be implicitly cast to
   // DynamicStruct::Reader.)
 
   template <typename T>
   Orphan<T> decode(kj::ArrayPtr<const char> input, Orphanage orphanage) const;
-  // Decode JSON text to any Cap'n Proto object (pointer value), allocated using the given
+  // Decode JSON text to any Zap object (pointer value), allocated using the given
   // orphanage. T must be specified explicitly and cannot be dynamic, e.g.:
   //
   //     Orphan<MyType> orphan = json.decode<MyType>(text, orphanage);
@@ -188,7 +188,7 @@ public:
   // of decode(), but it will only be called when the struct would be allocated as an individual
   // object, not as part of a list. This allows you to return "nullptr" in these cases to say that
   // the pointer value should be null. This does not apply to list elements because struct list
-  // elements cannot ever be null (since Cap'n Proto encodes struct lists as a flat list rather
+  // elements cannot ever be null (since Zap encodes struct lists as a flat list rather
   // than list-of-pointers).
 
   template <typename T>
@@ -211,7 +211,7 @@ public:
   void handleByAnnotation(Schema schema);
   template <typename T> void handleByAnnotation();
   // Inspects the given type (as specified by type parameter or dynamic schema) and all its
-  // dependencies looking for JSON annotations (see json.capnp), building and registering Handlers
+  // dependencies looking for JSON annotations (see json.zap), building and registering Handlers
   // based on these annotations.
   //
   // If you'd like to use annotations to control JSON, you must call these functions before you
@@ -524,6 +524,6 @@ void JsonCodec::handleByAnnotation() {
   return handleByAnnotation(Schema::from<T>());
 }
 
-} // namespace capnp
+} // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

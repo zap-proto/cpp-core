@@ -27,9 +27,9 @@
 #include <atomic>
 #endif
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 
 struct RawSchema;
@@ -237,6 +237,6 @@ inline bool RawBrandedSchema::isUnbound() const {
 }
 
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

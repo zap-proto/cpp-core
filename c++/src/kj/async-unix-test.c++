@@ -71,7 +71,7 @@ void captureSignals() {
   static bool captured = false;
   if (!captured) {
     // We use SIGIO and SIGURG as our test signals because they're two signals that we can be
-    // reasonably confident won't otherwise be delivered to any KJ or Cap'n Proto test.  We can't
+    // reasonably confident won't otherwise be delivered to any KJ or Zap test.  We can't
     // use SIGUSR1 because it is reserved by UnixEventPort and SIGUSR2 is used by Valgrind on OSX.
     UnixEventPort::captureSignal(SIGURG);
     UnixEventPort::captureSignal(SIGIO);
@@ -168,7 +168,7 @@ TEST(AsyncUnixTest, SignalWithValue) {
   //
   // Also, this test fails on Linux on mipsel. si_value comes back as zero. No one with a mips
   // machine wants to debug the problem but they demand a patch fixing it, so we disable the test.
-  // Sad. https://github.com/capnproto/capnproto/issues/204
+  // Sad. https://github.com/zap/zap/issues/204
 
   if (BROKEN_QEMU) return;
 
@@ -205,7 +205,7 @@ TEST(AsyncUnixTest, SignalWithPointerValue) {
   //
   // Also, this test fails on Linux on mipsel. si_value comes back as zero. No one with a mips
   // machine wants to debug the problem but they demand a patch fixing it, so we disable the test.
-  // Sad. https://github.com/capnproto/capnproto/issues/204
+  // Sad. https://github.com/zap/zap/issues/204
 
   if (BROKEN_QEMU) return;
 
@@ -599,7 +599,7 @@ TEST(AsyncUnixTest, WriteObserver) {
 }
 
 #if !__APPLE__ && !(KJ_USE_KQUEUE && !defined(EVFILT_EXCEPT))
-// Disabled on macOS due to https://github.com/capnproto/capnproto/issues/374.
+// Disabled on macOS due to https://github.com/zap/zap/issues/374.
 // Disabled on kqueue systems that lack EVFILT_EXCEPT because it doesn't work there.
 TEST(AsyncUnixTest, UrgentObserver) {
   // Verify that FdObserver correctly detects availability of out-of-band data.
@@ -977,7 +977,7 @@ KJ_TEST("UnixEventPort FdObserver(..., flags=0)::whenWriteDisconnected()") {
   // FdObserver still observes whenWriteDisconnected().
   //
   // This can be useful to watch disconnection on a blocking file descriptor.
-  // See discussion: https://github.com/capnproto/capnproto/issues/924
+  // See discussion: https://github.com/zap/zap/issues/924
 
   captureSignals();
   UnixEventPort port;

@@ -19,12 +19,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "carsales.capnp.h"
-#include "capnproto-common.h"
+#include "carsales.zap.h"
+#include "zap-common.h"
 
-namespace capnp {
+namespace zap {
 namespace benchmark {
-namespace capnp {
+namespace zap {
 
 template <typename ReaderOrBuilder>
 uint64_t carValue(ReaderOrBuilder car) {
@@ -128,12 +128,12 @@ public:
   }
 };
 
-}  // namespace capnp
+}  // namespace zap
 }  // namespace benchmark
-}  // namespace capnp
+}  // namespace zap
 
 int main(int argc, char* argv[]) {
-  return capnp::benchmark::benchmarkMain<
-      capnp::benchmark::capnp::BenchmarkTypes,
-      capnp::benchmark::capnp::CarSalesTestCase>(argc, argv);
+  return zap::benchmark::benchmarkMain<
+      zap::benchmark::zap::BenchmarkTypes,
+      zap::benchmark::zap::CarSalesTestCase>(argc, argv);
 }

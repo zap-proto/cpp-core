@@ -19,9 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "calculator.capnp.h"
+#include "calculator.zap.h"
 #include <kj/async-io.h>
-#include <capnp/rpc-twoparty.h>
+#include <zap/rpc-twoparty.h>
 #include <kj/debug.h>
 #include <math.h>
 #include <iostream>
@@ -62,8 +62,8 @@ int main(int argc, const char* argv[]) {
   kj::Own<kj::NetworkAddress> addr = network.parseAddress(argv[1]).wait(waitScope);
   kj::Own<kj::AsyncIoStream> conn = addr->connect().wait(waitScope);
 
-  // Now we can start the Cap'n Proto RPC system on this connection.
-  capnp::TwoPartyClient client(*conn);
+  // Now we can start the Zap RPC system on this connection.
+  zap::TwoPartyClient client(*conn);
 
   // The server exports a "bootstrap" capability implementing the
   // `Calculator` interface.

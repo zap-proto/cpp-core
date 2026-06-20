@@ -22,13 +22,13 @@
 #include "serialize-text.h"
 #include <kj/compat/gtest.h>
 #include <kj/string.h>
-#include <capnp/pretty-print.h>
-#include <capnp/message.h>
+#include <zap/pretty-print.h>
+#include <zap/message.h>
 #include "test-util.h"
 
-#include <capnp/test.capnp.h>
+#include <zap/test.zap.h>
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -93,7 +93,7 @@ KJ_TEST("TextCodec TestListDefaults") {
 }
 
 KJ_TEST("TextCodec raw text") {
-  using TestType = capnproto_test::capnp::test::TestLateUnion;
+  using TestType = zap_test::zap::test::TestLateUnion;
 
   kj::String message =
       kj::str(R"((
@@ -136,7 +136,7 @@ KJ_TEST("TextCodec parse error") {
   auto exception = KJ_ASSERT_NONNULL(kj::runCatchingExceptions(
       [&]() { codec.decode(message, root); }));
 
-  KJ_EXPECT(exception.getFile() == "(capnp text input)"_kj);
+  KJ_EXPECT(exception.getFile() == "(zap text input)"_kj);
   KJ_EXPECT(exception.getLine() == 2);
   KJ_EXPECT(exception.getDescription() == "3-6: Parse error: Empty list item.",
             exception.getDescription());
@@ -144,7 +144,7 @@ KJ_TEST("TextCodec parse error") {
 
 KJ_TEST("text format implicitly coerces struct value from first field type") {
   // We don't actually use TextCodec here, but rather check how the compiler handled some constants
-  // defined in test.capnp. It's the same parser code either way but this is easier.
+  // defined in test.zap. It's the same parser code either way but this is easier.
 
   {
     auto s = test::TestImpliedFirstField::Reader().getTextStruct();
@@ -188,4 +188,4 @@ KJ_TEST("text format implicitly coerces struct value from first field type") {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

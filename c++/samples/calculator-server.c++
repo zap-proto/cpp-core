@@ -19,11 +19,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "calculator.capnp.h"
+#include "calculator.zap.h"
 #include <kj/async-io.h>
-#include <capnp/rpc-twoparty.h>
+#include <zap/rpc-twoparty.h>
 #include <kj/debug.h>
-#include <capnp/message.h>
+#include <zap/message.h>
 #include <iostream>
 
 typedef unsigned int uint;
@@ -34,14 +34,14 @@ kj::Promise<double> readValue(Calculator::Value::Client value) {
   // include something like this automatically.)
 
   return value.readRequest().send()
-      .then([](capnp::Response<Calculator::Value::ReadResults> result) {
+      .then([](zap::Response<Calculator::Value::ReadResults> result) {
     return result.getValue();
   });
 }
 
 kj::Promise<double> evaluateImpl(
     Calculator::Expression::Reader expression,
-    capnp::List<double>::Reader params = capnp::List<double>::Reader()) {
+    zap::List<double>::Reader params = zap::List<double>::Reader()) {
   // Implementation of CalculatorImpl::evaluate(), also shared by
   // FunctionImpl::call().  In the latter case, `params` are the parameter
   // values passed to the function; in the former case, `params` is just an
@@ -79,7 +79,7 @@ kj::Promise<double> evaluateImpl(
         auto request = func.callRequest();
         request.setParams(paramValues);
         return request.send().then(
-            [](capnp::Response<Calculator::Function::CallResults>&& result) {
+            [](zap::Response<Calculator::Function::CallResults>&& result) {
           return result.getValue();
         });
       });
@@ -92,7 +92,7 @@ kj::Promise<double> evaluateImpl(
 }
 
 class ValueImpl final: public Calculator::Value::Server {
-  // Simple implementation of the Calculator.Value Cap'n Proto interface.
+  // Simple implementation of the Calculator.Value Zap interface.
 
 public:
   ValueImpl(double value): value(value) {}
@@ -107,7 +107,7 @@ private:
 };
 
 class FunctionImpl final: public Calculator::Function::Server {
-  // Implementation of the Calculator.Function Cap'n Proto interface, where the
+  // Implementation of the Calculator.Function Zap interface, where the
   // function is defined by a Calculator.Expression.
 
 public:
@@ -130,12 +130,12 @@ private:
   uint paramCount;
   // The function's arity.
 
-  capnp::MallocMessageBuilder body;
+  zap::MallocMessageBuilder body;
   // Stores a permanent copy of the function body.
 };
 
 class OperatorImpl final: public Calculator::Function::Server {
-  // Implementation of the Calculator.Function Cap'n Proto interface, wrapping
+  // Implementation of the Calculator.Function Zap interface, wrapping
   // basic binary arithmetic operators.
 
 public:
@@ -164,7 +164,7 @@ private:
 };
 
 class CalculatorImpl final: public Calculator::Server {
-  // Implementation of the Calculator Cap'n Proto interface.
+  // Implementation of the Calculator Zap interface.
 
 public:
   kj::Promise<void> evaluate(EvaluateContext context) override {
@@ -217,7 +217,7 @@ int main(int argc, const char* argv[]) {
   }
 
   // Start the RPC server.
-  capnp::TwoPartyServer server(kj::heap<CalculatorImpl>());
+  zap::TwoPartyServer server(kj::heap<CalculatorImpl>());
 
   // Run forever, accepting connections and handling requests.
   server.listen(*listener).wait(io.waitScope);

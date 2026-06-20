@@ -23,11 +23,11 @@
 
 #include <kj/string.h>
 #include <kj/array.h>
-#include <capnp/common.h>
+#include <zap/common.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 
 uint64_t generateChildId(uint64_t parentId, kj::StringPtr childName);
@@ -41,6 +41,6 @@ uint64_t generateMethodParamsId(uint64_t parentId, uint16_t methodOrdinal, bool 
 // IDs.
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

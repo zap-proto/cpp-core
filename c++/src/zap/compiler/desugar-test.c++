@@ -4,8 +4,12 @@
 // Unit tests for the whitespace->brace schema desugar preprocessor.
 
 #include "desugar.h"
+#include "lexer.h"
+#include "parser.h"
+#include "../message.h"
 #include <kj/test.h>
 #include <kj/string.h>
+#include <kj/vector.h>
 
 namespace zap {
 namespace compiler {
@@ -14,6 +18,46 @@ namespace {
 kj::String desugarStr(kj::StringPtr src) {
   auto out = desugar(src.asArray());
   return kj::heapString(out.begin(), out.size());
+}
+
+// Collects diagnostics instead of failing, so a test can assert that desugared output either
+// parses cleanly (no errors) or is rejected by the real parser with a specific message — proving
+// the desugar emits VALID brace source and that out-of-range ordinals fail gracefully (a clean
+// parser diagnostic, never an uncaught exception from desugar itself).
+class CountingErrorReporter final: public ErrorReporter {
+public:
+  void addError(uint32_t startByte, uint32_t endByte, kj::StringPtr message) override {
+    errors.add(kj::heapString(message));
+  }
+  bool hadErrors() override { return errors.size() > 0; }
+
+  kj::Vector<kj::String> errors;
+};
+
+// Run `wsSrc` (whitespace-significant schema) all the way through desugar -> lexer -> parser,
+// returning the diagnostics the real front-end produced. Asserts the desugar step itself never
+// throws and that lexing succeeds structurally (balanced braces / terminators), so the only
+// errors surfaced are genuine parser-level diagnostics. This is the missing "parses through the
+// real lexer+parser" coverage the audit flagged. [audit: parse-through validation]
+kj::Vector<kj::String> parseErrorsThroughRealFrontEnd(kj::StringPtr wsSrc) {
+  auto desugared = desugar(wsSrc.asArray());
+  CountingErrorReporter reporter;
+
+  MallocMessageBuilder lexedBuilder;
+  auto lexed = lexedBuilder.initRoot<LexedStatements>();
+  lex(desugared, lexed, reporter);
+
+  MallocMessageBuilder parsedBuilder;
+  auto parsed = parsedBuilder.initRoot<ParsedFile>();
+  parseFile(lexed.getStatements(), parsed, reporter, /*requiresId=*/false);
+
+  return kj::mv(reporter.errors);
+}
+
+// Render the first diagnostic (or "(none)") as a fresh owned string, for KJ_EXPECT context
+// messages — kj::String is move-only, so a vector element can't be handed to the macro directly.
+kj::String firstError(const kj::Vector<kj::String>& errs) {
+  return errs.size() > 0 ? kj::str(errs[0]) : kj::str("(none)");
 }
 
 // Back-compat: brace source must be returned byte-identical (idempotent).
@@ -145,7 +189,7 @@ KJ_TEST("desugar: isWhitespaceSchema detects ws vs brace") {
 
 // [audit: C2] A trailing '#' comment on a whitespace MEMBER must not swallow the ';'
 // terminator. Previously `a Int8  # doc` produced `a @0 :Int8  # doc;` (the ';' landed
-// AFTER the comment, leaving the field unterminated — capnp requires ';'). The ';' must
+// AFTER the comment, leaving the field unterminated — ZAP requires ';'). The ';' must
 // be inserted BEFORE the comment, and the original gap before '#' is preserved.
 KJ_TEST("desugar: trailing comment on field keeps ';' before comment") {
   KJ_EXPECT(desugarStr("struct Foo\n  a Int8  # doc\n") ==
@@ -202,24 +246,89 @@ KJ_TEST("desugar: named union/group with trailing comment is recognized") {
             "    x @1 :Text;\n    y @2 :Bool;\n  }\n}\n");
 }
 
-// [audit: H1] Explicit ordinals are 16-bit (parser rejects >= 65536). The desugar must
-// parse without uint32 wrap and reject out-of-range ordinals rather than silently
-// emitting/wrapping them. Previously `@4294967295` set the next member to `@0` (wrapped),
-// and `@70000` was accepted though invalid.
-KJ_TEST("desugar: out-of-range ordinal is rejected, in-range preserved") {
-  KJ_EXPECT_THROW_RECOVERABLE_MESSAGE("ordinal out of range",
-      desugar(kj::StringPtr("struct Foo\n  a @4294967295 :Int8\n  b Text\n").asArray()));
-  KJ_EXPECT_THROW_RECOVERABLE_MESSAGE("ordinal out of range",
-      desugar(kj::StringPtr("struct Foo\n  a @70000 :Int8\n  b Text\n").asArray()));
-  // astronomically long literal must not wrap a uint32 back into range.
-  KJ_EXPECT_THROW_RECOVERABLE_MESSAGE("ordinal out of range",
-      desugar(kj::StringPtr("struct Foo\n  a @99999999999999999999 :Int8\n").asArray()));
-  // the maximum valid ordinal (65535) is accepted; the successor auto-ordinal would be
-  // out of range, so a following auto field is rejected — but an explicit one is fine.
+// [audit: H1 / graceful failure] Explicit ordinals are 16-bit; the PARSER is the single
+// authority that rejects an out-of-range ordinal (parser.c++ reports "Ordinals cannot be
+// greater than 65535." at the exact source span). The desugar therefore does NOT throw — it
+// emits the explicit `@N` VERBATIM (so the parser sees and rejects the real digits) and only
+// keeps its per-scope counter from WRAPPING a uint32. This makes the un-tried call sites
+// (schema-parser.c++ / module-loader.c++) fail gracefully: a bad ws schema yields a clean
+// file:line:col diagnostic, never an uncaught exception that crashes the compiler/LSP.
+KJ_TEST("desugar: out-of-range ordinal is emitted verbatim (parser rejects), no wrap") {
+  // Verbatim emission — the out-of-range digits reach the parser unchanged. The counter
+  // SATURATES at 65536 (it does not continue from the out-of-range value), so the next auto
+  // field is @65536, which the parser also rejects.
+  KJ_EXPECT(desugarStr("struct Foo\n  a @70000 :Int8\n  b Text\n") ==
+            "struct Foo {\n  a @70000 :Int8;\n  b @65536 :Text;\n}\n");
+  // The next auto ordinal after @4294967295 must SATURATE, not wrap back to @0.
+  KJ_EXPECT(desugarStr("struct Foo\n  a @4294967295 :Int8\n  b Text\n") ==
+            "struct Foo {\n  a @4294967295 :Int8;\n  b @65536 :Text;\n}\n");
+  // An astronomically long literal must not wrap a uint32; counter saturates to 65536.
+  KJ_EXPECT(desugarStr("struct Foo\n  a @99999999999999999999 :Int8\n  b Text\n") ==
+            "struct Foo {\n  a @99999999999999999999 :Int8;\n  b @65536 :Text;\n}\n");
+  // The maximum valid ordinal (65535) is preserved; a following auto field is @65536, which
+  // the parser then rejects (proven in the parse-through test below).
   KJ_EXPECT(desugarStr("struct Foo\n  a @65535 :Int8\n") ==
             "struct Foo {\n  a @65535 :Int8;\n}\n");
-  KJ_EXPECT_THROW_RECOVERABLE_MESSAGE("ordinal out of range",
-      desugar(kj::StringPtr("struct Foo\n  a @65535 :Int8\n  b Text\n").asArray()));
+  KJ_EXPECT(desugarStr("struct Foo\n  a @65535 :Int8\n  b Text\n") ==
+            "struct Foo {\n  a @65535 :Int8;\n  b @65536 :Text;\n}\n");
+}
+
+// [audit: HIGH] A nested `using`/`const`/`annotation` declaration inside a whitespace
+// struct/interface is NOT a field: it takes no positional ordinal and carries its own ';'.
+// Previously it was mangled into a bogus field (`using EmbargoId = UInt32` ->
+// `using @0 EmbargoId = UInt32;`, double-ordinal garbage). It must pass through verbatim with
+// the ';' the newline implied; the surrounding fields keep their own ordinal sequence. The
+// `using EmbargoId = UInt32;` form is real — it appears in the corpus (rpc.zap).
+KJ_TEST("desugar: nested using/const/annotation pass through, not mangled into fields") {
+  KJ_EXPECT(desugarStr("interface I\n  using EmbargoId = UInt32\n  foo (x :Int32) -> (y :Int32)\n") ==
+            "interface I {\n  using EmbargoId = UInt32;\n  foo @0 (x :Int32) -> (y :Int32);\n}\n");
+  // const inside a struct: passes through, does NOT consume an ordinal; sibling fields keep
+  // their sequence (a @0, b @1) with the const interleaved.
+  KJ_EXPECT(desugarStr("struct S\n  a Int32\n  const k :UInt32 = 5\n  b Text\n") ==
+            "struct S {\n  a @0 :Int32;\n  const k :UInt32 = 5;\n  b @1 :Text;\n}\n");
+  // annotation inside a struct, with an explicit ';' already present — not doubled.
+  KJ_EXPECT(desugarStr("struct S\n  annotation foo (field) :Text;\n  a Int32\n") ==
+            "struct S {\n  annotation foo (field) :Text;\n  a @0 :Int32;\n}\n");
+  // using/const/annotation as a FIELD NAME (keyword + a type, not its decl syntax) stays a
+  // field — `using Foo` is a field named `using` of type `Foo`.
+  KJ_EXPECT(desugarStr("struct S\n  using Foo\n  const Int32\n") ==
+            "struct S {\n  using @0 :Foo;\n  const @1 :Int32;\n}\n");
+}
+
+// [audit: HIGH] explicitOrdinal must read `@N` ONLY in ordinal position (after the name,
+// before the type/params). A generic/brand `@N` inside a TYPE (`b :Bar(@7)`) or inside method
+// params is NOT the field's ordinal. Previously it was misread: the field got no ordinal and
+// the per-scope counter jumped, mis-numbering every following member. The field must instead
+// receive its correct auto ordinal and the type expression pass through untouched.
+KJ_TEST("desugar: @N inside a type is not mistaken for the field ordinal") {
+  KJ_EXPECT(desugarStr("struct Foo\n  a Int32\n  b :Bar(@7)\n  c Int8\n  d Int16\n") ==
+            "struct Foo {\n  a @0 :Int32;\n  b @1 :Bar(@7);\n  c @2 :Int8;\n  d @3 :Int16;\n}\n");
+  // a method whose parameter type carries a brand `@N` keeps its own method ordinal.
+  KJ_EXPECT(desugarStr("interface I\n  m (p :Gen(@3)) -> (r :Int32)\n  n (q :Int32) -> (s :Int32)\n") ==
+            "interface I {\n  m @0 (p :Gen(@3)) -> (r :Int32);\n  n @1 (q :Int32) -> (s :Int32);\n}\n");
+  // an explicit ordinal in real ordinal position still wins, even when the type also has @N.
+  KJ_EXPECT(desugarStr("struct Foo\n  a @5 :Bar(@7)\n  b Int8\n") ==
+            "struct Foo {\n  a @5 :Bar(@7);\n  b @6 :Int8;\n}\n");
+}
+
+// [audit: HIGH] Mixed indentation (space-indented header + tab-indented body, or the reverse)
+// must nest correctly. Previously nesting compared raw character counts (tab == 1 char), so a
+// one-tab body tested as shallower than a several-space header and the block closed empty,
+// orphaning every field as a sibling with the parent's ordinals. Nesting is now decided on the
+// expanded column WIDTH (tab -> next 8-col stop), so the body nests under its header regardless
+// of which indent unit each uses. Emitted indent bytes are preserved exactly (not re-tabified).
+KJ_TEST("desugar: mixed space/tab indentation nests instead of orphaning fields") {
+  // 4-space header, 1-tab body (tab expands to col 8 > 4): body nests under the group. The
+  // close brace is emitted at the HEADER's exact column (4 spaces — its raw indent chars), so
+  // emitted indent bytes are preserved (not re-tabified).
+  KJ_EXPECT(desugarStr("struct Outer\n    inner :group\n\tx Int8\n\ty Int8\n") ==
+            "struct Outer {\n    inner :group {\n\tx @0 :Int8;\n\ty @1 :Int8;\n    }\n}\n");
+  // 1-tab header, deeper space body: tab header at col 8, 9-space body at col 9 > 8: nests.
+  // Close braces are emitted as N spaces where N is the header's raw indent CHAR count (a tab
+  // counts as one char), matching the existing all-tab nesting behavior — the parser accepts a
+  // close brace at any column.
+  KJ_EXPECT(desugarStr("struct Outer\n\ta Int8\n\tstruct Inner\n         b Text\n") ==
+            "struct Outer {\n\ta @0 :Int8;\n\tstruct Inner {\n         b @0 :Text;\n }\n}\n");
 }
 
 // [audit: H4] A field NAMED after a structural keyword must not be misdetected as a block
@@ -251,6 +360,61 @@ KJ_TEST("desugar: brace corpus constructs remain byte-identical") {
   assertIdempotent("struct Node {\n  struct :group {\n    x @0 :Int32;\n  }\n}\n");
   assertIdempotent("struct Foo {\n\ta @0 :Int8;\n\tb @1 :Text;\n}\n");
   assertIdempotent("interface Persistent @0 (Ref) {\n  save @0 () -> (ref :Ref);\n}\n");
+}
+
+// ===== parse-through validation: desugared output must be VALID through the REAL front-end ===
+// The audit flagged that the suite only asserted string-equality and never lex/parsed the
+// desugared output. These tests close that gap: they push whitespace schemas all the way
+// through desugar -> lexer -> parser and assert the diagnostics.
+
+KJ_TEST("desugar: whitespace schemas parse cleanly through the real lexer+parser") {
+  // A schema exercising every whitespace construct the desugar handles AND the three bug fixes:
+  // nested struct, enum, anonymous + named union sharing ordinals, an interface with a nested
+  // `using` decl, a field whose TYPE carries a brand `@N`, and a tab-indented body. After
+  // desugaring it must lex and parse with ZERO errors — i.e. the emitted brace source is valid.
+  auto errs = parseErrorsThroughRealFrontEnd(
+      "@0xf36d7b330303c66e;\n"
+      "struct Outer\n"
+      "  a UInt32\n"
+      "  inner :group\n"
+      "    x Int8\n"
+      "    y Int8\n"
+      "  struct Inner\n"
+      "\tb Text\n"            // tab-indented body nests under the space-indented header
+      "  color Color\n"
+      "enum Color\n"
+      "  red\n"
+      "  green\n"
+      "interface Svc\n"
+      "  using Token = UInt32\n"   // nested decl, not a field
+      "  call (req :UInt32) -> (resp :UInt32)\n");
+  KJ_EXPECT(errs.size() == 0, firstError(errs));
+}
+
+KJ_TEST("desugar: brand @N inside a type parses (not a field ordinal collision)") {
+  // `value :List(Int32)` and a parameterized type must round-trip through the parser. The
+  // ordinal-position fix means the generic argument is never confused with the field ordinal,
+  // so fields get sequential @0,@1,... and the schema is well-formed.
+  auto errs = parseErrorsThroughRealFrontEnd(
+      "struct Generic(T)\n"
+      "  value T\n"
+      "struct Holder\n"
+      "  a Int32\n"
+      "  g :Generic(Int32)\n"
+      "  b Int8\n");
+  KJ_EXPECT(errs.size() == 0, firstError(errs));
+}
+
+KJ_TEST("desugar: out-of-range ordinal yields a clean parser diagnostic, not a crash") {
+  // The desugar emits the bad ordinal verbatim and does NOT throw; the parser rejects it with a
+  // precise message. This proves the call sites fail gracefully (the whole point of the MED fix).
+  auto errs = parseErrorsThroughRealFrontEnd("struct Foo\n  a @70000 :Int8\n");
+  KJ_EXPECT(errs.size() >= 1);
+  bool sawOrdinalError = false;
+  for (auto& e: errs) {
+    if (e.contains("65535")) sawOrdinalError = true;
+  }
+  KJ_EXPECT(sawOrdinalError, firstError(errs));
 }
 
 }  // namespace

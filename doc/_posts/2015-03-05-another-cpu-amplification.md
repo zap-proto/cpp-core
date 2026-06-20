@@ -8,9 +8,9 @@ Unfortunately, it turns out that our fix for one of [the security advisories iss
 
 Fortunately, the incomplete fix is for the non-critical vulnerability. The worst case is that an attacker could consume excessive CPU time.
 
-Nevertheless, we've issued [a new advisory](https://github.com/capnproto/capnproto/tree/master/security-advisories/2015-03-05-0-c++-addl-cpu-amplification.md) and pushed a new release:
+Nevertheless, we've issued [a new advisory](https://github.com/zap/zap/tree/master/security-advisories/2015-03-05-0-c++-addl-cpu-amplification.md) and pushed a new release:
 
-- Release 0.5.1.2: [source](https://capnproto.org/capnproto-c++-0.5.1.2.tar.gz), [win32](https://capnproto.org/capnproto-c++-win32-0.5.1.2.zip)
-- Release 0.4.1.2: [source](https://capnproto.org/capnproto-c++-0.4.1.2.tar.gz)
+- Release 0.5.1.2: [source](https://zap.org/zap-c++-0.5.1.2.tar.gz), [win32](https://zap.org/zap-c++-win32-0.5.1.2.zip)
+- Release 0.4.1.2: [source](https://zap.org/zap-c++-0.4.1.2.tar.gz)
 
 Sorry for the rapid repeated releases, but we don't like sitting on security bugs.

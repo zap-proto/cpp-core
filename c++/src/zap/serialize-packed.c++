@@ -24,7 +24,7 @@
 #include "layout.h"
 #include <vector>
 
-namespace capnp {
+namespace zap {
 
 namespace _ {  // private
 
@@ -507,4 +507,4 @@ size_t computeUnpackedSizeInWords(kj::ArrayPtr<const byte> packedBytes) {
   return total;
 }
 
-}  // namespace capnp
+}  // namespace zap

@@ -19,23 +19,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "http-over-capnp.h"
+#include "http-over-zap.h"
 #include <kj/debug.h>
-#include <capnp/schema.h>
-#include <capnp/message.h>
+#include <zap/schema.h>
+#include <zap/message.h>
 
-namespace capnp {
+namespace zap {
 
 using kj::uint;
 using kj::byte;
 
 // =======================================================================================
 
-class HttpOverCapnpFactory::CapnpToKjWebSocketAdapter final: public capnp::WebSocket::Server {
+class HttpOverZapFactory::ZapToKjWebSocketAdapter final: public zap::WebSocket::Server {
 public:
-  CapnpToKjWebSocketAdapter(kj::WebSocket& webSocket,
+  ZapToKjWebSocketAdapter(kj::WebSocket& webSocket,
                             kj::Promise<Capability::Client> shorteningPromise,
-                            kj::Maybe<kj::Maybe<CapnpToKjWebSocketAdapter&>&> selfRef)
+                            kj::Maybe<kj::Maybe<ZapToKjWebSocketAdapter&>&> selfRef)
       : webSocket(webSocket),
         shorteningPromise(kj::mv(shorteningPromise)),
         selfRef(selfRef) {
@@ -43,7 +43,7 @@ public:
       s = *this;
     }
   }
-  CapnpToKjWebSocketAdapter(kj::Own<kj::WebSocket> webSocket,
+  ZapToKjWebSocketAdapter(kj::Own<kj::WebSocket> webSocket,
                             kj::Promise<Capability::Client> shorteningPromise)
       : webSocket(*webSocket), ownWebSocket(kj::mv(webSocket)),
         shorteningPromise(kj::mv(shorteningPromise)) {}
@@ -56,7 +56,7 @@ public:
   // The second version of the constructor takes ownership of the underlying `webSocket`. In
   // this case, a `selfRef` isn't needed since there's no need to call `cancel()`.
 
-  ~CapnpToKjWebSocketAdapter() noexcept(false) {
+  ~ZapToKjWebSocketAdapter() noexcept(false) {
     // The peer dropped the capability, which means the WebSocket stream has ended. We want to
     // translate this to a `disconnect()` call on the `kj::WebSocket`, if it is still around.
 
@@ -76,7 +76,7 @@ public:
         // out->abort() in its destructor. BlockedPumpTo treats abort() as a non-erroneous
         // shutdown, which seems wrong, but treats disconnect() as erronous, which seems right, but
         // is what leads to the problem here. What we really want to do is cancel the pump when
-        // the path is shortened. See KjToCapnpWebSocketAdapter::pumpTo() where
+        // the path is shortened. See KjToZapWebSocketAdapter::pumpTo() where
         // `shorteningFulfiller` is fulfilled, and then we start pumping -- that pump should be
         // canceled / complete without error at this point. Once that is fixed, we should change
         // WebSocketPipeImpl so that it doesn't treat simply dropping one of the ends as
@@ -92,7 +92,7 @@ public:
     // exists. Since we can't force the peer to drop the capability, we have to disable it.
     // Further access to `webSocket` must be blocked since it is no longer valid.
     //
-    // Arguably we could instead use capnp::RevocableServer to accomplish something similar. The
+    // Arguably we could instead use zap::RevocableServer to accomplish something similar. The
     // problem is, we also do actually want to know when the peer drops this capability. With
     // RevocableServer, we no longer get notification of that -- the destructor runs when we tell
     // it to, rather than when the peer drops the cap.
@@ -154,7 +154,7 @@ private:
   kj::Maybe<kj::WebSocket&> webSocket;  // becomes none when canceled
   kj::Own<kj::WebSocket> ownWebSocket;
   kj::Promise<Capability::Client> shorteningPromise;
-  kj::Maybe<kj::Maybe<CapnpToKjWebSocketAdapter&>&> selfRef;
+  kj::Maybe<kj::Maybe<ZapToKjWebSocketAdapter&>&> selfRef;
 
   kj::Canceler canceler;
 
@@ -196,13 +196,13 @@ private:
   }
 };
 
-class HttpOverCapnpFactory::KjToCapnpWebSocketAdapter final: public kj::WebSocket {
+class HttpOverZapFactory::KjToZapWebSocketAdapter final: public kj::WebSocket {
 public:
-  KjToCapnpWebSocketAdapter(
-      kj::Maybe<kj::Own<kj::WebSocket>> in, capnp::WebSocket::Client out,
+  KjToZapWebSocketAdapter(
+      kj::Maybe<kj::Own<kj::WebSocket>> in, zap::WebSocket::Client out,
       kj::Own<kj::PromiseFulfiller<kj::Promise<Capability::Client>>> shorteningFulfiller)
       : in(kj::mv(in)), out(kj::mv(out)), shorteningFulfiller(kj::mv(shorteningFulfiller)) {}
-  ~KjToCapnpWebSocketAdapter() noexcept(false) {
+  ~KjToZapWebSocketAdapter() noexcept(false) {
     if (shorteningFulfiller->isWaiting()) {
       // We want to make sure the fulfiller is not rejected with a bogus "PromiseFulfiller
       // destroyed" error, so fulfill it with never-done.
@@ -267,7 +267,7 @@ public:
   }
 
   kj::Promise<void> pumpTo(WebSocket& other) override {
-    KJ_IF_SOME(optimized, kj::dynamicDowncastIfAvailable<KjToCapnpWebSocketAdapter>(other)) {
+    KJ_IF_SOME(optimized, kj::dynamicDowncastIfAvailable<KjToZapWebSocketAdapter>(other)) {
       shorteningFulfiller->fulfill(
           kj::cp(KJ_REQUIRE_NONNULL(optimized.out, "already called disconnect()")));
 
@@ -286,24 +286,24 @@ public:
   uint64_t receivedByteCount() override { return KJ_ASSERT_NONNULL(in)->receivedByteCount(); }
 
   kj::Maybe<kj::String> getPreferredExtensions(ExtensionsContext ctx) override {
-    // TODO(someday): Optimized pump is tricky with HttpOverCapnp, we may want to revisit
+    // TODO(someday): Optimized pump is tricky with HttpOverZap, we may want to revisit
     // this but for now we always return none (indicating no preference).
     return kj::none;
   };
 
 private:
   kj::Maybe<kj::Own<kj::WebSocket>> in;   // One end of a WebSocketPipe, used only for receiving.
-  kj::Maybe<capnp::WebSocket::Client> out;  // Used only for sending.
+  kj::Maybe<zap::WebSocket::Client> out;  // Used only for sending.
   kj::Own<kj::PromiseFulfiller<kj::Promise<Capability::Client>>> shorteningFulfiller;
   uint64_t sentBytes = 0;
 };
 
 // =======================================================================================
 
-class HttpOverCapnpFactory::ClientRequestContextImpl final
-    : public capnp::HttpService::ClientRequestContext::Server {
+class HttpOverZapFactory::ClientRequestContextImpl final
+    : public zap::HttpService::ClientRequestContext::Server {
 public:
-  ClientRequestContextImpl(HttpOverCapnpFactory& factory,
+  ClientRequestContextImpl(HttpOverZapFactory& factory,
                            kj::HttpService::Response& kjResponse)
       : factory(factory), kjResponse(kjResponse) {}
 
@@ -330,12 +330,12 @@ public:
     }
 
     auto bodyStream = kjResponse.send(rpcResponse.getStatusCode(), rpcResponse.getStatusText(),
-        factory.capnpToKj(rpcResponse.getHeaders()), expectedSize);
+        factory.zapToKj(rpcResponse.getHeaders()), expectedSize);
 
     auto results = context.getResults(MessageSize { 16, 1 });
     if (hasBody) {
       auto pipe = kj::newOneWayPipe();
-      results.setBody(factory.streamFactory.kjToCapnp(kj::mv(pipe.out)));
+      results.setBody(factory.streamFactory.kjToZap(kj::mv(pipe.out)));
       responsePumpTask = pipe.in->pumpTo(*bodyStream)
           .ignoreResult()
           .attach(kj::mv(bodyStream), kj::mv(pipe.in));
@@ -351,9 +351,9 @@ public:
 
     auto shorteningPaf = kj::newPromiseAndFulfiller<kj::Promise<Capability::Client>>();
 
-    auto webSocket = kjResponse.acceptWebSocket(factory.capnpToKj(params.getHeaders()));
+    auto webSocket = kjResponse.acceptWebSocket(factory.zapToKj(params.getHeaders()));
 
-    auto upWrapper = kj::heap<KjToCapnpWebSocketAdapter>(
+    auto upWrapper = kj::heap<KjToZapWebSocketAdapter>(
         kj::none, params.getUpSocket(), kj::mv(shorteningPaf.fulfiller));
     responsePumpTask = webSocket->pumpTo(*upWrapper).attach(kj::mv(upWrapper))
         .catch_([&webSocket=*webSocket](kj::Exception&& e) -> kj::Promise<void> {
@@ -366,15 +366,15 @@ public:
     });
 
     auto results = context.getResults(MessageSize { 16, 1 });
-    auto downSocket = kj::heap<CapnpToKjWebSocketAdapter>(
+    auto downSocket = kj::heap<ZapToKjWebSocketAdapter>(
         *webSocket, kj::mv(shorteningPaf.promise), maybeWebSocket);
     results.setDownSocket(kj::mv(downSocket));
 
-    // We need to hold onto this WebSocket until `CapnpToKjWebSocketAdapter` is canceled or
-    // destroyed. If `responsePumpTask`completes successfully, then `CapnpToKjWebSocketAdapter`
+    // We need to hold onto this WebSocket until `ZapToKjWebSocketAdapter` is canceled or
+    // destroyed. If `responsePumpTask`completes successfully, then `ZapToKjWebSocketAdapter`
     // has to have been destroyed, since `downPaf.promise` doesn't resolve until that point. But
     // in the case of request cancellation, it is our own destructor that will call `cancel()`
-    // on the `CapnpToKjWebSocketAdapter`, so we should make sure the `webSocket` outlives that.
+    // on the `ZapToKjWebSocketAdapter`, so we should make sure the `webSocket` outlives that.
     //
     // (Additionally, the WebSocket must outlive `responsePumpTask` itself, even when it is
     // canceled.)
@@ -407,10 +407,10 @@ public:
   }
 
 private:
-  HttpOverCapnpFactory& factory;
+  HttpOverZapFactory& factory;
   kj::Maybe<kj::Own<kj::WebSocket>> ownWebSocket;
   kj::Maybe<kj::Promise<void>> responsePumpTask;
-  kj::Maybe<CapnpToKjWebSocketAdapter&> maybeWebSocket;
+  kj::Maybe<ZapToKjWebSocketAdapter&> maybeWebSocket;
 
   kj::HttpService::Response& kjResponse;
   bool sentResponse = false;
@@ -424,10 +424,10 @@ private:
   }
 };
 
-class HttpOverCapnpFactory::ConnectClientRequestContextImpl final
-    : public capnp::HttpService::ConnectClientRequestContext::Server {
+class HttpOverZapFactory::ConnectClientRequestContextImpl final
+    : public zap::HttpService::ConnectClientRequestContext::Server {
 public:
-  ConnectClientRequestContextImpl(HttpOverCapnpFactory& factory,
+  ConnectClientRequestContextImpl(HttpOverZapFactory& factory,
       kj::HttpService::ConnectResponse& connResponse)
       : factory(factory), connResponse(connResponse) {}
 
@@ -438,7 +438,7 @@ public:
     auto params = context.getParams();
     auto resp = params.getResponse();
 
-    auto headers = factory.capnpToKj(resp.getHeaders());
+    auto headers = factory.zapToKj(resp.getHeaders());
     connResponse.accept(resp.getStatusCode(), resp.getStatusText(), headers);
 
     return kj::READY_NOW;
@@ -451,7 +451,7 @@ public:
     auto params = context.getParams();
     auto resp = params.getResponse();
 
-    auto headers = factory.capnpToKj(resp.getHeaders());
+    auto headers = factory.zapToKj(resp.getHeaders());
 
     auto bodySize = resp.getBodySize();
     kj::Maybe<uint64_t> expectedSize;
@@ -462,21 +462,21 @@ public:
     auto stream = connResponse.reject(
         resp.getStatusCode(), resp.getStatusText(), headers, expectedSize);
 
-    context.initResults().setBody(factory.streamFactory.kjToCapnp(kj::mv(stream)));
+    context.initResults().setBody(factory.streamFactory.kjToZap(kj::mv(stream)));
 
     return kj::READY_NOW;
   }
 
 private:
-  HttpOverCapnpFactory& factory;
+  HttpOverZapFactory& factory;
   bool sent = false;
 
   kj::HttpService::ConnectResponse& connResponse;
 };
 
-class HttpOverCapnpFactory::KjToCapnpHttpServiceAdapter final: public kj::HttpService {
+class HttpOverZapFactory::KjToZapHttpServiceAdapter final: public kj::HttpService {
 public:
-  KjToCapnpHttpServiceAdapter(HttpOverCapnpFactory& factory, capnp::HttpService::Client inner)
+  KjToZapHttpServiceAdapter(HttpOverZapFactory& factory, zap::HttpService::Client inner)
       : factory(factory), inner(kj::mv(inner)) {}
 
   kj::Promise<void> request(
@@ -485,9 +485,9 @@ public:
     auto rpcRequest = inner.requestRequest();
 
     auto metadata = rpcRequest.initRequest();
-    metadata.setMethod(static_cast<capnp::HttpMethod>(method));
+    metadata.setMethod(static_cast<zap::HttpMethod>(method));
     metadata.setUrl(url);
-    metadata.adoptHeaders(factory.headersToCapnp(
+    metadata.adoptHeaders(factory.headersToZap(
         headers, Orphanage::getForMessageContaining(metadata)));
 
     kj::Maybe<kj::AsyncInputStream&> maybeRequestBody;
@@ -509,13 +509,13 @@ public:
     }
 
     ClientRequestContextImpl context(factory, kjResponse);
-    RevocableServer<capnp::HttpService::ClientRequestContext> revocableContext(context);
+    RevocableServer<zap::HttpService::ClientRequestContext> revocableContext(context);
     KJ_DEFER({
       if (!context.hasSentResponse()) {
         // Client is disconnecting before server has sent a response. Make sure to revoke with a
         // DISCONNECTED exception here so that the server side doesn't log a spurious error.
         revocableContext.revoke(KJ_EXCEPTION(DISCONNECTED,
-            "client disconnected before HTTP-over-capnp response was sent"));
+            "client disconnected before HTTP-over-zap response was sent"));
       } else if (revocableContext.isInUse()) {
         // Since someone still holds a capability to the `ClientRequestContext`, the destructor
         // of `RevocableServer` will revoke it with a FAILED-type exception with the description
@@ -545,7 +545,7 @@ public:
         //   object for no reason. (And if we didn't do it here, ~RevocableServer would do it
         //   instead.) Might be worth investigating in order to optimize?
         revocableContext.revoke(KJ_EXCEPTION(DISCONNECTED,
-            "client disconnected before HTTP-over-capnp response completed (but after it "
+            "client disconnected before HTTP-over-zap response completed (but after it "
             "started)"));
       }
     });
@@ -561,7 +561,7 @@ public:
     kj::Maybe<kj::Own<kj::Exception>> pumpRequestFailedReason;
     kj::Maybe<kj::Promise<void>> pumpRequestTask;
     KJ_IF_SOME(rb, maybeRequestBody) {
-      auto bodyOut = factory.streamFactory.capnpToKjExplicitEnd(pipeline.getRequestBody());
+      auto bodyOut = factory.streamFactory.zapToKjExplicitEnd(pipeline.getRequestBody());
       pumpRequestTask = rb.pumpTo(*bodyOut)
           .then([&bodyOut = *bodyOut](uint64_t) mutable {
         return bodyOut.end();
@@ -615,19 +615,19 @@ public:
     auto rpcRequest = inner.connectRequest();
     auto downPipe = kj::newOneWayPipe();
     rpcRequest.setHost(host);
-    rpcRequest.setDown(factory.streamFactory.kjToCapnp(kj::mv(downPipe.out)));
+    rpcRequest.setDown(factory.streamFactory.kjToZap(kj::mv(downPipe.out)));
     rpcRequest.initSettings().setUseTls(settings.useTls);
 
     ConnectClientRequestContextImpl context(factory, tunnel);
-    RevocableServer<capnp::HttpService::ConnectClientRequestContext> revocableContext(context);
+    RevocableServer<zap::HttpService::ConnectClientRequestContext> revocableContext(context);
 
-    auto builder = capnp::Request<
-        capnp::HttpService::ConnectParams,
-        capnp::HttpService::ConnectResults>::Builder(rpcRequest);
-    rpcRequest.adoptHeaders(factory.headersToCapnp(headers,
+    auto builder = zap::Request<
+        zap::HttpService::ConnectParams,
+        zap::HttpService::ConnectResults>::Builder(rpcRequest);
+    rpcRequest.adoptHeaders(factory.headersToZap(headers,
         Orphanage::getForMessageContaining(builder)));
     rpcRequest.setContext(revocableContext.getClient());
-    RemotePromise<capnp::HttpService::ConnectResults> pipeline = rpcRequest.send();
+    RemotePromise<zap::HttpService::ConnectResults> pipeline = rpcRequest.send();
 
     // Make sure the request message isn't pinned into memory through the co_await below.
     { auto drop = kj::mv(rpcRequest); }
@@ -641,7 +641,7 @@ public:
     // We write to `up` (the other side reads from it).
     auto up = pipeline.getUp();
 
-    // We need to create a tlsStarter callback which sends a startTls request to the capnp server.
+    // We need to create a tlsStarter callback which sends a startTls request to the zap server.
     KJ_IF_SOME(tlsStarter, settings.tlsStarter) {
       kj::Function<kj::Promise<void>(kj::StringPtr)> cb =
           [upForStartTls = kj::cp(up)]
@@ -654,7 +654,7 @@ public:
       tlsStarter = kj::mv(cb);
     }
 
-    auto upStream = factory.streamFactory.capnpToKjExplicitEnd(up);
+    auto upStream = factory.streamFactory.zapToKjExplicitEnd(up);
     auto upPumpTask = connection.pumpTo(*upStream)
         .then([&upStream = *upStream](uint64_t) mutable {
       return upStream.end();
@@ -668,26 +668,26 @@ public:
 
 
 private:
-  HttpOverCapnpFactory& factory;
-  capnp::HttpService::Client inner;
+  HttpOverZapFactory& factory;
+  zap::HttpService::Client inner;
 };
 
-kj::Own<kj::HttpService> HttpOverCapnpFactory::capnpToKj(capnp::HttpService::Client rpcService) {
-  return kj::heap<KjToCapnpHttpServiceAdapter>(*this, kj::mv(rpcService));
+kj::Own<kj::HttpService> HttpOverZapFactory::zapToKj(zap::HttpService::Client rpcService) {
+  return kj::heap<KjToZapHttpServiceAdapter>(*this, kj::mv(rpcService));
 }
 
 // =======================================================================================
 
-class HttpOverCapnpFactory::HttpServiceResponseImpl final
+class HttpOverZapFactory::HttpServiceResponseImpl final
     : public kj::HttpService::Response {
 public:
-  HttpServiceResponseImpl(HttpOverCapnpFactory& factory,
-                          capnp::HttpRequest::Reader request,
-                          capnp::HttpService::ClientRequestContext::Client clientContext)
+  HttpServiceResponseImpl(HttpOverZapFactory& factory,
+                          zap::HttpRequest::Reader request,
+                          zap::HttpService::ClientRequestContext::Client clientContext)
       : factory(factory),
         method(validateMethod(request.getMethod())),
         url(request.getUrl()),
-        headers(factory.capnpToKj(request.getHeaders())),
+        headers(factory.zapToKj(request.getHeaders())),
         clientContext(kj::mv(clientContext)) {}
 
   kj::Own<kj::AsyncOutputStream> send(
@@ -706,7 +706,7 @@ public:
     auto rpcResponse = req.initResponse();
     rpcResponse.setStatusCode(statusCode);
     rpcResponse.setStatusText(statusText);
-    rpcResponse.adoptHeaders(factory.headersToCapnp(
+    rpcResponse.adoptHeaders(factory.headersToZap(
         headers, Orphanage::getForMessageContaining(rpcResponse)));
     bool hasBody = true;
     KJ_IF_SOME(s, expectedBodySize) {
@@ -716,7 +716,7 @@ public:
 
     if (hasBody) {
       auto pipeline = req.send();
-      auto result = factory.streamFactory.capnpToKj(pipeline.getBody());
+      auto result = factory.streamFactory.zapToKj(pipeline.getBody());
       dontWaitForRpc(kj::mv(pipeline));
       return result;
     } else {
@@ -731,35 +731,35 @@ public:
 
     auto req = clientContext.startWebSocketRequest();
 
-    req.adoptHeaders(factory.headersToCapnp(
+    req.adoptHeaders(factory.headersToZap(
         headers, Orphanage::getForMessageContaining(
-            capnp::HttpService::ClientRequestContext::StartWebSocketParams::Builder(req))));
+            zap::HttpService::ClientRequestContext::StartWebSocketParams::Builder(req))));
 
     auto pipe = kj::newWebSocketPipe();
     auto shorteningPaf = kj::newPromiseAndFulfiller<kj::Promise<Capability::Client>>();
 
-    // Note that since CapnpToKjWebSocketAdapter takes ownership of the pipe end, we don't need
+    // Note that since ZapToKjWebSocketAdapter takes ownership of the pipe end, we don't need
     // to cancel it later. Dropping the other end of the pipe will have the same effect.
-    req.setUpSocket(kj::heap<CapnpToKjWebSocketAdapter>(
+    req.setUpSocket(kj::heap<ZapToKjWebSocketAdapter>(
         kj::mv(pipe.ends[0]), kj::mv(shorteningPaf.promise)));
 
     auto pipeline = req.send();
-    auto result = kj::heap<KjToCapnpWebSocketAdapter>(
+    auto result = kj::heap<KjToZapWebSocketAdapter>(
         kj::mv(pipe.ends[1]), pipeline.getDownSocket(), kj::mv(shorteningPaf.fulfiller));
     dontWaitForRpc(kj::mv(pipeline));
 
     return result;
   }
 
-  HttpOverCapnpFactory& factory;
+  HttpOverZapFactory& factory;
   kj::HttpMethod method;
   kj::StringPtr url;
   kj::HttpHeaders headers;
-  capnp::HttpService::ClientRequestContext::Client clientContext;
+  zap::HttpService::ClientRequestContext::Client clientContext;
   bool responseSent = false;
 
-  static kj::HttpMethod validateMethod(capnp::HttpMethod method) {
-    KJ_REQUIRE(method <= capnp::HttpMethod::BAN, "unknown method", method);
+  static kj::HttpMethod validateMethod(zap::HttpMethod method) {
+    KJ_REQUIRE(method <= zap::HttpMethod::BAN, "unknown method", method);
     return static_cast<kj::HttpMethod>(method);
   }
 
@@ -768,7 +768,7 @@ public:
     // When we call clientContext.startResponse(), we really don't want to actually wait for
     // the reply to this RPC, because in many cases we will call this, write a response body,
     // and then immediately return from the HttpService::request() handler. At that point, we
-    // would like CapnpToKjHttpServiceAdapter::request() to be able to propagate this return
+    // would like ZapToKjHttpServiceAdapter::request() to be able to propagate this return
     // immediately *without* waiting for a round trip to the client, so without waiting for
     // `startResponse()` to finish. However, we also do not want to inadvertently cancel
     // `startResponse()`, so we have to save the promise somewhere. Since this is an RPC that
@@ -782,12 +782,12 @@ public:
   }
 };
 
-class HttpOverCapnpFactory::HttpOverCapnpConnectResponseImpl final :
+class HttpOverZapFactory::HttpOverZapConnectResponseImpl final :
     public kj::HttpService::ConnectResponse {
 public:
-  HttpOverCapnpConnectResponseImpl(
-      HttpOverCapnpFactory& factory,
-      capnp::HttpService::ConnectClientRequestContext::Client context) :
+  HttpOverZapConnectResponseImpl(
+      HttpOverZapFactory& factory,
+      zap::HttpService::ConnectClientRequestContext::Client context) :
       context(context), factory(factory) {}
 
   void accept(uint statusCode, kj::StringPtr statusText, const kj::HttpHeaders& headers) override {
@@ -797,7 +797,7 @@ public:
     auto rpcResponse = req.initResponse();
     rpcResponse.setStatusCode(statusCode);
     rpcResponse.setStatusText(statusText);
-    rpcResponse.adoptHeaders(factory.headersToCapnp(
+    rpcResponse.adoptHeaders(factory.headersToZap(
         headers, Orphanage::getForMessageContaining(rpcResponse)));
 
     replyTask = req.sendIgnoringResult();
@@ -815,7 +815,7 @@ public:
     auto rpcResponse = req.initResponse();
     rpcResponse.setStatusCode(statusCode);
     rpcResponse.setStatusText(statusText);
-    rpcResponse.adoptHeaders(factory.headersToCapnp(
+    rpcResponse.adoptHeaders(factory.headersToZap(
         headers, Orphanage::getForMessageContaining(rpcResponse)));
 
     auto errorBody = kj::mv(pipe.in);
@@ -826,7 +826,7 @@ public:
 
     replyTask = req.send().then(
         [this, errorBody = kj::mv(errorBody)](auto resp) mutable -> kj::Promise<void> {
-      auto body = factory.streamFactory.capnpToKjExplicitEnd(resp.getBody());
+      auto body = factory.streamFactory.zapToKjExplicitEnd(resp.getBody());
       return errorBody->pumpTo(*body)
           .then([&body = *body](uint64_t) mutable {
         return body.end();
@@ -836,15 +836,15 @@ public:
     return kj::mv(pipe.out);
   }
 
-  capnp::HttpService::ConnectClientRequestContext::Client context;
-  capnp::HttpOverCapnpFactory& factory;
+  zap::HttpService::ConnectClientRequestContext::Client context;
+  zap::HttpOverZapFactory& factory;
   kj::Maybe<kj::Promise<void>> replyTask;
 };
 
 
-class HttpOverCapnpFactory::CapnpToKjHttpServiceAdapter final: public capnp::HttpService::Server {
+class HttpOverZapFactory::ZapToKjHttpServiceAdapter final: public zap::HttpService::Server {
 public:
-  CapnpToKjHttpServiceAdapter(HttpOverCapnpFactory& factory, kj::Own<kj::HttpService> inner)
+  ZapToKjHttpServiceAdapter(HttpOverZapFactory& factory, kj::Own<kj::HttpService> inner)
       : factory(factory), inner(kj::mv(inner)) {}
 
   kj::Promise<void> request(RequestContext context) override {
@@ -864,7 +864,7 @@ public:
     kj::Own<kj::AsyncInputStream> requestBody;
     if (hasBody) {
       auto pipe = kj::newOneWayPipe(expectedSize);
-      auto requestBodyCap = factory.streamFactory.kjToCapnp(kj::mv(pipe.out));
+      auto requestBodyCap = factory.streamFactory.kjToZap(kj::mv(pipe.out));
 
       // For request(), use context.setPipeline() to enable pipelined calls to the request body
       // stream before this RPC completes.
@@ -890,7 +890,7 @@ public:
         .useTls = params.getSettings().getUseTls(),
         .tlsStarter = kj::none };
     settings.tlsStarter = tlsStarter;
-    auto headers = factory.capnpToKj(params.getHeaders());
+    auto headers = factory.zapToKj(params.getHeaders());
     auto pipe = kj::newTwoWayPipe();
 
     class EofDetector final: public kj::AsyncOutputStream {
@@ -921,7 +921,7 @@ public:
       kj::Own<kj::AsyncIoStream> inner;
     };
 
-    auto stream = factory.streamFactory.capnpToKjExplicitEnd(context.getParams().getDown());
+    auto stream = factory.streamFactory.zapToKjExplicitEnd(context.getParams().getDown());
 
     // We want to keep the stream alive even after EofDetector is destroyed, so we need to create
     // a refcounted AsyncIoStream.
@@ -941,39 +941,39 @@ public:
     {
       PipelineBuilder<ConnectResults> pb;
       auto eofWrapper = kj::heap<EofDetector>(kj::mv(ref2));
-      auto up = factory.streamFactory.kjToCapnp(kj::mv(eofWrapper), kj::mv(tlsStarter));
+      auto up = factory.streamFactory.kjToZap(kj::mv(eofWrapper), kj::mv(tlsStarter));
       pb.setUp(kj::cp(up));
 
       context.setPipeline(pb.build());
-      context.initResults(capnp::MessageSize { 4, 1 }).setUp(kj::mv(up));
+      context.initResults(zap::MessageSize { 4, 1 }).setUp(kj::mv(up));
     }
 
     { auto drop = kj::mv(refcounted); }
 
-    HttpOverCapnpConnectResponseImpl response(factory, context.getParams().getContext());
+    HttpOverZapConnectResponseImpl response(factory, context.getParams().getContext());
     co_await inner->connect(host, headers, *pipe.ends[0], response, settings)
         .exclusiveJoin(kj::mv(pumpTask));
   }
 
 private:
-  HttpOverCapnpFactory& factory;
+  HttpOverZapFactory& factory;
   kj::Own<kj::HttpService> inner;
 };
 
-capnp::HttpService::Client HttpOverCapnpFactory::kjToCapnp(kj::Own<kj::HttpService> service) {
-  return kj::heap<CapnpToKjHttpServiceAdapter>(*this, kj::mv(service));
+zap::HttpService::Client HttpOverZapFactory::kjToZap(kj::Own<kj::HttpService> service) {
+  return kj::heap<ZapToKjHttpServiceAdapter>(*this, kj::mv(service));
 }
 
 // =======================================================================================
 
 static constexpr uint64_t COMMON_TEXT_ANNOTATION = 0x857745131db6fc83ull;
-// Type ID of `commonText` from `http.capnp`.
-// TODO(cleanup): Cap'n Proto should auto-generate constants for these.
+// Type ID of `commonText` from `http.zap`.
+// TODO(cleanup): Zap should auto-generate constants for these.
 
-HttpOverCapnpFactory::HeaderIdBundle::HeaderIdBundle(kj::HttpHeaderTable::Builder& builder)
+HttpOverZapFactory::HeaderIdBundle::HeaderIdBundle(kj::HttpHeaderTable::Builder& builder)
     : table(builder.getFutureTable()) {
-  auto commonHeaderNames = Schema::from<capnp::CommonHeaderName>().getEnumerants();
-  nameCapnpToKj = kj::heapArray<kj::HttpHeaderId>(commonHeaderNames.size());
+  auto commonHeaderNames = Schema::from<zap::CommonHeaderName>().getEnumerants();
+  nameZapToKj = kj::heapArray<kj::HttpHeaderId>(commonHeaderNames.size());
   for (size_t i = 1; i < commonHeaderNames.size(); i++) {
     kj::StringPtr nameText;
     for (auto ann: commonHeaderNames[i].getProto().getAnnotations()) {
@@ -984,37 +984,37 @@ HttpOverCapnpFactory::HeaderIdBundle::HeaderIdBundle(kj::HttpHeaderTable::Builde
     }
     KJ_ASSERT(nameText != nullptr);
     kj::HttpHeaderId headerId = builder.add(nameText);
-    nameCapnpToKj[i] = headerId;
+    nameZapToKj[i] = headerId;
     maxHeaderId = kj::max(maxHeaderId, headerId.hashCode());
   }
 }
 
-HttpOverCapnpFactory::HeaderIdBundle::HeaderIdBundle(
-    const kj::HttpHeaderTable& table, kj::Array<kj::HttpHeaderId> nameCapnpToKj, size_t maxHeaderId)
-    : table(table), nameCapnpToKj(kj::mv(nameCapnpToKj)), maxHeaderId(maxHeaderId) {}
+HttpOverZapFactory::HeaderIdBundle::HeaderIdBundle(
+    const kj::HttpHeaderTable& table, kj::Array<kj::HttpHeaderId> nameZapToKj, size_t maxHeaderId)
+    : table(table), nameZapToKj(kj::mv(nameZapToKj)), maxHeaderId(maxHeaderId) {}
 
-HttpOverCapnpFactory::HeaderIdBundle HttpOverCapnpFactory::HeaderIdBundle::clone() const {
-  return HeaderIdBundle(table, kj::heapArray<kj::HttpHeaderId>(nameCapnpToKj), maxHeaderId);
+HttpOverZapFactory::HeaderIdBundle HttpOverZapFactory::HeaderIdBundle::clone() const {
+  return HeaderIdBundle(table, kj::heapArray<kj::HttpHeaderId>(nameZapToKj), maxHeaderId);
 }
 
-HttpOverCapnpFactory::HttpOverCapnpFactory(ByteStreamFactory& streamFactory,
+HttpOverZapFactory::HttpOverZapFactory(ByteStreamFactory& streamFactory,
                                            HeaderIdBundle headerIds,
                                            OptimizationLevel peerOptimizationLevel)
     : streamFactory(streamFactory), headerTable(headerIds.table),
       peerOptimizationLevel(peerOptimizationLevel),
-      nameCapnpToKj(kj::mv(headerIds.nameCapnpToKj)) {
-  auto commonHeaderNames = Schema::from<capnp::CommonHeaderName>().getEnumerants();
-  nameKjToCapnp = kj::heapArray<capnp::CommonHeaderName>(headerIds.maxHeaderId + 1);
-  for (auto& slot: nameKjToCapnp) slot = capnp::CommonHeaderName::INVALID;
+      nameZapToKj(kj::mv(headerIds.nameZapToKj)) {
+  auto commonHeaderNames = Schema::from<zap::CommonHeaderName>().getEnumerants();
+  nameKjToZap = kj::heapArray<zap::CommonHeaderName>(headerIds.maxHeaderId + 1);
+  for (auto& slot: nameKjToZap) slot = zap::CommonHeaderName::INVALID;
 
   for (size_t i = 1; i < commonHeaderNames.size(); i++) {
-    auto& slot = nameKjToCapnp[nameCapnpToKj[i].hashCode()];
-    KJ_ASSERT(slot == capnp::CommonHeaderName::INVALID);
-    slot = static_cast<capnp::CommonHeaderName>(i);
+    auto& slot = nameKjToZap[nameZapToKj[i].hashCode()];
+    KJ_ASSERT(slot == zap::CommonHeaderName::INVALID);
+    slot = static_cast<zap::CommonHeaderName>(i);
   }
 
-  auto commonHeaderValues = Schema::from<capnp::CommonHeaderValue>().getEnumerants();
-  valueCapnpToKj = kj::heapArray<kj::StringPtr>(commonHeaderValues.size());
+  auto commonHeaderValues = Schema::from<zap::CommonHeaderValue>().getEnumerants();
+  valueZapToKj = kj::heapArray<kj::StringPtr>(commonHeaderValues.size());
   for (size_t i = 1; i < commonHeaderValues.size(); i++) {
     kj::StringPtr valueText;
     for (auto ann: commonHeaderValues[i].getProto().getAnnotations()) {
@@ -1024,27 +1024,27 @@ HttpOverCapnpFactory::HttpOverCapnpFactory(ByteStreamFactory& streamFactory,
       }
     }
     KJ_ASSERT(valueText != nullptr);
-    valueCapnpToKj[i] = valueText;
-    valueKjToCapnp.insert(valueText, static_cast<capnp::CommonHeaderValue>(i));
+    valueZapToKj[i] = valueText;
+    valueKjToZap.insert(valueText, static_cast<zap::CommonHeaderValue>(i));
   }
 }
 
-Orphan<List<capnp::HttpHeader>> HttpOverCapnpFactory::headersToCapnp(
+Orphan<List<zap::HttpHeader>> HttpOverZapFactory::headersToZap(
     const kj::HttpHeaders& headers, Orphanage orphanage) {
-  auto result = orphanage.newOrphan<List<capnp::HttpHeader>>(headers.size());
+  auto result = orphanage.newOrphan<List<zap::HttpHeader>>(headers.size());
   auto rpcHeaders = result.get();
   uint i = 0;
   headers.forEach([&](kj::HttpHeaderId id, kj::StringPtr value) {
-    auto capnpName = id.hashCode() < nameKjToCapnp.size()
-        ? nameKjToCapnp[id.hashCode()]
-        : capnp::CommonHeaderName::INVALID;
-    if (capnpName == capnp::CommonHeaderName::INVALID) {
+    auto zapName = id.hashCode() < nameKjToZap.size()
+        ? nameKjToZap[id.hashCode()]
+        : zap::CommonHeaderName::INVALID;
+    if (zapName == zap::CommonHeaderName::INVALID) {
       auto header = rpcHeaders[i++].initUncommon();
       header.setName(id.toString());
       header.setValue(value);
     } else {
       auto header = rpcHeaders[i++].initCommon();
-      header.setName(capnpName);
+      header.setName(zapName);
       header.setValue(value);
     }
   }, [&](kj::StringPtr name, kj::StringPtr value) {
@@ -1056,27 +1056,27 @@ Orphan<List<capnp::HttpHeader>> HttpOverCapnpFactory::headersToCapnp(
   return result;
 }
 
-kj::HttpHeaders HttpOverCapnpFactory::capnpToKj(
-    List<capnp::HttpHeader>::Reader capnpHeaders) const {
+kj::HttpHeaders HttpOverZapFactory::zapToKj(
+    List<zap::HttpHeader>::Reader zapHeaders) const {
   kj::HttpHeaders result(headerTable);
 
-  for (auto header: capnpHeaders) {
+  for (auto header: zapHeaders) {
     switch (header.which()) {
-      case capnp::HttpHeader::COMMON: {
+      case zap::HttpHeader::COMMON: {
         auto nv = header.getCommon();
         auto nameInt = static_cast<uint>(nv.getName());
-        KJ_REQUIRE(nameInt < nameCapnpToKj.size(), "unknown common header name", nv.getName());
+        KJ_REQUIRE(nameInt < nameZapToKj.size(), "unknown common header name", nv.getName());
 
         switch (nv.which()) {
-          case capnp::HttpHeader::Common::COMMON_VALUE: {
+          case zap::HttpHeader::Common::COMMON_VALUE: {
             auto cvInt = static_cast<uint>(nv.getCommonValue());
-            KJ_REQUIRE(nameInt < valueCapnpToKj.size(),
+            KJ_REQUIRE(nameInt < valueZapToKj.size(),
                 "unknown common header value", nv.getCommonValue());
-            result.setPtr(nameCapnpToKj[nameInt], valueCapnpToKj[cvInt]);
+            result.setPtr(nameZapToKj[nameInt], valueZapToKj[cvInt]);
             break;
           }
-          case capnp::HttpHeader::Common::VALUE: {
-            auto headerId = nameCapnpToKj[nameInt];
+          case zap::HttpHeader::Common::VALUE: {
+            auto headerId = nameZapToKj[nameInt];
             if (result.get(headerId) == kj::none) {
               result.setPtr(headerId, nv.getValue());
             } else {
@@ -1090,7 +1090,7 @@ kj::HttpHeaders HttpOverCapnpFactory::capnpToKj(
         }
         break;
       }
-      case capnp::HttpHeader::UNCOMMON: {
+      case zap::HttpHeader::UNCOMMON: {
         auto nv = header.getUncommon();
         result.addPtrPtr(nv.getName(), nv.getValue());
       }
@@ -1100,4 +1100,4 @@ kj::HttpHeaders HttpOverCapnpFactory::capnpToKj(
   return result;
 }
 
-}  // namespace capnp
+}  // namespace zap

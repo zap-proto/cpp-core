@@ -5,26 +5,26 @@ title: C++ RPC
 
 # C++ RPC
 
-The Cap'n Proto C++ RPC layer sits on top of the [serialization layer](cxx.html) and implements
+The Zap C++ RPC layer sits on top of the [serialization layer](cxx.html) and implements
 the [RPC protocol](rpc.html).
 
 ## Current Status
 
-As of version 0.4, Cap'n Proto's C++ RPC implementation is a [Level 1](rpc.html#protocol-features)
+As of version 0.4, Zap's C++ RPC implementation is a [Level 1](rpc.html#protocol-features)
 implementation.  Persistent capabilities, three-way introductions, and distributed equality are
 not yet implemented.
 
 ## Sample Code
 
-The [Calculator example](https://github.com/capnproto/capnproto/tree/master/c++/samples) implements
-a fully-functional Cap'n Proto client and server.
+The [Calculator example](https://github.com/zap/zap/tree/master/c++/samples) implements
+a fully-functional Zap client and server.
 
 ## KJ Concurrency Framework
 
 RPC naturally requires a notion of concurrency.  Unfortunately,
 [all concurrency models suck](https://web.archive.org/web/20170718202612/https://plus.google.com/+KentonVarda/posts/D95XKtB5DhK).
 
-Cap'n Proto's RPC is based on the [KJ library](cxx.html#kj-library)'s event-driven concurrency
+Zap's RPC is based on the [KJ library](cxx.html#kj-library)'s event-driven concurrency
 framework.  The core of the KJ asynchronous framework (events, promises, callbacks) is defined in
 `kj/async.h`, with I/O interfaces (streams, sockets, networks) defined in `kj/async-io.h`.
 
@@ -33,7 +33,7 @@ framework.  The core of the KJ asynchronous framework (events, promises, callbac
 KJ's concurrency model is based on event loops.  While multiple threads are allowed, each thread
 must have its own event loop.  KJ discourages fine-grained interaction between threads as
 synchronization is expensive and error-prone.  Instead, threads are encouraged to communicate
-through Cap'n Proto RPC.
+through Zap RPC.
 
 KJ's event loop model bears a lot of similarity to the JavaScript concurrency model.  Experienced
 JavaScript hackers -- especially node.js hackers -- will feel right at home.
@@ -119,7 +119,7 @@ to the caller.  To that end, `kj::Exception` contains information useful for rep
 and to help decide if trying again is reasonable, but typed exception hierarchies are not useful
 and not supported.
 
-It is recommended that Cap'n Proto code use the assertion macros in `kj/debug.h` to throw
+It is recommended that Zap code use the assertion macros in `kj/debug.h` to throw
 exceptions rather than use the C++ `throw` keyword.  These macros make it easy to add useful
 debug information to an exception and generally play nicely with the KJ framework.  In fact, you
 can even use these macros -- and propagate exceptions through promises -- if you compile your code
@@ -178,14 +178,14 @@ following:
 
 KJ supports a number of primitive operations that can be performed on promises.  The complete API
 is documented directly in the `kj/async.h` header.  Additionally, see the `kj/async-io.h` header
-for APIs for performing basic network I/O -- although Cap'n Proto RPC users typically won't need
+for APIs for performing basic network I/O -- although Zap RPC users typically won't need
 to use these APIs directly.
 
 ## Generated Code
 
 Imagine the following interface:
 
-{% highlight capnp %}
+{% highlight zap %}
 interface Directory {
   create @0 (name :Text) -> (file :File);
   open @1 (name :Text) -> (file :File);
@@ -193,7 +193,7 @@ interface Directory {
 }
 {% endhighlight %}
 
-`capnp compile` will generate code that looks like this (edited for readability):
+`zap compile` will generate code that looks like this (edited for readability):
 
 {% highlight c++ %}
 struct Directory {
@@ -209,29 +209,29 @@ struct Directory {
   struct RemoveParams;
   struct RemoveResults;
   // Each of these is equivalent to what would be generated for
-  // a Cap'n Proto struct with one field for each parameter /
+  // a Zap struct with one field for each parameter /
   // result.
 };
 
 class Directory::Client
-    : public virtual capnp::Capability::Client {
+    : public virtual zap::Capability::Client {
 public:
   Client(std::nullptr_t);
   Client(kj::Own<Directory::Server> server);
   Client(kj::Promise<Client> promise);
   Client(kj::Exception exception);
 
-  capnp::Request<CreateParams, CreateResults> createRequest();
-  capnp::Request<OpenParams, OpenResults> openRequest();
-  capnp::Request<RemoveParams, RemoveResults> removeRequest();
+  zap::Request<CreateParams, CreateResults> createRequest();
+  zap::Request<OpenParams, OpenResults> openRequest();
+  zap::Request<RemoveParams, RemoveResults> removeRequest();
 };
 
 class Directory::Server
-    : public virtual capnp::Capability::Server {
+    : public virtual zap::Capability::Server {
 protected:
-  typedef capnp::CallContext<CreateParams, CreateResults> CreateContext;
-  typedef capnp::CallContext<OpenParams, OpenResults> OpenContext;
-  typedef capnp::CallContext<RemoveParams, RemoveResults> RemoveContext;
+  typedef zap::CallContext<CreateParams, CreateResults> CreateContext;
+  typedef zap::CallContext<OpenParams, OpenResults> OpenContext;
+  typedef zap::CallContext<RemoveParams, RemoveResults> RemoveContext;
   // Convenience typedefs.
 
   virtual kj::Promise<void> create(CreateContext context);
@@ -260,11 +260,11 @@ A `Client` can be implicitly constructed from any of:
   initialize variables that will be initialized to a real value later on.
 
 For each interface method `foo()`, the `Client` has a method `fooRequest()` which creates a new
-request to call `foo()`.  The returned `capnp::Request` object has methods equivalent to a
+request to call `foo()`.  The returned `zap::Request` object has methods equivalent to a
 `Builder` for the parameter struct (`FooParams`), with the addition of a method `send()`.
-`send()` sends the RPC and returns a `capnp::RemotePromise<FooResults>`.
+`send()` sends the RPC and returns a `zap::RemotePromise<FooResults>`.
 
-This `RemotePromise` is equivalent to `kj::Promise<capnp::Response<FooResults>>`, but also has
+This `RemotePromise` is equivalent to `kj::Promise<zap::Response<FooResults>>`, but also has
 methods that allow pipelining.  Namely:
 
 * For each interface-typed result, it has a getter method which returns a `Client` of that type.
@@ -275,7 +275,7 @@ methods that allow pipelining.  Namely:
 In other words, the `RemotePromise` effectively implements a subset of the eventual results'
 `Reader` interface -- one that only allows access to interfaces and sub-structs.
 
-The `RemotePromise` eventually resolves to `capnp::Response<FooResults>`, which behaves like a
+The `RemotePromise` eventually resolves to `zap::Response<FooResults>`, which behaves like a
 `Reader` for the result struct except that it also owns the result message.
 
 {% highlight c++ %}
@@ -293,7 +293,7 @@ auto promise2 = promise.getFile().getSizeRequest().send();
 
 // Wait for the full results.
 auto promise3 = promise2.then(
-    [](capnp::Response<File::GetSizeResults>&& response) {
+    [](zap::Response<File::GetSizeResults>&& response) {
   cout << "File size is: " << response.getSize() << endl;
 });
 {% endhighlight %}
@@ -308,7 +308,7 @@ capability.  Each method takes a `context` argument and returns a `kj::Promise<v
 resolves when the call is finished.  The parameter and result structures are accessed through the
 context -- `context.getParams()` returns a `Reader` for the parameters, and `context.getResults()`
 returns a `Builder` for the results.  The context also has methods for controlling RPC logistics,
-such as cancellation -- see `capnp::CallContext` in `capnp/capability.h` for details.
+such as cancellation -- see `zap::CallContext` in `zap/capability.h` for details.
 
 Accessing the results through the context (rather than by returning them) is unintuitive, but
 necessary because the underlying RPC transport needs to have control over where the results are
@@ -345,8 +345,8 @@ to be correct for any parameterization.
 
 ## Initializing RPC
 
-Cap'n Proto makes it easy to start up an RPC client or server using the  "EZ RPC" classes,
-defined in `capnp/ez-rpc.h`.  These classes get you up and running quickly, but they hide a lot
+Zap makes it easy to start up an RPC client or server using the  "EZ RPC" classes,
+defined in `zap/ez-rpc.h`.  These classes get you up and running quickly, but they hide a lot
 of details that power users will likely want to manipulate.  Check out the comments in `ez-rpc.h`
 to understand exactly what you get and what you miss.  For the purpose of this overview, we'll
 show you how to use EZ RPC to get started.
@@ -356,8 +356,8 @@ show you how to use EZ RPC to get started.
 A client should typically look like this:
 
 {% highlight c++ %}
-#include <capnp/ez-rpc.h>
-#include "my-interface.capnp.h"
+#include <zap/ez-rpc.h>
+#include "my-interface.zap.h"
 #include <iostream>
 
 int main(int argc, const char* argv[]) {
@@ -369,7 +369,7 @@ int main(int argc, const char* argv[]) {
 
   // Set up the EzRpcClient, connecting to the server on port
   // 5923 unless a different port was specified by the user.
-  capnp::EzRpcClient client(argv[1], 5923);
+  zap::EzRpcClient client(argv[1], 5923);
   auto& waitScope = client.getWaitScope();
 
   // Request the bootstrap capability from the server.
@@ -389,19 +389,19 @@ int main(int argc, const char* argv[]) {
 }
 {% endhighlight %}
 
-Note that for the connect address, Cap'n Proto supports DNS host names as well as IPv4 and IPv6
+Note that for the connect address, Zap supports DNS host names as well as IPv4 and IPv6
 addresses.  Additionally, a Unix domain socket can be specified as `unix:` followed by a path name,
 and an abstract Unix domain socket can be specified as `unix-abstract:` followed by an identifier.
 
 For a more complete example, see the
-[calculator client sample](https://github.com/capnproto/capnproto/tree/master/c++/samples/calculator-client.c++).
+[calculator client sample](https://github.com/zap/zap/tree/master/c++/samples/calculator-client.c++).
 
 ### Starting a server
 
 A server might look something like this:
 
 {% highlight c++ %}
-#include <capnp/ez-rpc.h>
+#include <zap/ez-rpc.h>
 #include "my-interface-impl.h"
 #include <iostream>
 
@@ -419,7 +419,7 @@ int main(int argc, const char* argv[]) {
   // first parameter here can be any "Client" object or anything
   // that can implicitly cast to a "Client" object.  You can even
   // re-export a capability imported from another server.
-  capnp::EzRpcServer server(kj::heap<MyInterfaceImpl>(), argv[1], 5923);
+  zap::EzRpcServer server(kj::heap<MyInterfaceImpl>(), argv[1], 5923);
   auto& waitScope = server.getWaitScope();
 
   // Run forever, accepting connections and handling requests.
@@ -427,18 +427,18 @@ int main(int argc, const char* argv[]) {
 }
 {% endhighlight %}
 
-Note that for the bind address, Cap'n Proto supports DNS host names as well as IPv4 and IPv6
+Note that for the bind address, Zap supports DNS host names as well as IPv4 and IPv6
 addresses.  The special address `*` can be used to bind to the same port on all local IPv4 and
 IPv6 interfaces.  Additionally, a Unix domain socket can be specified as `unix:` followed by a
 path name, and an abstract Unix domain socket can be specified as `unix-abstract:` followed by
 an identifier.
 
 For a more complete example, see the
-[calculator server sample](https://github.com/capnproto/capnproto/tree/master/c++/samples/calculator-server.c++).
+[calculator server sample](https://github.com/zap/zap/tree/master/c++/samples/calculator-server.c++).
 
 ## Debugging
 
 If you've written a server and you want to connect to it to issue some calls for debugging, perhaps
-interactively, the easiest way to do it is to use [pycapnp](http://jparyani.github.io/pycapnp/).
-We have decided not to add RPC functionality to the `capnp` command-line tool because pycapnp is
+interactively, the easiest way to do it is to use [pyzap](http://jparyani.github.io/pyzap/).
+We have decided not to add RPC functionality to the `zap` command-line tool because pyzap is
 better than anything we might provide.

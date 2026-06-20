@@ -23,19 +23,19 @@
 
 #include "json.h"
 #include <kj/async-io.h>
-#include <capnp/capability.h>
+#include <zap/capability.h>
 #include <kj/map.h>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
 namespace kj { class HttpInputStream; }
 
-namespace capnp {
+namespace zap {
 
 class JsonRpc: private kj::TaskSet::ErrorHandler {
   // An implementation of JSON-RPC 2.0: https://www.jsonrpc.org/specification
   //
-  // This allows you to use Cap'n Proto interface declarations to implement JSON-RPC protocols.
+  // This allows you to use Zap interface declarations to implement JSON-RPC protocols.
   // Of course, JSON-RPC does not support capabilities. So, the client and server each expose
   // exactly one object to the other.
 
@@ -111,6 +111,6 @@ private:
   kj::ArrayPtr<const byte> parts[2];
 };
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

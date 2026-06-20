@@ -1,39 +1,39 @@
-load("@capnp-cpp//src/capnp:cc_capnp_library.bzl", "cc_capnp_library")
+load("@zap-cpp//src/zap:cc_zap_library.bzl", "cc_zap_library")
 load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
 load("@rules_cc//cc:cc_library.bzl", "cc_library")
 load("@rules_cc//cc:cc_test.bzl", "cc_test")
-load(":configure.bzl", "capnp_configure")
+load(":configure.bzl", "zap_configure")
 
-capnp_configure()
+zap_configure()
 
 exports_files([
-    "c++.capnp",
+    "c++.zap",
 ])
 
 cc_library(
-    name = "capnp",
+    name = "zap",
     srcs = [
         "any.c++",
         "arena.c++",
         "blob.c++",
-        "c++.capnp.c++",
+        "c++.zap.c++",
         "dynamic.c++",
         "layout.c++",
         "list.c++",
         "message.c++",
         "schema.c++",
-        "schema.capnp.c++",
+        "schema.zap.c++",
         "schema-loader.c++",
         "serialize.c++",
         "serialize-packed.c++",
-        "stream.capnp.c++",
+        "stream.zap.c++",
         "stringify.c++",
     ],
     hdrs = [
         "any.h",
         "arena.h",
         "blob.h",
-        "c++.capnp.h",
+        "c++.zap.h",
         "capability.h",
         "common.h",
         "dynamic.h",
@@ -47,7 +47,7 @@ cc_library(
         "pointer-helpers.h",
         "pretty-print.h",
         "raw-schema.h",
-        "schema.capnp.h",
+        "schema.zap.h",
         "schema.h",
         "schema-lite.h",
         "schema-loader.h",
@@ -56,14 +56,14 @@ cc_library(
         "serialize-async.h",
         "serialize-packed.h",
         "serialize-text.h",
-        "stream.capnp.h",
+        "stream.zap.h",
         # This is just to make it avaible if `KJ_STD_COMPAT` is defined.
         # This is an unfortunate hack, but if we would make `std-iterator.h`
         # its own `cc_library()` we would have a circular dependency between
-        # `//src/capnp` and `//src/capnp/compat:std-iterator``.
-        "//src/capnp/compat:std-iterator.h",
+        # `//src/zap` and `//src/zap/compat:std-iterator``.
+        "//src/zap/compat:std-iterator.h",
     ],
-    include_prefix = "capnp",
+    include_prefix = "zap",
     visibility = ["//visibility:public"],
     deps = [
         "//src/kj:kj-async",
@@ -71,44 +71,44 @@ cc_library(
 )
 
 cc_library(
-    name = "capnp-rpc",
+    name = "zap-rpc",
     srcs = [
         "capability.c++",
         "dynamic-capability.c++",
         "membrane.c++",
-        "persistent.capnp.c++",
+        "persistent.zap.c++",
         "reconnect.c++",
         "rpc.c++",
-        "rpc.capnp.c++",
+        "rpc.zap.c++",
         "rpc-twoparty.c++",
-        "rpc-twoparty.capnp.c++",
+        "rpc-twoparty.zap.c++",
         "serialize-async.c++",
     ],
     hdrs = [
-        "persistent.capnp.h",
+        "persistent.zap.h",
         "reconnect.h",
-        "rpc.capnp.h",
+        "rpc.zap.h",
         "rpc.h",
         "rpc-prelude.h",
-        "rpc-twoparty.capnp.h",
+        "rpc-twoparty.zap.h",
         "rpc-twoparty.h",
     ],
-    include_prefix = "capnp",
+    include_prefix = "zap",
     visibility = ["//visibility:public"],
     deps = [
-        ":capnp",
+        ":zap",
     ],
 )
 
 cc_library(
-    name = "capnpc",
+    name = "zapc",
     srcs = [
         "compiler/compiler.c++",
         "compiler/error-reporter.c++",
         "compiler/generics.c++",
-        "compiler/grammar.capnp.c++",
+        "compiler/grammar.zap.c++",
         "compiler/lexer.c++",
-        "compiler/lexer.capnp.c++",
+        "compiler/lexer.zap.c++",
         "compiler/node-translator.c++",
         "compiler/parser.c++",
         "compiler/type-id.c++",
@@ -119,8 +119,8 @@ cc_library(
         "compiler/compiler.h",
         "compiler/error-reporter.h",
         "compiler/generics.h",
-        "compiler/grammar.capnp.h",
-        "compiler/lexer.capnp.h",
+        "compiler/grammar.zap.h",
+        "compiler/lexer.zap.h",
         "compiler/lexer.h",
         "compiler/module-loader.h",
         "compiler/node-translator.h",
@@ -128,72 +128,72 @@ cc_library(
         "compiler/resolver.h",
         "compiler/type-id.h",
     ],
-    include_prefix = "capnp",
+    include_prefix = "zap",
     visibility = ["//visibility:public"],
     deps = [
-        ":capnp",
+        ":zap",
     ],
 )
 
 cc_binary(
-    name = "capnp_tool",
+    name = "zap_tool",
     srcs = [
-        "compiler/capnp.c++",
+        "compiler/zap.c++",
         "compiler/module-loader.c++",
     ],
     visibility = ["//visibility:public"],
     deps = [
-        ":capnpc",
-        "//src/capnp/compat:json",
+        ":zapc",
+        "//src/zap/compat:json",
     ],
 )
 
 cc_binary(
-    name = "capnpc-c++",
+    name = "zapc-c++",
     srcs = [
-        "compiler/capnpc-c++.c++",
+        "compiler/zapc-c++.c++",
     ],
     defines = select({
-        "//src/capnp:capnp_no_inline_accessors_true": ["CAPNP_NO_INLINE_ACCESSORS"],
+        "//src/zap:zap_no_inline_accessors_true": ["ZAP_NO_INLINE_ACCESSORS"],
         "//conditions:default": [],
     }),
     visibility = ["//visibility:public"],
     deps = [
-        ":capnpc",
+        ":zapc",
     ],
 )
 
 cc_binary(
-    name = "capnpc-capnp",
+    name = "zapc-zap",
     srcs = [
-        "compiler/capnpc-capnp.c++",
+        "compiler/zapc-zap.c++",
     ],
     visibility = ["//visibility:public"],
     deps = [
-        ":capnpc",
+        ":zapc",
     ],
 )
 
-# capnp files that are implicitly available for import to any .capnp.
+# zap files that are implicitly available for import to any .zap.
 filegroup(
-    name = "capnp_system_library",
+    name = "zap_system_library",
     srcs = [
-        "c++.capnp",
-        "schema.capnp",
-        "stream.capnp",
-        "//src/capnp/compat:json.capnp",
+        "c++.zap",
+        "schema.zap",
+        "stream.zap",
+        "//src/zap/compat:json.zap",
     ],
     visibility = ["//visibility:public"],
 )
 
-# library to link with every cc_capnp_library
+# library to link with every cc_zap_library
 cc_library(
-    name = "capnp_runtime",
+    name = "zap_runtime",
     visibility = ["//visibility:public"],
-    # include json since it is not exposed as cc_capnp_library
+    # include json since it is not exposed as cc_zap_library
     deps = [
-        ":capnp",
-        "//src/capnp/compat:json",
+        ":zap",
+        "//src/zap/compat:json",
     ],
 )
 
@@ -202,33 +202,33 @@ filegroup(
     srcs = glob(["testdata/**/*"]),
 )
 
-cc_capnp_library(
-    name = "capnp_test",
+cc_zap_library(
+    name = "zap_test",
     srcs = [
-        "test.capnp",
-        "test-import.capnp",
-        "test-import2.capnp",
+        "test.zap",
+        "test-import.zap",
+        "test-import2.zap",
     ],
     data = [
-        "c++.capnp",
-        "schema.capnp",
-        "stream.capnp",
+        "c++.zap",
+        "schema.zap",
+        "stream.zap",
         ":testdata",
     ],
-    include_prefix = "capnp",
+    include_prefix = "zap",
     src_prefix = "src",
 )
 
 cc_library(
-    name = "capnp-test",
+    name = "zap-test",
     srcs = ["test-util.c++"],
     hdrs = ["test-util.h"],
-    include_prefix = "capnp",
+    include_prefix = "zap",
     visibility = [":__subpackages__"],
     deps = [
-        ":capnp-rpc",
-        ":capnp_test",
-        ":capnpc",
+        ":zap-rpc",
+        ":zap_test",
+        ":zapc",
         "//src/kj:kj-test",
     ],
 )
@@ -236,7 +236,7 @@ cc_library(
 [cc_test(
     name = f.removesuffix(".c++"),
     srcs = [f],
-    deps = [":capnp-test"],
+    deps = [":zap-test"],
 ) for f in [
     "any-test.c++",
     "blob-test.c++",
@@ -273,13 +273,13 @@ cc_test(
         "@platforms//os:windows": ["@platforms//:incompatible"],
         "//conditions:default": [],
     }),
-    deps = [":capnp-test"],
+    deps = [":zap-test"],
 )
 
 cc_library(
     name = "endian-test-base",
     hdrs = ["endian-test.c++"],
-    deps = [":capnp-test"],
+    deps = [":zap-test"],
 )
 
 cc_test(
@@ -293,5 +293,5 @@ cc_test(
     size = "large",
     srcs = ["fuzz-test.c++"],
     tags = ["manual"],
-    deps = [":capnp-test"],
+    deps = [":zap-test"],
 )

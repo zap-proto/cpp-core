@@ -14,7 +14,7 @@
 
 # Code you may want to map in from elsewhere.
 /c++/src/base
-/c++/src/capnp/compilerbin
+/c++/src/zap/compilerbin
 /c++/src/ekam
 /c++/src/os
 /c++/src/protobuf
@@ -51,21 +51,21 @@
 /c++/**/.dirstamp
 /c++/stamp-h1
 /c++/**/*.log
-/c++/test_capnpc_middleman
-/c++/**/test*.capnp.*
+/c++/test_zapc_middleman
+/c++/**/test*.zap.*
 /c++/*.la
 /c++/**/*.trs
 /c++/aclocal.m4
 /c++/autom4te.cache/
 /c++/build-aux/
-/c++/capnp
-/c++/capnp-evolution-test
-/c++/cmake/CapnProtoConfig.cmake
-/c++/cmake/CapnProtoConfigVersion.cmake
+/c++/zap
+/c++/zap-evolution-test
+/c++/cmake/ZapConfig.cmake
+/c++/cmake/ZapConfigVersion.cmake
 /c++/pkgconfig/*.pc
-/c++/capnp-test
-/c++/capnpc-c++
-/c++/capnpc-capnp
+/c++/zap-test
+/c++/zapc-c++
+/c++/zapc-zap
 /c++/config.*
 /c++/configure
 /c++/libtool

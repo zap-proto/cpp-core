@@ -37,8 +37,8 @@
 #include "compiler.h"
 #include "module-loader.h"
 #include "node-translator.h"
-#include <capnp/pretty-print.h>
-#include <capnp/schema.capnp.h>
+#include <zap/pretty-print.h>
+#include <zap/schema.zap.h>
 #include <kj/vector.h>
 #include <kj/io.h>
 #include <kj/miniposix.h>
@@ -49,10 +49,10 @@
 #include <kj/parse/char.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <capnp/serialize.h>
-#include <capnp/serialize-packed.h>
-#include <capnp/serialize-text.h>
-#include <capnp/compat/json.h>
+#include <zap/serialize.h>
+#include <zap/serialize-packed.h>
+#include <zap/serialize-text.h>
+#include <zap/compat/json.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <kj/map.h>
@@ -74,10 +74,10 @@
 #define VERSION "(unknown)"
 #endif
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 
-static const char VERSION_STRING[] = "Cap'n Proto version " VERSION;
+static const char VERSION_STRING[] = "Zap version " VERSION;
 
 class CompilerMain final: public GlobalErrorReporter {
 public:
@@ -85,18 +85,18 @@ public:
       : context(context), disk(kj::newDiskFilesystem()), loader(*this) {}
 
   kj::MainFunc getMain() {
-    if (context.getProgramName().endsWith("capnpc") || context.getProgramName().endsWith("capnpc.exe")) {
+    if (context.getProgramName().endsWith("zapc") || context.getProgramName().endsWith("zapc.exe")) {
       kj::MainBuilder builder(context, VERSION_STRING,
-            "Compiles Cap'n Proto schema files and generates corresponding source code in one or "
+            "Compiles Zap schema files and generates corresponding source code in one or "
             "more languages.");
       addGlobalOptions(builder);
       addCompileOptions(builder);
       builder.addOption({'i', "generate-id"}, KJ_BIND_METHOD(*this, generateId),
-                        "Generate a new 64-bit unique ID for use in a Cap'n Proto schema.");
+                        "Generate a new 64-bit unique ID for use in a Zap schema.");
       return builder.build();
     } else {
       kj::MainBuilder builder(context, VERSION_STRING,
-            "Command-line tool for Cap'n Proto development and debugging.");
+            "Command-line tool for Zap development and debugging.");
       builder.addSubCommand("compile", KJ_BIND_METHOD(*this, getCompileMain),
                             "Generate source code from schema files.")
              .addSubCommand("id", KJ_BIND_METHOD(*this, getGenIdMain),
@@ -116,7 +116,7 @@ public:
 
   kj::MainFunc getCompileMain() {
     kj::MainBuilder builder(context, VERSION_STRING,
-          "Compiles Cap'n Proto schema files and generates corresponding source code in one or "
+          "Compiles Zap schema files and generates corresponding source code in one or "
           "more languages.");
     addGlobalOptions(builder);
     addCompileOptions(builder);
@@ -125,7 +125,7 @@ public:
 
   kj::MainFunc getGenIdMain() {
     return kj::MainBuilder(context, VERSION_STRING,
-          "Generates a new 64-bit unique ID for use in a Cap'n Proto schema.")
+          "Generates a new 64-bit unique ID for use in a Zap schema.")
         .callAfterParsing(KJ_BIND_METHOD(*this, generateId))
         .build();
   }
@@ -134,7 +134,7 @@ public:
     // Only parse the schemas we actually need for decoding.
     compileEagerness = Compiler::NODE;
 
-    // Drop annotations since we don't need them.  This avoids importing files like c++.capnp.
+    // Drop annotations since we don't need them.  This avoids importing files like c++.zap.
     annotationFlag = Compiler::DROP_ANNOTATIONS;
 
     kj::MainBuilder builder(context, VERSION_STRING,
@@ -175,23 +175,23 @@ public:
     // Only parse the schemas we actually need for decoding.
     compileEagerness = Compiler::NODE;
 
-    // Drop annotations since we don't need them.  This avoids importing files like c++.capnp.
+    // Drop annotations since we don't need them.  This avoids importing files like c++.zap.
     annotationFlag = Compiler::DROP_ANNOTATIONS;
 
     kj::MainBuilder builder(context, VERSION_STRING,
-          "Decodes one or more encoded Cap'n Proto messages as text.  The messages have root "
+          "Decodes one or more encoded Zap messages as text.  The messages have root "
           "type <type> defined in <schema-file>.  Messages are read from standard input and "
-          "by default are expected to be in standard Cap'n Proto serialization format.");
+          "by default are expected to be in standard Zap serialization format.");
     addGlobalOptions(builder);
     builder.addOption({"flat"}, KJ_BIND_METHOD(*this, codeFlat),
                       "Interpret the input as one large single-segment message rather than a "
                       "stream in standard serialization format.  (Rarely used.)")
            .addOption({'p', "packed"}, KJ_BIND_METHOD(*this, codePacked),
-                      "Expect the input to be packed using standard Cap'n Proto packing, which "
+                      "Expect the input to be packed using standard Zap packing, which "
                       "deflates zero-valued bytes.  (This reads messages written with "
-                      "capnp::writePackedMessage*() from <capnp/serialize-packed.h>.  Do not use "
-                      "this for messages written with capnp::writeMessage*() from "
-                      "<capnp/serialize.h>.)")
+                      "zap::writePackedMessage*() from <zap/serialize-packed.h>.  Do not use "
+                      "this for messages written with zap::writeMessage*() from "
+                      "<zap/serialize.h>.)")
            .addOption({"short"}, KJ_BIND_METHOD(*this, printShort),
                       "Print in short (non-pretty) format.  Each message will be printed on one "
                       "line, without using whitespace to improve readability.")
@@ -209,11 +209,11 @@ public:
     // Only parse the schemas we actually need for decoding.
     compileEagerness = Compiler::NODE;
 
-    // Drop annotations since we don't need them.  This avoids importing files like c++.capnp.
+    // Drop annotations since we don't need them.  This avoids importing files like c++.zap.
     annotationFlag = Compiler::DROP_ANNOTATIONS;
 
     kj::MainBuilder builder(context, VERSION_STRING,
-          "Encodes one or more textual Cap'n Proto messages to binary.  The messages have root "
+          "Encodes one or more textual Zap messages to binary.  The messages have root "
           "type <type> defined in <schema-file>.  Messages are read from standard input.  Each "
           "message is a parenthesized struct literal, like the format used to specify constants "
           "and default values of struct type in the schema language.  For example:\n"
@@ -229,10 +229,10 @@ public:
                       "Expect only one input value, serializing it as a single-segment message "
                       "with no framing.")
            .addOption({'p', "packed"}, KJ_BIND_METHOD(*this, codePacked),
-                      "Pack the output message with standard Cap'n Proto packing, which "
+                      "Pack the output message with standard Zap packing, which "
                       "deflates zero-valued bytes.  (This writes messages using "
-                      "capnp::writePackedMessage() from <capnp/serialize-packed.h>.  Without "
-                      "this, capnp::writeMessage() from <capnp/serialize.h> is used.)")
+                      "zap::writePackedMessage() from <zap/serialize-packed.h>.  Without "
+                      "this, zap::writeMessage() from <zap/serialize.h> is used.)")
            .addOptionWithArg({"segment-size"}, KJ_BIND_METHOD(*this, setSegmentSize), "<n>",
                              "Sets the preferred segment size on the MallocMessageBuilder to <n> "
                              "words and turns off heuristic growth.  This flag is mainly useful "
@@ -248,15 +248,15 @@ public:
     // Only parse the schemas we actually need for decoding.
     compileEagerness = Compiler::NODE;
 
-    // Drop annotations since we don't need them.  This avoids importing files like c++.capnp.
+    // Drop annotations since we don't need them.  This avoids importing files like c++.zap.
     annotationFlag = Compiler::DROP_ANNOTATIONS;
 
     // Default convert to text unless -o is given.
     convertTo = Format::TEXT;
 
-    // When using `capnp eval`, type IDs don't really matter, because `eval` won't actually use
-    // them for anything. When using Cap'n Proto an a config format -- the common use case for
-    // `capnp eval` -- the exercise of adding a file ID to every file is pointless busy work. So,
+    // When using `zap eval`, type IDs don't really matter, because `eval` won't actually use
+    // them for anything. When using Zap an a config format -- the common use case for
+    // `zap eval` -- the exercise of adding a file ID to every file is pointless busy work. So,
     // we don't require it.
     loader.setFileIdsRequired(false);
 
@@ -264,11 +264,11 @@ public:
           "Prints (or encodes) the value of <name>, which must be defined in <schema-file>.  "
           "<name> must refer to a const declaration, a field of a struct type (prints the default "
           "value), or a field or list element nested within some other value.  Examples:\n"
-          "    capnp eval myschema.capnp MyType.someField\n"
-          "    capnp eval myschema.capnp someConstant\n"
-          "    capnp eval myschema.capnp someConstant.someField\n"
-          "    capnp eval myschema.capnp someConstant.someList[4]\n"
-          "    capnp eval myschema.capnp someConstant.someList[4].anotherField[1][2][3]\n"
+          "    zap eval myschema.zap MyType.someField\n"
+          "    zap eval myschema.zap someConstant\n"
+          "    zap eval myschema.zap someConstant.someField\n"
+          "    zap eval myschema.zap someConstant.someList[4]\n"
+          "    zap eval myschema.zap someConstant.someList[4].anotherField[1][2][3]\n"
           "Since consts can have complex struct types, and since you can define a const using "
           "import and variable substitution, this can be a convenient way to write text-format "
           "config files which are compiled to binary before deployment.",
@@ -278,7 +278,7 @@ public:
           "type.");
     addGlobalOptions(builder);
     builder.addOptionWithArg({'o', "output"}, KJ_BIND_METHOD(*this, setEvalOutputFormat),
-                      "<format>", "Encode the output in the given format. See `capnp help convert` "
+                      "<format>", "Encode the output in the given format. See `zap help convert` "
                       "for a list of formats. Defaults to \"text\".")
            .addOption({'b', "binary"}, KJ_BIND_METHOD(*this, codeBinary),
                       "same as -obinary")
@@ -310,7 +310,7 @@ public:
                              "Generate source code for language <lang> in directory <dir> "
                              "(default: current directory).  <lang> actually specifies a plugin "
                              "to use.  If <lang> is a simple word, the compiler searches for a plugin "
-                             "called 'capnpc-<lang>' in $PATH.  If <lang> is a file path "
+                             "called 'zapc-<lang>' in $PATH.  If <lang> is a file path "
                              "containing slashes, it is interpreted as the exact plugin "
                              "executable file name, and $PATH is not searched.  If <lang> is '-', "
                              "the compiler dumps the request to standard output.")
@@ -318,8 +318,8 @@ public:
                              "If a file specified for compilation starts with <prefix>, remove "
                              "the prefix for the purpose of deciding the names of output files.  "
                              "For example, the following command:\n"
-                             "    capnp compile --src-prefix=foo/bar -oc++:corge foo/bar/baz/qux.capnp\n"
-                             "would generate the files corge/baz/qux.capnp.{h,c++}.")
+                             "    zap compile --src-prefix=foo/bar -oc++:corge foo/bar/baz/qux.zap\n"
+                             "would generate the files corge/baz/qux.zap.{h,c++}.")
            .expectOneOrMoreArgs("<source>", KJ_BIND_METHOD(*this, addSource))
            .callAfterParsing(KJ_BIND_METHOD(*this, generateOutput));
   }
@@ -351,8 +351,8 @@ public:
       static constexpr kj::StringPtr STANDARD_IMPORT_PATHS[] = {
         "/usr/local/include"_kj,
         "/usr/include"_kj,
-#ifdef CAPNP_INCLUDE_DIR
-        KJ_CONCAT(CAPNP_INCLUDE_DIR, _kj),
+#ifdef ZAP_INCLUDE_DIR
+        KJ_CONCAT(ZAP_INCLUDE_DIR, _kj),
 #endif
       };
       for (auto path: STANDARD_IMPORT_PATHS) {
@@ -403,7 +403,7 @@ public:
         KJ_IF_SOME(split2, dir.findFirst(':')) {
           // There are two colons. The first ':' was the second char, and was followed by '/' or
           // '\', e.g.:
-          //     capnp compile -o c:/foo.exe:bar
+          //     zap compile -o c:/foo.exe:bar
           //
           // In this case we can conclude that the second colon is actually meant to be the
           // plugin/location separator, and the first colon was simply signifying a drive letter.
@@ -431,10 +431,10 @@ public:
         } else {
           // The user wrote something like:
           //
-          //     capnp compile -o c:/foo/bar
+          //     zap compile -o c:/foo/bar
           //
           // What does this mean? It depends on what system we're on. On a Unix system, the above
-          // clearly is a request to run the `capnpc-c` plugin (perhaps to output C code) and write
+          // clearly is a request to run the `zapc-c` plugin (perhaps to output C code) and write
           // to the directory /foo/bar. But on Windows, absolute paths do not start with '/', and
           // the above is actually a request to run the plugin `c:/foo/bar`, outputting to the
           // current directory.
@@ -482,10 +482,10 @@ public:
     MallocMessageBuilder message;
     auto request = message.initRoot<schema::CodeGeneratorRequest>();
 
-    auto version = request.getCapnpVersion();
-    version.setMajor(CAPNP_VERSION_MAJOR);
-    version.setMinor(CAPNP_VERSION_MINOR);
-    version.setMicro(CAPNP_VERSION_MICRO);
+    auto version = request.getZapVersion();
+    version.setMajor(ZAP_VERSION_MAJOR);
+    version.setMinor(ZAP_VERSION_MINOR);
+    version.setMicro(ZAP_VERSION_MICRO);
 
     auto schemas = compiler->getLoader().getAllLoaded();
     auto nodes = request.initNodes(schemas.size());
@@ -546,7 +546,7 @@ public:
         }
       }
       if (shouldSearchPath) {
-        exeName = kj::str("capnpc-", output.name);
+        exeName = kj::str("zapc-", output.name);
       } else {
         exeName = kj::heapString(output.name);
       }
@@ -759,8 +759,8 @@ public:
 
       if (convertFrom == Format::JSON || convertTo == Format::JSON) {
         // We need annotations to process JSON.
-        // TODO(someday): Find a way that we can process annotations from json.capnp without
-        //   requiring other annotation-only imports like c++.capnp
+        // TODO(someday): Find a way that we can process annotations from json.zap without
+        //   requiring other annotation-only imports like c++.zap
         annotationFlag = Compiler::COMPILE_ANNOTATIONS;
       }
 
@@ -1035,11 +1035,11 @@ private:
 
     switch (convertFrom) {
       case Format::BINARY: {
-        capnp::InputStreamMessageReader message(input, options);
+        zap::InputStreamMessageReader message(input, options);
         return writeConversion(message.getRoot<AnyStruct>(), output);
       }
       case Format::PACKED: {
-        capnp::PackedMessageReader message(input, options);
+        zap::PackedMessageReader message(input, options);
         return writeConversion(message.getRoot<AnyStruct>(), output);
       }
       case Format::FLAT:
@@ -1065,7 +1065,7 @@ private:
 
         auto words = kj::heapArray<word>(computeUnpackedSizeInWords(allBytes));
         kj::ArrayInputStream input(allBytes);
-        capnp::_::PackedInputStream unpacker(input);
+        zap::_::PackedInputStream unpacker(input);
         unpacker.read(words.asBytes());
         word dummy;
         KJ_ASSERT(unpacker.tryRead(kj::asBytes(dummy), sizeof(dummy)) == 0);
@@ -1105,7 +1105,7 @@ private:
             segmentSize == 0 ? SUGGESTED_FIRST_SEGMENT_WORDS : segmentSize,
             segmentSize == 0 ? SUGGESTED_ALLOCATION_STRATEGY : AllocationStrategy::FIXED_SIZE);
         message.setRoot(reader);
-        capnp::writeMessage(output, message);
+        zap::writeMessage(output, message);
         return;
       }
       case Format::PACKED: {
@@ -1113,7 +1113,7 @@ private:
             segmentSize == 0 ? SUGGESTED_FIRST_SEGMENT_WORDS : segmentSize,
             segmentSize == 0 ? SUGGESTED_ALLOCATION_STRATEGY : AllocationStrategy::FIXED_SIZE);
         message.setRoot(reader);
-        capnp::writePackedMessage(output, message);
+        zap::writePackedMessage(output, message);
         return;
       }
       case Format::FLAT: {
@@ -1128,7 +1128,7 @@ private:
         memset(words.begin(), 0, words.asBytes().size());
         copyToUnchecked(reader, words);
         kj::BufferedOutputStreamWrapper buffered(output);
-        capnp::_::PackedOutputStream packed(buffered);
+        zap::_::PackedOutputStream packed(buffered);
         packed.write(words.asBytes());
         return;
       }
@@ -1229,13 +1229,13 @@ public:
 
     CliArgumentErrorReporter errorReporter;
 
-    capnp::MallocMessageBuilder tokenArena;
-    auto lexedTokens = tokenArena.initRoot<capnp::compiler::LexedTokens>();
+    zap::MallocMessageBuilder tokenArena;
+    auto lexedTokens = tokenArena.initRoot<zap::compiler::LexedTokens>();
     lex(input, lexedTokens, errorReporter);
 
-    CapnpParser parser(tokenArena.getOrphanage(), errorReporter);
+    ZapParser parser(tokenArena.getOrphanage(), errorReporter);
     auto tokens = lexedTokens.asReader().getTokens();
-    CapnpParser::ParserInput parserInput(tokens.begin(), tokens.end());
+    ZapParser::ParserInput parserInput(tokens.begin(), tokens.end());
 
     bool success = false;
 
@@ -1999,7 +1999,7 @@ private:
       // are ones which we know do not produce output files. This is a hack.
       for (auto& output: outputs) {
         auto name = kj::str(output.name);
-        if (name != "-" && name != "capnp") {
+        if (name != "-" && name != "zap") {
           context.warning(kj::str(pathStr,
               ": File is not in the current directory and does not match any prefix defined with "
               "--src-prefix. Please pass an appropriate --src-prefix so I can figure out where to "
@@ -2026,6 +2026,6 @@ private:
 };
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap
 
-KJ_MAIN(capnp::compiler::CompilerMain);
+KJ_MAIN(zap::compiler::CompilerMain);

@@ -33,27 +33,27 @@ if test "$INTERCEPTOR" = ""; then
   exit 1
 fi
 
-echo findProvider file:capnp
-read CAPNP
+echo findProvider file:zap
+read ZAP
 
-if test "$CAPNP" = ""; then
-  echo "error:  couldn't find capnp." >&2
+if test "$ZAP" = ""; then
+  echo "error:  couldn't find zap." >&2
   exit 1
 fi
 
-echo findProvider file:capnpc-c++
-read CAPNPC_CXX
+echo findProvider file:zapc-c++
+read ZAPC_CXX
 
-if test "$CAPNPC_CXX" = ""; then
-  echo "error:  couldn't find capnpc-c++." >&2
+if test "$ZAPC_CXX" = ""; then
+  echo "error:  couldn't find zapc-c++." >&2
   exit 1
 fi
 
-mkdir -p tmp/capnp/bootstrap-test-tmp
+mkdir -p tmp/zap/bootstrap-test-tmp
 
-INPUTS="capnp/c++.capnp capnp/schema.capnp capnp/stream.capnp capnp/compiler/lexer.capnp \
-capnp/compiler/grammar.capnp capnp/rpc.capnp capnp/rpc-twoparty.capnp capnp/persistent.capnp \
-capnp/compat/json.capnp"
+INPUTS="zap/c++.zap zap/schema.zap zap/stream.zap zap/compiler/lexer.zap \
+zap/compiler/grammar.zap zap/rpc.zap zap/rpc-twoparty.zap zap/persistent.zap \
+zap/compat/json.zap"
 
 SRC_INPUTS=""
 for file in $INPUTS; do
@@ -62,15 +62,15 @@ for file in $INPUTS; do
   SRC_INPUTS="$SRC_INPUTS $srcfile"
 done
 
-$CAPNP compile --src-prefix=src -Isrc --no-standard-import \
-    -o$CAPNPC_CXX:tmp/capnp/bootstrap-test-tmp $SRC_INPUTS
+$ZAP compile --src-prefix=src -Isrc --no-standard-import \
+    -o$ZAPC_CXX:tmp/zap/bootstrap-test-tmp $SRC_INPUTS
 
 for file in $INPUTS; do
   for ext in h c++; do
     echo findProvider file:$file.$ext
     read srcfile
     test "x$srcfile" != x || (echo "missing: $file.$ext" >&2 && exit 1)
-    diff -u $srcfile tmp/capnp/bootstrap-test-tmp/$file.$ext >&2
+    diff -u $srcfile tmp/zap/bootstrap-test-tmp/$file.$ext >&2
   done
 done
 

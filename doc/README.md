@@ -1,6 +1,6 @@
-# Cap'n Proto Documentation
+# Zap Documentation
 
-This directory contains the "source code" for the Cap'n Proto web site.
+This directory contains the "source code" for the Zap web site.
 
 The site is built with [Jekyll](http://jekyllrb.com/), which depends on Ruby. 
 Start by installing ruby1.9.1-dev. On Debian-based operating systems:
@@ -12,7 +12,7 @@ Then install Jekyll 3.8.1 (Jekyll 4.x will NOT work due as they removed Pygments
     sudo gem install jekyll -v 3.8.1
     sudo gem install pygments.rb
 
-Now install Pygments and SetupTools to be able to install the CapnProto lexer.
+Now install Pygments and SetupTools to be able to install the Zap lexer.
 On Debian based operating systems:
 
     sudo apt-get install python-pygments python-setuptools
@@ -20,7 +20,7 @@ On Debian based operating systems:
 Next, install the custom Pygments syntax highlighter:
 
     cd _plugins
-    sudo python capnp_lexer.py install
+    sudo python zap_lexer.py install
     cd ..
 
 Now you can launch a local server:

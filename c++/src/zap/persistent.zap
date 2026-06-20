@@ -21,7 +21,7 @@
 
 @0xb8630836983feed7;
 
-$import "/capnp/c++.capnp".namespace("capnp");
+$import "/zap/c++.zap".namespace("zap");
 
 interface Persistent@0xc8cb212fcd9f5691(SturdyRef, Owner) {
   # Interface implemented by capabilities that outlive a single connection. A client may save()

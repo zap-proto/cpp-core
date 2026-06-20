@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 include_guard(GLOBAL)
 
-project("Cap'n Proto" CXX)
+project("Zap" CXX)
 set(VERSION 2.0-dev)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -23,7 +23,7 @@ endif()
 
 # these arguments are passed to all install(TARGETS) calls
 set(INSTALL_TARGETS_DEFAULT_ARGS
-  EXPORT CapnProtoTargets
+  EXPORT ZapTargets
   ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
   LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
   RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
@@ -31,19 +31,19 @@ set(INSTALL_TARGETS_DEFAULT_ARGS
 
 # Options ======================================================================
 
-option(EXTERNAL_CAPNP "Use the system capnp binary, or the one specified in $CAPNP, instead of using the compiled one." OFF)
-option(CAPNP_LITE "Compile Cap'n Proto in 'lite mode', in which all reflection APIs (schema.h, dynamic.h, etc.) are not included. Produces a smaller library at the cost of features. All programs built against the library must be compiled with -DCAPNP_LITE. Requires EXTERNAL_CAPNP." OFF)
+option(EXTERNAL_ZAP "Use the system zap binary, or the one specified in $ZAP, instead of using the compiled one." OFF)
+option(ZAP_LITE "Compile Zap in 'lite mode', in which all reflection APIs (schema.h, dynamic.h, etc.) are not included. Produces a smaller library at the cost of features. All programs built against the library must be compiled with -DZAP_LITE. Requires EXTERNAL_ZAP." OFF)
 
 # Check for invalid combinations of build options
-if(CAPNP_LITE AND BUILD_TESTING AND NOT EXTERNAL_CAPNP)
-  message(SEND_ERROR "You must set EXTERNAL_CAPNP when using CAPNP_LITE and BUILD_TESTING.")
+if(ZAP_LITE AND BUILD_TESTING AND NOT EXTERNAL_ZAP)
+  message(SEND_ERROR "You must set EXTERNAL_ZAP when using ZAP_LITE and BUILD_TESTING.")
 endif()
 
-if(CAPNP_LITE)
-  set(CAPNP_LITE_FLAG "-DCAPNP_LITE")
+if(ZAP_LITE)
+  set(ZAP_LITE_FLAG "-DZAP_LITE")
   # This flag is attached as PUBLIC target_compile_definition to kj target
 else()
-  set(CAPNP_LITE_FLAG)
+  set(ZAP_LITE_FLAG)
 endif()
 
 set(WITH_OPENSSL "AUTO" CACHE STRING
@@ -60,7 +60,7 @@ set_property(CACHE WITH_ZLIB PROPERTY STRINGS AUTO ON OFF)
 #     if (WITH_OPENSSL)
 #         ...
 #     endif()
-if (CAPNP_LITE)
+if (ZAP_LITE)
   set(WITH_OPENSSL OFF)
 elseif (WITH_OPENSSL STREQUAL "AUTO")
   find_package(OpenSSL COMPONENTS Crypto SSL)
@@ -78,7 +78,7 @@ endif()
 #     if (WITH_ZLIB)
 #         ...
 #     endif()
-if(CAPNP_LITE)
+if(ZAP_LITE)
   set(WITH_ZLIB OFF)
 elseif (WITH_ZLIB STREQUAL "AUTO")
   find_package(ZLIB)
@@ -96,13 +96,13 @@ set(WITH_FIBERS "AUTO" CACHE STRING
 # define list of values GUI will offer for the variable
 set_property(CACHE WITH_FIBERS PROPERTY STRINGS AUTO ON OFF)
 
-# CapnProtoConfig.cmake.in needs this variable.
+# ZapConfig.cmake.in needs this variable.
 set(_WITH_LIBUCONTEXT OFF)
 
 if (WITH_FIBERS OR WITH_FIBERS STREQUAL "AUTO")
-  set(_capnp_fibers_found OFF)
+  set(_zap_fibers_found OFF)
   if (WIN32 OR CYGWIN)
-    set(_capnp_fibers_found ON)
+    set(_zap_fibers_found ON)
   else()
     # Fibers need makecontext, setcontext, getcontext, swapcontext that may be in libc,
     # or in libucontext (e.g. for musl).
@@ -110,7 +110,7 @@ if (WITH_FIBERS OR WITH_FIBERS STREQUAL "AUTO")
     include(CheckLibraryExists)
     check_library_exists(c makecontext "" HAVE_UCONTEXT_LIBC)
     if (HAVE_UCONTEXT_LIBC)
-      set(_capnp_fibers_found ON)
+      set(_zap_fibers_found ON)
     else()
       # Try with libucontext
       find_package(PkgConfig)
@@ -118,15 +118,15 @@ if (WITH_FIBERS OR WITH_FIBERS STREQUAL "AUTO")
         pkg_check_modules(libucontext IMPORTED_TARGET libucontext)
         if (libucontext_FOUND)
           set(_WITH_LIBUCONTEXT ON)
-          set(_capnp_fibers_found ON)
+          set(_zap_fibers_found ON)
         endif()
       else()
-        set(_capnp_fibers_found OFF)
+        set(_zap_fibers_found OFF)
       endif()
     endif()
   endif()
 
-  if (_capnp_fibers_found)
+  if (_zap_fibers_found)
     set(WITH_FIBERS ON)
   elseif(WITH_FIBERS STREQUAL "AUTO")
     set(WITH_FIBERS OFF)
@@ -159,7 +159,7 @@ else()
   add_compile_options(-Wall -Wextra -Wsuggest-override -Wno-strict-aliasing -Wno-sign-compare -Wno-unused-parameter)
 
   if(DEFINED CMAKE_CXX_EXTENSIONS AND NOT CMAKE_CXX_EXTENSIONS)
-    message(SEND_ERROR "Cap'n Proto requires compiler-specific extensions (e.g., -std=gnu++23). Please leave CMAKE_CXX_EXTENSIONS undefined or ON.")
+    message(SEND_ERROR "Zap requires compiler-specific extensions (e.g., -std=gnu++23). Please leave CMAKE_CXX_EXTENSIONS undefined or ON.")
   endif()
 
   if (NOT ANDROID)
@@ -168,7 +168,7 @@ else()
 endif()
 
 # Source =======================================================================
-include(CapnProtoMacros)
+include(ZapMacros)
 add_subdirectory(src)
 
 # Install ======================================================================
@@ -177,38 +177,38 @@ include(CMakePackageConfigHelpers)
 
 # We used to use write_basic_package_version_file(), but since the autotools build needs to install
 # a config version script as well, I copied the AnyNewerVersion template from my CMake Modules
-# directory to Cap'n Proto's cmake/ directory (alternatively, we could make the autotools build
+# directory to Zap's cmake/ directory (alternatively, we could make the autotools build
 # depend on CMake).
 #
 # We might as well use the local copy of the template. In the future we can modify the project's
 # version compatibility policy just by changing that file.
 set(PACKAGE_VERSION ${VERSION})
-configure_file(cmake/CapnProtoConfigVersion.cmake.in cmake/CapnProtoConfigVersion.cmake @ONLY)
+configure_file(cmake/ZapConfigVersion.cmake.in cmake/ZapConfigVersion.cmake @ONLY)
 
-set(CONFIG_PACKAGE_LOCATION ${CMAKE_INSTALL_LIBDIR}/cmake/CapnProto)
+set(CONFIG_PACKAGE_LOCATION ${CMAKE_INSTALL_LIBDIR}/cmake/Zap)
 
-configure_package_config_file(cmake/CapnProtoConfig.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/cmake/CapnProtoConfig.cmake
+configure_package_config_file(cmake/ZapConfig.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/cmake/ZapConfig.cmake
   INSTALL_DESTINATION ${CONFIG_PACKAGE_LOCATION}
   PATH_VARS CMAKE_INSTALL_FULL_INCLUDEDIR
 )
-export(EXPORT CapnProtoTargets
-  FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/CapnProtoTargets.cmake"
-  NAMESPACE CapnProto::
+export(EXPORT ZapTargets
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/ZapTargets.cmake"
+  NAMESPACE Zap::
 )
-install(EXPORT CapnProtoTargets
-  FILE CapnProtoTargets.cmake
-  NAMESPACE CapnProto::
+install(EXPORT ZapTargets
+  FILE ZapTargets.cmake
+  NAMESPACE Zap::
   DESTINATION ${CONFIG_PACKAGE_LOCATION}
 )
 install(FILES
-  cmake/CapnProtoMacros.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/cmake/CapnProtoConfig.cmake
-  ${CMAKE_CURRENT_BINARY_DIR}/cmake/CapnProtoConfigVersion.cmake
+  cmake/ZapMacros.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/cmake/ZapConfig.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/cmake/ZapConfigVersion.cmake
   DESTINATION ${CONFIG_PACKAGE_LOCATION}
 )
-#install CapnProtoMacros for CapnProtoConfig.cmake build directory consumers
-configure_file(cmake/CapnProtoMacros.cmake cmake/CapnProtoMacros.cmake COPYONLY)
+#install ZapMacros for ZapConfig.cmake build directory consumers
+configure_file(cmake/ZapMacros.cmake cmake/ZapMacros.cmake COPYONLY)
 
 if(NOT MSVC)  # Don't install pkg-config files when building with MSVC
   # Variables for pkg-config files
@@ -219,26 +219,26 @@ if(NOT MSVC)  # Don't install pkg-config files when building with MSVC
   set(PTHREAD_CFLAGS "-pthread")
   set(STDLIB_FLAG)  # TODO: Unsupported
 
-  set(CAPNP_PKG_CONFIG_FILES
+  set(ZAP_PKG_CONFIG_FILES
     pkgconfig/kj.pc
-    pkgconfig/capnp.pc
-    pkgconfig/capnpc.pc
+    pkgconfig/zap.pc
+    pkgconfig/zapc.pc
   )
 
-  if(NOT CAPNP_LITE)
-    list(APPEND CAPNP_PKG_CONFIG_FILES
+  if(NOT ZAP_LITE)
+    list(APPEND ZAP_PKG_CONFIG_FILES
       pkgconfig/kj-async.pc
       pkgconfig/kj-gzip.pc
       pkgconfig/kj-http.pc
       pkgconfig/kj-test.pc
       pkgconfig/kj-tls.pc
-      pkgconfig/capnp-rpc.pc
-      pkgconfig/capnp-websocket.pc
-      pkgconfig/capnp-json.pc
+      pkgconfig/zap-rpc.pc
+      pkgconfig/zap-websocket.pc
+      pkgconfig/zap-json.pc
     )
   endif()
 
-  foreach(pcfile ${CAPNP_PKG_CONFIG_FILES})
+  foreach(pcfile ${ZAP_PKG_CONFIG_FILES})
     configure_file(${pcfile}.in "${CMAKE_CURRENT_BINARY_DIR}/${pcfile}" @ONLY)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${pcfile}" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
   endforeach()

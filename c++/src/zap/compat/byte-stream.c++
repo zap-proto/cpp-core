@@ -25,7 +25,7 @@
 
 namespace {
 
-class Wrapper final: public capnp::ExplicitEndOutputStream {
+class Wrapper final: public zap::ExplicitEndOutputStream {
   public:
   Wrapper(kj::Own<kj::AsyncOutputStream> inner, kj::Function<void()> uncleanEnd)
       : state(State{kj::mv(inner), kj::mv(uncleanEnd)}) {}
@@ -72,7 +72,7 @@ class Wrapper final: public capnp::ExplicitEndOutputStream {
 
 }  // namespace
 
-namespace capnp {
+namespace zap {
 
 kj::Own<ExplicitEndOutputStream> ExplicitEndOutputStream::wrap(
     kj::Own<kj::AsyncOutputStream> inner, kj::Function<void()> uncleanEnd) {
@@ -81,7 +81,7 @@ kj::Own<ExplicitEndOutputStream> ExplicitEndOutputStream::wrap(
 
 const uint MAX_BYTES_PER_WRITE = 1 << 16;
 
-class ByteStreamFactory::StreamServerBase: public capnp::ByteStream::Server {
+class ByteStreamFactory::StreamServerBase: public zap::ByteStream::Server {
 public:
   virtual void returnStream(uint64_t written) = 0;
   // Called after the StreamServerBase's internal kj::AsyncOutputStream has been borrowed, to
@@ -99,16 +99,16 @@ public:
     uint64_t limit;
   };
 
-  typedef kj::OneOf<kj::Promise<void>, capnp::ByteStream::Client*, BorrowedStream> ShortestPath;
+  typedef kj::OneOf<kj::Promise<void>, zap::ByteStream::Client*, BorrowedStream> ShortestPath;
 
   virtual ShortestPath getShortestPath() = 0;
-  // Called by KjToCapnpStreamAdapter when it has determined that its inner ByteStream::Client
+  // Called by KjToZapStreamAdapter when it has determined that its inner ByteStream::Client
   // actually points back to a StreamServerBase in the same process created by the same
   // ByteStreamFactory. Returns the best shortened path to use, or a promise that resolves when the
   // shortest path is known.
 
   virtual void directEnd() = 0;
-  // Called by KjToCapnpStreamAdapter's destructor when it has determined that its inner
+  // Called by KjToZapStreamAdapter's destructor when it has determined that its inner
   // ByteStream::Client actually points back to a StreamServerBase in the same process created by
   // the same ByteStreamFactory. Since destruction of a KJ stream signals EOF, we need to propagate
   // that by destroying our underlying stream.
@@ -122,9 +122,9 @@ class ByteStreamFactory::SubstreamImpl final: public StreamServerBase {
 public:
   SubstreamImpl(ByteStreamFactory& factory,
                 StreamServerBase& parent,
-                capnp::ByteStream::Client ownParent,
+                zap::ByteStream::Client ownParent,
                 kj::AsyncOutputStream& stream,
-                capnp::ByteStream::SubstreamCallback::Client callback,
+                zap::ByteStream::SubstreamCallback::Client callback,
                 uint64_t limit,
                 kj::Maybe<kj::Own<kj::TlsStarterCallback>> tlsStarter,
                 kj::PromiseFulfillerPair<void> paf = kj::newPromiseAndFulfiller<void>())
@@ -259,7 +259,7 @@ public:
             if (leftover.size() > 0) {
               // Need to forward the leftover bytes to the next stream.
               auto req = state.get<Redirected>().replacement.writeRequest(
-                  MessageSize { 4 + leftover.size() / sizeof(capnp::word), 0 });
+                  MessageSize { 4 + leftover.size() / sizeof(zap::word), 0 });
               req.setBytes(leftover);
               return req.send();
             } else {
@@ -339,16 +339,16 @@ private:
 
   struct Streaming {
     StreamServerBase& parent;
-    capnp::ByteStream::Client ownParent;
+    zap::ByteStream::Client ownParent;
     kj::AsyncOutputStream& stream;
-    capnp::ByteStream::SubstreamCallback::Client callback;
+    zap::ByteStream::SubstreamCallback::Client callback;
     kj::Maybe<kj::Own<kj::TlsStarterCallback>> tlsStarter;
   };
   struct Borrowed {
     Streaming originalState;
   };
   struct Redirected {
-    capnp::ByteStream::Client replacement;
+    zap::ByteStream::Client replacement;
   };
   struct Ended {};
 
@@ -362,7 +362,7 @@ private:
 
   void limitReached() {
     auto& streaming = state.get<Streaming>();
-    auto next = streaming.callback.reachedLimitRequest(capnp::MessageSize {2,0})
+    auto next = streaming.callback.reachedLimitRequest(zap::MessageSize {2,0})
         .send().getNext();
 
     // Set the next stream as our replacement.
@@ -374,22 +374,22 @@ private:
 
 // =======================================================================================
 
-class ByteStreamFactory::CapnpToKjStreamAdapter final: public StreamServerBase {
-  // Implements Cap'n Proto ByteStream as a wrapper around a KJ stream.
+class ByteStreamFactory::ZapToKjStreamAdapter final: public StreamServerBase {
+  // Implements Zap ByteStream as a wrapper around a KJ stream.
 
   class SubstreamCallbackImpl;
 
 public:
   class PathProber;
 
-  CapnpToKjStreamAdapter(ByteStreamFactory& factory,
+  ZapToKjStreamAdapter(ByteStreamFactory& factory,
                          kj::Own<kj::AsyncOutputStream> inner)
       : factory(factory),
         state(kj::heap<PathProber>(*this, kj::mv(inner))) {
     state.get<kj::Own<PathProber>>()->startProbing();
   }
 
-  CapnpToKjStreamAdapter(ByteStreamFactory& factory,
+  ZapToKjStreamAdapter(ByteStreamFactory& factory,
                          kj::Own<kj::AsyncOutputStream> inner,
                          kj::Maybe<kj::Own<kj::TlsStarterCallback>> starter)
       : factory(factory),
@@ -398,7 +398,7 @@ public:
     state.get<kj::Own<PathProber>>()->startProbing();
   }
 
-  CapnpToKjStreamAdapter(ByteStreamFactory& factory,
+  ZapToKjStreamAdapter(ByteStreamFactory& factory,
                          kj::Own<PathProber> pathProber)
       : factory(factory),
         state(kj::mv(pathProber)) {
@@ -414,8 +414,8 @@ public:
   }
 
   ShortestPath getShortestPath() override {
-    // Called by KjToCapnpStreamAdapter when it has determined that its inner ByteStream::Client
-    // actually points back to a CapnpToKjStreamAdapter in the same process. Returns the best
+    // Called by KjToZapStreamAdapter when it has determined that its inner ByteStream::Client
+    // actually points back to a ZapToKjStreamAdapter in the same process. Returns the best
     // shortened path to use, or a promise that resolves when the shortest path is known.
 
     KJ_SWITCH_ONEOF(state) {
@@ -427,8 +427,8 @@ public:
         state = Borrowed { kj::mv(kjStream) };
         return StreamServerBase::BorrowedStream { *this, streamRef, kj::maxValue };
       }
-      KJ_CASE_ONEOF(capnpStream, capnp::ByteStream::Client) {
-        return &capnpStream;
+      KJ_CASE_ONEOF(zapStream, zap::ByteStream::Client) {
+        return &zapStream;
       }
       KJ_CASE_ONEOF(b, Borrowed) {
         KJ_FAIL_REQUIRE("concurrent streaming calls disallowed") { break; }
@@ -457,9 +457,9 @@ public:
 
         state = Ended();
       }
-      KJ_CASE_ONEOF(capnpStream, capnp::ByteStream::Client) {
+      KJ_CASE_ONEOF(zapStream, zap::ByteStream::Client) {
         // Ugh I guess we need to send a real end() request here.
-        capnpStream.endRequest(MessageSize {2, 0}).send().detach([](kj::Exception&&){});
+        zapStream.endRequest(MessageSize {2, 0}).send().detach([](kj::Exception&&){});
       }
       KJ_CASE_ONEOF(b, Borrowed) {
         // Fine, ignore.
@@ -489,9 +489,9 @@ public:
           return kj::READY_NOW;
         }
       }
-      KJ_CASE_ONEOF(capnpStream, capnp::ByteStream::Client) {
+      KJ_CASE_ONEOF(zapStream, zap::ByteStream::Client) {
         // Ugh I guess we need to send a real end() request here.
-        return capnpStream.endRequest(MessageSize {2, 0}).sendIgnoringResult();
+        return zapStream.endRequest(MessageSize {2, 0}).sendIgnoringResult();
       }
       KJ_CASE_ONEOF(b, Borrowed) {
         // Fine, ignore.
@@ -510,7 +510,7 @@ public:
 
   class PathProber final: public kj::AsyncInputStream {
   public:
-    PathProber(CapnpToKjStreamAdapter& parent, kj::Own<kj::AsyncOutputStream> inner,
+    PathProber(ZapToKjStreamAdapter& parent, kj::Own<kj::AsyncOutputStream> inner,
                kj::PromiseFulfillerPair<void> paf = kj::newPromiseAndFulfiller<void>())
         : parent(parent), inner(kj::mv(inner)),
           readyPromise(paf.promise.fork()),
@@ -521,7 +521,7 @@ public:
       task = probeForShorterPath();
     }
 
-    void setNewParent(CapnpToKjStreamAdapter& newParent) {
+    void setNewParent(ZapToKjStreamAdapter& newParent) {
       KJ_ASSERT(parent == kj::none);
       parent = newParent;
       auto paf = kj::newPromiseAndFulfiller<void>();
@@ -533,8 +533,8 @@ public:
       return readyPromise.addBranch();
     }
 
-    kj::Promise<uint64_t> pumpToShorterPath(capnp::ByteStream::Client target, uint64_t limit) {
-      // If our probe succeeds in finding a KjToCapnpStreamAdapter somewhere down the stack, that
+    kj::Promise<uint64_t> pumpToShorterPath(zap::ByteStream::Client target, uint64_t limit) {
+      // If our probe succeeds in finding a KjToZapStreamAdapter somewhere down the stack, that
       // will call this method to provide the shortened path.
 
       KJ_IF_SOME(currentParent, parent) {
@@ -554,7 +554,7 @@ public:
         // Now we hook up the incoming stream adapter to point directly to this substream, yay.
         currentParent.state = req.send().getSubstream();
 
-        // Let the original CapnpToKjStreamAdapter know that it's safe to handle incoming requests.
+        // Let the original ZapToKjStreamAdapter know that it's safe to handle incoming requests.
         readyFulfiller->fulfill();
 
         // It's now up to the SubstreamCallbackImpl to signal when the pump is done.
@@ -570,7 +570,7 @@ public:
     kj::Promise<size_t> tryRead(void* buffer, size_t minBytes, size_t maxBytes) override {
       // If this is called, it means the tryPumpFrom() in probeForShorterPath() eventually invoked
       // code that tries to read manually from the source. We don't know what this code is doing
-      // exactly, but we do know for sure that the endpoint is not a KjToCapnpStreamAdapter, so
+      // exactly, but we do know for sure that the endpoint is not a KjToZapStreamAdapter, so
       // we can't optimize. Instead, we pretend that we immediately hit EOF, ending the pump. This
       // works because pumps do not propagate EOF -- the destination can still receive further
       // writes and pumps. Basically our probing pump becomes a no-op, and then we revert to having
@@ -592,7 +592,7 @@ public:
     }
 
   private:
-    kj::Maybe<CapnpToKjStreamAdapter&> parent;
+    kj::Maybe<ZapToKjStreamAdapter&> parent;
     kj::Own<kj::AsyncOutputStream> inner;
     kj::ForkedPromise<void> readyPromise;
     kj::Own<kj::PromiseFulfiller<void>> readyFulfiller;
@@ -650,8 +650,8 @@ protected:
         // to us forever.
         return kj::NEVER_DONE;
       }
-      KJ_CASE_ONEOF(capnpStream, capnp::ByteStream::Client) {
-        return Capability::Client(capnpStream);
+      KJ_CASE_ONEOF(zapStream, zap::ByteStream::Client) {
+        return Capability::Client(zapStream);
       }
       KJ_CASE_ONEOF(b, Borrowed) {
         KJ_FAIL_REQUIRE("concurrent streaming calls disallowed") { break; }
@@ -678,9 +678,9 @@ protected:
         auto data = context.getParams().getBytes();
         return kjStream->write(data);
       }
-      KJ_CASE_ONEOF(capnpStream, capnp::ByteStream::Client) {
+      KJ_CASE_ONEOF(zapStream, zap::ByteStream::Client) {
         auto params = context.getParams();
-        auto req = capnpStream.writeRequest(params.totalSize());
+        auto req = zapStream.writeRequest(params.totalSize());
         req.setBytes(params.getBytes());
         return req.send();
       }
@@ -721,9 +721,9 @@ protected:
           return kj::READY_NOW;
         }
       }
-      KJ_CASE_ONEOF(capnpStream, capnp::ByteStream::Client) {
+      KJ_CASE_ONEOF(zapStream, zap::ByteStream::Client) {
         auto params = context.getParams();
-        auto req = capnpStream.endRequest(params.totalSize());
+        auto req = zapStream.endRequest(params.totalSize());
         return context.tailCall(kj::mv(req));
       }
       KJ_CASE_ONEOF(b, Borrowed) {
@@ -748,7 +748,7 @@ protected:
         KJ_CASE_ONEOF(kjStream, kj::Own<kj::AsyncOutputStream>) {
           return KJ_ASSERT_NONNULL(*s)(params.getExpectedServerHostname());
         }
-        KJ_CASE_ONEOF(capnpStream, capnp::ByteStream::Client) {
+        KJ_CASE_ONEOF(zapStream, zap::ByteStream::Client) {
           return KJ_ASSERT_NONNULL(*s)(params.getExpectedServerHostname());
         }
         KJ_CASE_ONEOF(e, Ended) {
@@ -783,9 +783,9 @@ protected:
         state = Borrowed { kj::mv(kjStream) };
         return kj::READY_NOW;
       }
-      KJ_CASE_ONEOF(capnpStream, capnp::ByteStream::Client) {
+      KJ_CASE_ONEOF(zapStream, zap::ByteStream::Client) {
         auto params = context.getParams();
-        auto req = capnpStream.getSubstreamRequest(params.totalSize());
+        auto req = zapStream.getSubstreamRequest(params.totalSize());
         req.setCallback(params.getCallback());
         req.setLimit(params.getLimit());
         return context.tailCall(kj::mv(req));
@@ -810,9 +810,9 @@ private:
   struct Ended {};
 
   kj::OneOf<kj::Own<PathProber>, kj::Own<kj::AsyncOutputStream>,
-            capnp::ByteStream::Client, Borrowed, Ended> state;
+            zap::ByteStream::Client, Borrowed, Ended> state;
 
-  class SubstreamCallbackImpl final: public capnp::ByteStream::SubstreamCallback::Server {
+  class SubstreamCallbackImpl final: public zap::ByteStream::SubstreamCallback::Server {
   public:
     SubstreamCallbackImpl(ByteStreamFactory& factory,
                           kj::Own<PathProber> pathProber,
@@ -855,13 +855,13 @@ private:
       done = true;
 
       // Allow the shortened stream to redirect back to our original underlying stream.
-      auto results = context.getResults(capnp::MessageSize { 4, 1 });
+      auto results = context.getResults(zap::MessageSize { 4, 1 });
       results.setNext(factory.streamSet.add(
-          kj::heap<CapnpToKjStreamAdapter>(factory, kj::mv(pathProber))));
+          kj::heap<ZapToKjStreamAdapter>(factory, kj::mv(pathProber))));
 
       // The full pump completed. Note that it's important that we fulfill this after the
-      // PathProber has been attached to the new CapnpToKjStreamAdapter, which will have happened
-      // in CapnpToKjStreamAdapter's constructor, which calls pathProber->setNewParent().
+      // PathProber has been attached to the new ZapToKjStreamAdapter, which will have happened
+      // in ZapToKjStreamAdapter's constructor, which calls pathProber->setNewParent().
       originalPumpfulfiller->fulfill(kj::cp(originalPumpLimit));
 
       return kj::READY_NOW;
@@ -878,16 +878,16 @@ private:
 
 // =======================================================================================
 
-class ByteStreamFactory::KjToCapnpStreamAdapter final: public ExplicitEndOutputStream {
+class ByteStreamFactory::KjToZapStreamAdapter final: public ExplicitEndOutputStream {
 public:
-  KjToCapnpStreamAdapter(ByteStreamFactory& factory, capnp::ByteStream::Client innerParam,
+  KjToZapStreamAdapter(ByteStreamFactory& factory, zap::ByteStream::Client innerParam,
                          bool explicitEnd)
       : factory(factory),
         inner(kj::mv(innerParam)),
         findShorterPathTask(findShorterPath(inner).fork()),
         explicitEnd(explicitEnd) {}
 
-  ~KjToCapnpStreamAdapter() noexcept(false) {
+  ~KjToZapStreamAdapter() noexcept(false) {
     if (!explicitEnd) {
       // HACK: KJ streams are implicitly ended on destruction, but the RPC stream needs a call. We
       //   use a detached promise for now, which is probably OK since capabilities are refcounted and
@@ -939,13 +939,13 @@ public:
           });
         }
       }
-      KJ_CASE_ONEOF(capnpStream, capnp::ByteStream::Client*) {
+      KJ_CASE_ONEOF(zapStream, zap::ByteStream::Client*) {
         if (buffer.size() <= MAX_BYTES_PER_WRITE) {
-          auto req = capnpStream->writeRequest(MessageSize { 8 + buffer.size() / sizeof(word), 0 });
+          auto req = zapStream->writeRequest(MessageSize { 8 + buffer.size() / sizeof(word), 0 });
           req.setBytes(buffer);
           return req.send();
         } else {
-          auto req = capnpStream->writeRequest(
+          auto req = zapStream->writeRequest(
               MessageSize { 8 + MAX_BYTES_PER_WRITE / sizeof(word), 0 });
           req.setBytes(buffer.first(MAX_BYTES_PER_WRITE));
           return req.send().then([this,buffer]() mutable {
@@ -983,11 +983,11 @@ public:
           });
         }
       }
-      KJ_CASE_ONEOF(capnpStream, capnp::ByteStream::Client*) {
-        auto writePieces = [capnpStream](kj::ArrayPtr<const kj::ArrayPtr<const byte>> pieces) {
+      KJ_CASE_ONEOF(zapStream, zap::ByteStream::Client*) {
+        auto writePieces = [zapStream](kj::ArrayPtr<const kj::ArrayPtr<const byte>> pieces) {
           size_t size = 0;
           for (auto& piece: pieces) size += piece.size();
-          auto req = capnpStream->writeRequest(MessageSize { 8 + size / sizeof(word), 0 });
+          auto req = zapStream->writeRequest(MessageSize { 8 + size / sizeof(word), 0 });
           auto out = req.initBytes(size);
           byte* ptr = out.begin();
           for (auto& piece: pieces) {
@@ -1013,9 +1013,9 @@ public:
 
   kj::Maybe<kj::Promise<uint64_t>> tryPumpFrom(
       kj::AsyncInputStream& input, uint64_t amount = kj::maxValue) override {
-    KJ_IF_SOME(rpc, kj::dynamicDowncastIfAvailable<CapnpToKjStreamAdapter::PathProber>(input)) {
+    KJ_IF_SOME(rpc, kj::dynamicDowncastIfAvailable<ZapToKjStreamAdapter::PathProber>(input)) {
       // Oh interesting, it turns we're hosting an incoming ByteStream which is pumping to this
-      // outgoing ByteStream. We can let the Cap'n Proto RPC layer know that it can shorten the
+      // outgoing ByteStream. We can let the Zap RPC layer know that it can shorten the
       // path from one to the other.
       return rpc.pumpToShorterPath(inner, amount);
     } else {
@@ -1029,7 +1029,7 @@ public:
 
 private:
   ByteStreamFactory& factory;
-  capnp::ByteStream::Client inner;
+  zap::ByteStream::Client inner;
   kj::Maybe<StreamServerBase&> optimized;
 
   kj::ForkedPromise<void> findShorterPathTask;
@@ -1041,18 +1041,18 @@ private:
   bool explicitEnd;
   // Did the creator promise to explicitly call end()?
 
-  kj::Promise<void> findShorterPath(capnp::ByteStream::Client& capnpClient) {
-    // If the capnp stream turns out to resolve back to this process, shorten the path.
+  kj::Promise<void> findShorterPath(zap::ByteStream::Client& zapClient) {
+    // If the zap stream turns out to resolve back to this process, shorten the path.
     // Also, implement whenWriteDisconnected() based on this.
-    return factory.streamSet.getLocalServer(capnpClient)
-        .then([this](kj::Maybe<capnp::ByteStream::Server&> server) -> kj::Promise<void> {
+    return factory.streamSet.getLocalServer(zapClient)
+        .then([this](kj::Maybe<zap::ByteStream::Server&> server) -> kj::Promise<void> {
       KJ_IF_SOME(s, server) {
         // Yay, we discovered that the ByteStream actually points back to a local KJ stream.
         // We can use this to shorten the path by skipping the RPC machinery.
         return findShorterPath(kj::downcast<StreamServerBase>(s));
       } else {
         // The capability is fully-resolved. This suggests that the remote implementation is
-        // NOT a CapnpToKjStreamAdapter at all, because CapnpToKjStreamAdapter is designed to
+        // NOT a ZapToKjStreamAdapter at all, because ZapToKjStreamAdapter is designed to
         // always look like a promise. It's some other implementation that doesn't present
         // itself as a promise. We have no way to detect when it is disconnected.
         return kj::NEVER_DONE;
@@ -1068,26 +1068,26 @@ private:
     });
   }
 
-  kj::Promise<void> findShorterPath(StreamServerBase& capnpServer) {
+  kj::Promise<void> findShorterPath(StreamServerBase& zapServer) {
     // We found a shorter path back to this process. Record it.
-    optimized = capnpServer;
+    optimized = zapServer;
 
-    KJ_SWITCH_ONEOF(capnpServer.getShortestPath()) {
+    KJ_SWITCH_ONEOF(zapServer.getShortestPath()) {
       KJ_CASE_ONEOF(promise, kj::Promise<void>) {
-        return promise.then([this,&capnpServer]() {
-          return findShorterPath(capnpServer);
+        return promise.then([this,&zapServer]() {
+          return findShorterPath(zapServer);
         });
       }
       KJ_CASE_ONEOF(kjStream, StreamServerBase::BorrowedStream) {
-        // The ByteStream::Server wraps a regular KJ stream that does not wrap another capnp
+        // The ByteStream::Server wraps a regular KJ stream that does not wrap another zap
         // stream.
         if (kjStream.limit < (uint64_t)kj::maxValue / 2) {
           // But it isn't wrapping that stream forever. Eventually it plans to redirect back to
           // some other stream. So, let's wait for that, and possibly shorten again.
           kjStream.lender.returnStream(0);
-          return KJ_ASSERT_NONNULL(capnpServer.shortenPath())
-              .then([this, &capnpServer](auto&&) {
-            return findShorterPath(capnpServer);
+          return KJ_ASSERT_NONNULL(zapServer.shortenPath())
+              .then([this, &zapServer](auto&&) {
+            return findShorterPath(zapServer);
           });
         } else {
           // This KJ stream is (effectively) the permanent endpoint. We can't get any shorter
@@ -1097,8 +1097,8 @@ private:
           return promise;
         }
       }
-      KJ_CASE_ONEOF(capnpStream, capnp::ByteStream::Client*) {
-        return findShorterPath(*capnpStream);
+      KJ_CASE_ONEOF(zapStream, zap::ByteStream::Client*) {
+        return findShorterPath(*zapStream);
       }
     }
     KJ_UNREACHABLE;
@@ -1146,14 +1146,14 @@ private:
           });
         }
       }
-      KJ_CASE_ONEOF(capnpStream, capnp::ByteStream::Client*) {
+      KJ_CASE_ONEOF(zapStream, zap::ByteStream::Client*) {
         // Pumping from some other kind of stream. Optimize the pump by reading from the input
         // directly into outgoing RPC messages.
         size_t size = kj::min(remaining, 8192);
-        auto req = capnpStream->writeRequest(MessageSize { 8 + size / sizeof(word), 0 });
+        auto req = zapStream->writeRequest(MessageSize { 8 + size / sizeof(word), 0 });
 
         auto orphanage = Orphanage::getForMessageContaining(
-            capnp::ByteStream::WriteParams::Builder(req));
+            zap::ByteStream::WriteParams::Builder(req));
 
         auto buffer = orphanage.newOrphan<Data>(size);
 
@@ -1161,7 +1161,7 @@ private:
           // The order of construction/destruction of lambda captures is unspecified, but we care
           // about ordering between these two things that we want to capture, so... we need a
           // struct.
-          StreamingRequest<capnp::ByteStream::WriteParams> request;
+          StreamingRequest<zap::ByteStream::WriteParams> request;
           Orphan<Data> buffer;  // points into `request`...
         };
 
@@ -1227,23 +1227,23 @@ private:
 
 // =======================================================================================
 
-capnp::ByteStream::Client ByteStreamFactory::kjToCapnp(kj::Own<kj::AsyncOutputStream> kjStream) {
-  return streamSet.add(kj::heap<CapnpToKjStreamAdapter>(*this, kj::mv(kjStream)));
+zap::ByteStream::Client ByteStreamFactory::kjToZap(kj::Own<kj::AsyncOutputStream> kjStream) {
+  return streamSet.add(kj::heap<ZapToKjStreamAdapter>(*this, kj::mv(kjStream)));
 }
 
-capnp::ByteStream::Client ByteStreamFactory::kjToCapnp(
+zap::ByteStream::Client ByteStreamFactory::kjToZap(
     kj::Own<kj::AsyncOutputStream> kjStream, kj::Maybe<kj::Own<kj::TlsStarterCallback>> tlsStarter) {
   return streamSet.add(
-      kj::heap<CapnpToKjStreamAdapter>(*this, kj::mv(kjStream), kj::mv(tlsStarter)));
+      kj::heap<ZapToKjStreamAdapter>(*this, kj::mv(kjStream), kj::mv(tlsStarter)));
 }
 
-kj::Own<kj::AsyncOutputStream> ByteStreamFactory::capnpToKj(capnp::ByteStream::Client capnpStream) {
-  return kj::heap<KjToCapnpStreamAdapter>(*this, kj::mv(capnpStream), false);
+kj::Own<kj::AsyncOutputStream> ByteStreamFactory::zapToKj(zap::ByteStream::Client zapStream) {
+  return kj::heap<KjToZapStreamAdapter>(*this, kj::mv(zapStream), false);
 }
 
-kj::Own<ExplicitEndOutputStream> ByteStreamFactory::capnpToKjExplicitEnd(
-    capnp::ByteStream::Client capnpStream) {
-  return kj::heap<KjToCapnpStreamAdapter>(*this, kj::mv(capnpStream), true);
+kj::Own<ExplicitEndOutputStream> ByteStreamFactory::zapToKjExplicitEnd(
+    zap::ByteStream::Client zapStream) {
+  return kj::heap<KjToZapStreamAdapter>(*this, kj::mv(zapStream), true);
 }
 
-}  // namespace capnp
+}  // namespace zap

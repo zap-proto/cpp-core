@@ -76,6 +76,9 @@ public:
     // Desugar whitespace-significant syntax to brace syntax before lexing (back-compat:
     // pure brace files are returned byte-identical and bypass this). The desugared buffer
     // is retained in `desugaredContent` so the line-break offsets index into it.
+    // desugar() is TOTAL — it never throws; any malformed construct (e.g. an out-of-range
+    // ordinal) is emitted verbatim and surfaced as a clean diagnostic by the lexer/parser
+    // below, so this call needs no exception guard.
     kj::ArrayPtr<const char> content = mapped;
     if (compiler::isWhitespaceSchema(mapped)) {
       desugaredContent = compiler::desugar(mapped);

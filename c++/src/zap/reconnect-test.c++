@@ -26,7 +26,7 @@
 #include <kj/async-io.h>
 #include "rpc-twoparty.h"
 
-namespace capnp {
+namespace zap {
 namespace _ {
 namespace {
 
@@ -266,4 +266,4 @@ KJ_TEST("lazyAutoReconnectWithController() through RPC (exercises call() / CallC
 
 }  // namespace
 }  // namespace _
-}  // namespace capnp
+}  // namespace zap

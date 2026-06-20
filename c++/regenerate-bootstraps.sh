@@ -5,11 +5,11 @@ set -euo pipefail
 
 export PATH=$PWD/bin:$PWD:$PATH
 
-bazel build src/capnp/capnp_tool src/capnp/capnpc-c++
+bazel build src/zap/zap_tool src/zap/zapc-c++
 
-bazel-bin/src/capnp/capnp_tool compile -Isrc --no-standard-import --src-prefix=src \
-    -obazel-bin/src/capnp/capnpc-c++:src \
-    src/capnp/c++.capnp src/capnp/schema.capnp src/capnp/stream.capnp \
-    src/capnp/compiler/lexer.capnp src/capnp/compiler/grammar.capnp \
-    src/capnp/rpc.capnp src/capnp/rpc-twoparty.capnp src/capnp/persistent.capnp \
-    src/capnp/compat/json.capnp
+bazel-bin/src/zap/zap_tool compile -Isrc --no-standard-import --src-prefix=src \
+    -obazel-bin/src/zap/zapc-c++:src \
+    src/zap/c++.zap src/zap/schema.zap src/zap/stream.zap \
+    src/zap/compiler/lexer.zap src/zap/compiler/grammar.zap \
+    src/zap/rpc.zap src/zap/rpc-twoparty.zap src/zap/persistent.zap \
+    src/zap/compat/json.zap

@@ -21,7 +21,7 @@
 
 #pragma once
 
-#if CAPNP_LITE
+#if ZAP_LITE
 #error "RPC APIs, including this header, are not available in lite mode."
 #endif
 
@@ -31,9 +31,9 @@
 #include "any.h"
 #include "pointer-helpers.h"
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 template <typename Results>
 class Response;
@@ -82,7 +82,7 @@ struct Capability {
   class Client;
   class Server;
 
-  struct _capnpPrivate {
+  struct _zapPrivate {
     struct IsInterface;
     static constexpr uint64_t typeId = 0x3;
     static constexpr Kind kind = Kind::INTERFACE;
@@ -109,7 +109,7 @@ class Request: public Params::Builder {
   // A call that hasn't been sent yet.  This class extends a Builder for the call's "Params"
   // structure with a method send() that actually sends it.
   //
-  // Given a Cap'n Proto method `foo(a :A, b :B): C`, the generated client interface will have
+  // Given a Zap method `foo(a :A, b :B): C`, the generated client interface will have
   // a method `Request<FooParams, C> fooRequest()` (as well as a convenience method
   // `RemotePromise<C> foo(A::Reader a, B::Reader b)`).
 
@@ -244,7 +244,7 @@ public:
 
   template <typename T>
   typename T::Client castAs(InterfaceSchema schema);
-  // Dynamic version.  `T` must be `DynamicCapability`, and you must `#include <capnp/dynamic.h>`.
+  // Dynamic version.  `T` must be `DynamicCapability`, and you must `#include <zap/dynamic.h>`.
 
   kj::Promise<void> whenResolved();
   // If the capability is actually only a promise, the returned promise resolves once the
@@ -393,13 +393,13 @@ public:
   //       auto barPromise = charlie.barRequest().send();
   //
   //       // Set up the final pipeline using pipelined capabilities from `barPromise`.
-  //       capnp::PipelineBuilder<FooResults> pipeline;
+  //       zap::PipelineBuilder<FooResults> pipeline;
   //       pipeline.setResultCap(barPromise.getSomeCap());
   //       context.setPipeline(pipeline.build());
   //
   //       // Now actually wait for the results and process them.
   //       return barPromise
-  //           .then([context](capnp::Response<BarResults> response) mutable {
+  //           .then([context](zap::Response<BarResults> response) mutable {
   //         auto results = context.initResults();
   //
   //         // Make sure to set up the capabilities exactly as we did in the pipeline.
@@ -438,8 +438,8 @@ public:
 
   void allowCancellation()
       KJ_UNAVAILABLE(
-          "As of Cap'n Proto 1.0, allowCancellation must be applied statically using an "
-          "annotation in the schema. See annotations defined in /capnp/c++.capnp. For "
+          "As of Zap 1.0, allowCancellation must be applied statically using an "
+          "annotation in the schema. See annotations defined in /zap/c++.zap. For "
           "DynamicCapability::Server, use the constructor option (the annotation does not apply "
           "to DynamicCapability). This change was made to gain a significant performance boost -- "
           "dynamically allowing cancellation required excessive bookkeeping.");
@@ -469,8 +469,8 @@ public:
 
   void allowCancellation()
       KJ_UNAVAILABLE(
-          "As of Cap'n Proto 1.0, allowCancellation must be applied statically using an "
-          "annotation in the schema. See annotations defined in /capnp/c++.capnp. For "
+          "As of Zap 1.0, allowCancellation must be applied statically using an "
+          "annotation in the schema. See annotations defined in /zap/c++.zap. For "
           "DynamicCapability::Server, use the constructor option (the annotation does not apply "
           "to DynamicCapability). This change was made to gain a significant performance boost -- "
           "dynamically allowing cancellation required excessive bookkeeping.");
@@ -484,7 +484,7 @@ private:
 };
 
 class Capability::Server {
-  // Objects implementing a Cap'n Proto interface must subclass this.  Typically, such objects
+  // Objects implementing a Zap interface must subclass this.  Typically, such objects
   // will instead subclass a typed Server interface which will take care of implementing
   // dispatchCall().
 
@@ -505,7 +505,7 @@ public:
     // for ensuring that cancellation is prevented and that `context` remains valid until the
     // call completes normally.
     //
-    // See the `allowCancellation` annotation defined in `c++.capnp`.
+    // See the `allowCancellation` annotation defined in `c++.zap`.
   };
 
   virtual DispatchCallResult dispatchCall(uint64_t interfaceId, uint16_t methodId,
@@ -640,7 +640,7 @@ private:
 class ReaderCapabilityTable: private _::CapTableReader {
   // Class which imbues Readers with the ability to read capabilities.
   //
-  // In Cap'n Proto format, the encoding of a capability pointer is simply an integer index into
+  // In Zap format, the encoding of a capability pointer is simply an integer index into
   // an external table. Since these pointers fundamentally point outside the message, a
   // MessageReader by default has no idea what they point at, and therefore reading capabilities
   // from such a reader will throw exceptions.
@@ -649,7 +649,7 @@ class ReaderCapabilityTable: private _::CapTableReader {
   // this class. By "imbuing" a Reader, you get a new Reader which will interpret capability
   // pointers by treating them as indexes into the ReaderCapabilityTable.
   //
-  // Note that when using Cap'n Proto's RPC system, this is handled automatically.
+  // Note that when using Zap's RPC system, this is handled automatically.
 
 public:
   explicit ReaderCapabilityTable(kj::Array<kj::Maybe<kj::Own<ClientHook>>> table);
@@ -710,10 +710,10 @@ class CapabilityServerSet: private _::CapabilityServerSetBase {
   // underlying Server objects associated with them.
   //
   // All objects in the set must have the same interface type T. The objects may implement various
-  // interfaces derived from T (and in fact T can be `capnp::Capability` to accept all objects),
+  // interfaces derived from T (and in fact T can be `zap::Capability` to accept all objects),
   // but note that if you compile with RTTI disabled then you will not be able to down-cast through
   // virtual inheritance, and all inheritance between server interfaces is virtual. So, with RTTI
-  // disabled, you will likely need to set T to be the most-derived Cap'n Proto interface type,
+  // disabled, you will likely need to set T to be the most-derived Zap interface type,
   // and you server class will need to be directly derived from that, so that you can use
   // static_cast (or kj::downcast) to cast to it after calling getLocalServer(). (If you compile
   // with RTTI, then you can freely dynamic_cast and ignore this issue!)
@@ -862,7 +862,7 @@ public:
 
   inline bool isNull() { return isBrand(&NULL_CAPABILITY_BRAND); }
   // Returns true if the capability was created as a result of assigning a Client to null or by
-  // reading a null pointer out of a Cap'n Proto message.
+  // reading a null pointer out of a Zap message.
 
   inline bool isError() { return isBrand(&BROKEN_CAPABILITY_BRAND); }
   // Returns true if the capability was created by newBrokenCap().
@@ -1339,8 +1339,8 @@ struct Orphanage::GetInnerReader<T, Kind::INTERFACE> {
   }
 };
 
-#define CAPNP_CAPABILITY_H_INCLUDED  // for testing includes in unit test
+#define ZAP_CAPABILITY_H_INCLUDED  // for testing includes in unit test
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

@@ -21,10 +21,10 @@
 
 #include "byte-stream.h"
 #include <kj/test.h>
-#include <capnp/rpc-twoparty.h>
+#include <zap/rpc-twoparty.h>
 #include <stdlib.h>
 
-namespace capnp {
+namespace zap {
 namespace {
 
 kj::Promise<void> expectRead(kj::AsyncInputStream& in, kj::StringPtr expected) {
@@ -65,7 +65,7 @@ KJ_TEST("KJ -> ByteStream -> KJ without shortening") {
 
   auto pipe = kj::newOneWayPipe();
 
-  auto wrapped = factory1.capnpToKj(factory2.kjToCapnp(kj::mv(pipe.out)));
+  auto wrapped = factory1.zapToKj(factory2.kjToZap(kj::mv(pipe.out)));
 
   {
     auto promise = wrapped->write("foo"_kjb);
@@ -153,7 +153,7 @@ KJ_TEST("KJ -> ByteStream -> KJ with shortening") {
   ExactPointerWriter exactPointerWriter;
   auto pumpPromise = pipe.in->pumpTo(exactPointerWriter);
 
-  auto wrapped = factory.capnpToKj(factory.kjToCapnp(kj::mv(pipe.out)));
+  auto wrapped = factory.zapToKj(factory.kjToZap(kj::mv(pipe.out)));
 
   {
     auto buffer = "foo"_kjb;
@@ -195,8 +195,8 @@ KJ_TEST("KJ -> ByteStream -> KJ -> ByteStream -> KJ with shortening") {
   ExactPointerWriter exactPointerWriter;
   auto pumpPromise = pipe.in->pumpTo(exactPointerWriter);
 
-  auto wrapped = factory.capnpToKj(factory.kjToCapnp(
-                 factory.capnpToKj(factory.kjToCapnp(kj::mv(pipe.out)))));
+  auto wrapped = factory.zapToKj(factory.kjToZap(
+                 factory.zapToKj(factory.kjToZap(kj::mv(pipe.out)))));
 
   {
     auto buffer = "foo"_kjb;
@@ -239,10 +239,10 @@ KJ_TEST("KJ -> ByteStream -> KJ pipe -> ByteStream -> KJ with shortening") {
   ExactPointerWriter exactPointerWriter;
   auto backPumpPromise = backPipe.in->pumpTo(exactPointerWriter);
 
-  auto backWrapped = factory.capnpToKj(factory.kjToCapnp(kj::mv(backPipe.out)));
+  auto backWrapped = factory.zapToKj(factory.kjToZap(kj::mv(backPipe.out)));
   auto midPumpPormise = middlePipe.in->pumpTo(*backWrapped, 3);
 
-  auto wrapped = factory.capnpToKj(factory.kjToCapnp(kj::mv(middlePipe.out)));
+  auto wrapped = factory.zapToKj(factory.kjToZap(kj::mv(middlePipe.out)));
 
   // Poll whenWriteDisconnected(), mainly as a way to let all the path-shortening settle.
   auto disconnectPromise = wrapped->whenWriteDisconnected();
@@ -302,17 +302,17 @@ KJ_TEST("KJ -> ByteStream RPC -> KJ pipe -> ByteStream RPC -> KJ with shortening
   auto backPumpPromise = backPipe.in->pumpTo(exactPointerWriter);
 
   auto rpcConnection = kj::newTwoWayPipe();
-  capnp::TwoPartyClient client(*rpcConnection.ends[0],
-      clientFactory.kjToCapnp(kj::mv(backPipe.out)),
+  zap::TwoPartyClient client(*rpcConnection.ends[0],
+      clientFactory.kjToZap(kj::mv(backPipe.out)),
       rpc::twoparty::Side::CLIENT);
-  capnp::TwoPartyClient server(*rpcConnection.ends[1],
-      serverFactory.kjToCapnp(kj::mv(middlePipe.out)),
+  zap::TwoPartyClient server(*rpcConnection.ends[1],
+      serverFactory.kjToZap(kj::mv(middlePipe.out)),
       rpc::twoparty::Side::SERVER);
 
-  auto backWrapped = serverFactory.capnpToKj(server.bootstrap().castAs<ByteStream>());
+  auto backWrapped = serverFactory.zapToKj(server.bootstrap().castAs<ByteStream>());
   auto midPumpPormise = middlePipe.in->pumpTo(*backWrapped, 3);
 
-  auto wrapped = clientFactory.capnpToKj(client.bootstrap().castAs<ByteStream>());
+  auto wrapped = clientFactory.zapToKj(client.bootstrap().castAs<ByteStream>());
 
   // Poll whenWriteDisconnected(), mainly as a way to let all the path-shortening settle.
   auto disconnectPromise = wrapped->whenWriteDisconnected();
@@ -372,17 +372,17 @@ KJ_TEST("KJ -> ByteStream RPC -> KJ pipe -> ByteStream RPC -> KJ with concurrent
   auto backPumpPromise = backPipe.in->pumpTo(exactPointerWriter);
 
   auto rpcConnection = kj::newTwoWayPipe();
-  capnp::TwoPartyClient client(*rpcConnection.ends[0],
-      clientFactory.kjToCapnp(kj::mv(backPipe.out)),
+  zap::TwoPartyClient client(*rpcConnection.ends[0],
+      clientFactory.kjToZap(kj::mv(backPipe.out)),
       rpc::twoparty::Side::CLIENT);
-  capnp::TwoPartyClient server(*rpcConnection.ends[1],
-      serverFactory.kjToCapnp(kj::mv(middlePipe.out)),
+  zap::TwoPartyClient server(*rpcConnection.ends[1],
+      serverFactory.kjToZap(kj::mv(middlePipe.out)),
       rpc::twoparty::Side::SERVER);
 
-  auto backWrapped = serverFactory.capnpToKj(server.bootstrap().castAs<ByteStream>());
+  auto backWrapped = serverFactory.zapToKj(server.bootstrap().castAs<ByteStream>());
   auto midPumpPormise = middlePipe.in->pumpTo(*backWrapped);
 
-  auto wrapped = clientFactory.capnpToKj(client.bootstrap().castAs<ByteStream>());
+  auto wrapped = clientFactory.zapToKj(client.bootstrap().castAs<ByteStream>());
 
   auto buffer = "foobar"_kjb;
   auto writePromise = wrapped->write(buffer);
@@ -427,7 +427,7 @@ KJ_TEST("KJ -> ByteStream RPC -> KJ pipe -> ByteStream RPC -> KJ with concurrent
 
 KJ_TEST("KJ -> KJ pipe -> ByteStream RPC -> KJ pipe -> ByteStream RPC -> KJ with concurrent shortening") {
   // Same as previous test, except we add a KJ pipe at the beginning and pump it into the top of
-  // the pipe, which invokes tryPumpFrom() on the KjToCapnpStreamAdapter.
+  // the pipe, which invokes tryPumpFrom() on the KjToZapStreamAdapter.
 
   kj::EventLoop eventLoop;
   kj::WaitScope waitScope(eventLoop);
@@ -443,17 +443,17 @@ KJ_TEST("KJ -> KJ pipe -> ByteStream RPC -> KJ pipe -> ByteStream RPC -> KJ with
   auto backPumpPromise = backPipe.in->pumpTo(exactPointerWriter);
 
   auto rpcConnection = kj::newTwoWayPipe();
-  capnp::TwoPartyClient client(*rpcConnection.ends[0],
-      clientFactory.kjToCapnp(kj::mv(backPipe.out)),
+  zap::TwoPartyClient client(*rpcConnection.ends[0],
+      clientFactory.kjToZap(kj::mv(backPipe.out)),
       rpc::twoparty::Side::CLIENT);
-  capnp::TwoPartyClient server(*rpcConnection.ends[1],
-      serverFactory.kjToCapnp(kj::mv(middlePipe.out)),
+  zap::TwoPartyClient server(*rpcConnection.ends[1],
+      serverFactory.kjToZap(kj::mv(middlePipe.out)),
       rpc::twoparty::Side::SERVER);
 
-  auto backWrapped = serverFactory.capnpToKj(server.bootstrap().castAs<ByteStream>());
+  auto backWrapped = serverFactory.zapToKj(server.bootstrap().castAs<ByteStream>());
   auto midPumpPormise = middlePipe.in->pumpTo(*backWrapped);
 
-  auto wrapped = clientFactory.capnpToKj(client.bootstrap().castAs<ByteStream>());
+  auto wrapped = clientFactory.zapToKj(client.bootstrap().castAs<ByteStream>());
   auto frontPumpPromise = frontPipe.in->pumpTo(*wrapped);
 
   auto buffer = "foobar"_kjb;
@@ -510,10 +510,10 @@ KJ_TEST("Two Substreams on one destination") {
   ExactPointerWriter exactPointerWriter;
   auto backPumpPromise = backPipe.in->pumpTo(exactPointerWriter);
 
-  auto backWrapped = factory.capnpToKj(factory.kjToCapnp(kj::mv(backPipe.out)));
+  auto backWrapped = factory.zapToKj(factory.kjToZap(kj::mv(backPipe.out)));
 
-  auto wrapped1 = factory.capnpToKj(factory.kjToCapnp(kj::mv(middlePipe1.out)));
-  auto wrapped2 = factory.capnpToKj(factory.kjToCapnp(kj::mv(middlePipe2.out)));
+  auto wrapped1 = factory.zapToKj(factory.kjToZap(kj::mv(middlePipe1.out)));
+  auto wrapped2 = factory.zapToKj(factory.kjToZap(kj::mv(middlePipe2.out)));
 
   // Declare these buffers out here so that they can't possibly end up with the same address.
   auto buffer1 = "foo"_kjb;
@@ -577,10 +577,10 @@ KJ_TEST("Two Substreams on one destination no limits (pump to EOF)") {
   ExactPointerWriter exactPointerWriter;
   auto backPumpPromise = backPipe.in->pumpTo(exactPointerWriter);
 
-  auto backWrapped = factory.capnpToKj(factory.kjToCapnp(kj::mv(backPipe.out)));
+  auto backWrapped = factory.zapToKj(factory.kjToZap(kj::mv(backPipe.out)));
 
-  auto wrapped1 = factory.capnpToKj(factory.kjToCapnp(kj::mv(middlePipe1.out)));
-  auto wrapped2 = factory.capnpToKj(factory.kjToCapnp(kj::mv(middlePipe2.out)));
+  auto wrapped1 = factory.zapToKj(factory.kjToZap(kj::mv(middlePipe1.out)));
+  auto wrapped2 = factory.zapToKj(factory.kjToZap(kj::mv(middlePipe2.out)));
 
   // Declare these buffers out here so that they can't possibly end up with the same address.
   auto buffer1 = "foo"_kjb;
@@ -644,12 +644,12 @@ KJ_TEST("KJ -> ByteStream RPC -> KJ promise stream -> ByteStream -> KJ") {
   ExactPointerWriter exactPointerWriter;
 
   auto paf = kj::newPromiseAndFulfiller<kj::Own<kj::AsyncOutputStream>>();
-  auto backCap = factory.kjToCapnp(kj::newPromisedStream(kj::mv(paf.promise)));
+  auto backCap = factory.kjToZap(kj::newPromisedStream(kj::mv(paf.promise)));
 
   auto rpcPipe = kj::newTwoWayPipe();
-  capnp::TwoPartyClient client(*rpcPipe.ends[0]);
-  capnp::TwoPartyClient server(*rpcPipe.ends[1], kj::mv(backCap), rpc::twoparty::Side::SERVER);
-  auto front = factory.capnpToKj(client.bootstrap().castAs<ByteStream>());
+  zap::TwoPartyClient client(*rpcPipe.ends[0]);
+  zap::TwoPartyClient server(*rpcPipe.ends[1], kj::mv(backCap), rpc::twoparty::Side::SERVER);
+  auto front = factory.zapToKj(client.bootstrap().castAs<ByteStream>());
 
   // These will all queue up in the RPC layer.
   front->write("foo"_kjb).wait(waitScope);
@@ -658,18 +658,18 @@ KJ_TEST("KJ -> ByteStream RPC -> KJ promise stream -> ByteStream -> KJ") {
   front->write("qux"_kjb).wait(waitScope);
 
   // Make sure those writes manage to get all the way through the RPC system and queue up in the
-  // LocalClient wrapping the CapnpToKjStreamAdapter at the other end.
+  // LocalClient wrapping the ZapToKjStreamAdapter at the other end.
   waitScope.poll();
 
   // Fulfill the promise.
-  paf.fulfiller->fulfill(factory.capnpToKj(factory.kjToCapnp(kj::attachRef(exactPointerWriter))));
+  paf.fulfiller->fulfill(factory.zapToKj(factory.kjToZap(kj::attachRef(exactPointerWriter))));
   waitScope.poll();
 
   // Now:
   // - "foo" should have made it all the way down to the final output stream.
-  // - "bar", "baz", and "qux" are queued on the CapnpToKjStreamAdapter immediately wrapping the
+  // - "bar", "baz", and "qux" are queued on the ZapToKjStreamAdapter immediately wrapping the
   //   KJ promise stream.
-  // - But that stream adapter has discovered that there's another capnp stream downstream and has
+  // - But that stream adapter has discovered that there's another zap stream downstream and has
   //   resolved itself to the later stream.
   // - A new call at this time should NOT be allowed to hop the queue.
 
@@ -801,33 +801,33 @@ KJ_TEST("ExplicitEndOutputStream round trip") {
 
   // Run blocking path shortening by using lots of different factoires and a PathProbeBlocker.
   doTest("no path shortening",
-      factories[3].capnpToKjExplicitEnd(
-          factories[2].kjToCapnp(
+      factories[3].zapToKjExplicitEnd(
+          factories[2].kjToZap(
               kj::heap<PathProbeBlocker>(
-                  factories[1].capnpToKj(
-                      factories[0].kjToCapnp(kj::attachRef(endpoint)))))));
+                  factories[1].zapToKj(
+                      factories[0].kjToZap(kj::attachRef(endpoint)))))));
 
-  // Run allowing shortening of capnp layers, by using the same factory in all cases.
-  doTest("capnp path shortening",
-      factories[0].capnpToKjExplicitEnd(
-          factories[0].kjToCapnp(
+  // Run allowing shortening of zap layers, by using the same factory in all cases.
+  doTest("zap path shortening",
+      factories[0].zapToKjExplicitEnd(
+          factories[0].kjToZap(
               kj::heap<PathProbeBlocker>(
-                  factories[0].capnpToKj(
-                      factories[0].kjToCapnp(kj::attachRef(endpoint)))))));
+                  factories[0].zapToKj(
+                      factories[0].kjToZap(kj::attachRef(endpoint)))))));
 
   // Run allowing shortening of KJ layers, by not inserting PathProbeBlocker.
   doTest("kj path shortening",
-      factories[3].capnpToKjExplicitEnd(
-          factories[2].kjToCapnp(
-              factories[1].capnpToKj(
-                  factories[0].kjToCapnp(kj::attachRef(endpoint))))));
+      factories[3].zapToKjExplicitEnd(
+          factories[2].kjToZap(
+              factories[1].zapToKj(
+                  factories[0].kjToZap(kj::attachRef(endpoint))))));
 
   // Run with full path shortening.
   doTest("full path shortening",
-      factories[0].capnpToKjExplicitEnd(
-          factories[0].kjToCapnp(
-              factories[0].capnpToKj(
-                  factories[0].kjToCapnp(kj::attachRef(endpoint))))));
+      factories[0].zapToKjExplicitEnd(
+          factories[0].kjToZap(
+              factories[0].zapToKj(
+                  factories[0].kjToZap(kj::attachRef(endpoint))))));
 }
 
 namespace {
@@ -885,9 +885,9 @@ KJ_TEST("ExplicitEndOutputStream::wrap") {
 
 // TODO:
 // - Parallel writes (requires streaming)
-// - Write to KJ -> capnp -> RPC -> capnp -> KJ loopback without shortening, verify we can write
+// - Write to KJ -> zap -> RPC -> zap -> KJ loopback without shortening, verify we can write
 //   several things to buffer (requires streaming).
 // - Again, but with shortening which only occurs after some promise resolve.
 
 }  // namespace
-}  // namespace capnp
+}  // namespace zap

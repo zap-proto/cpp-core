@@ -21,7 +21,7 @@
 
 @0xf36d7b330303c66e;
 
-using Test = import "test.capnp";
+using Test = import "test.zap";
 
 struct TestImport {
   field @0 :Test.TestAllTypes;

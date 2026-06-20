@@ -19,14 +19,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// This program is a code generator plugin for `capnp compile` which writes the schema back to
-// stdout in roughly capnpc format.
+// This program is a code generator plugin for `zap compile` which writes the schema back to
+// stdout in roughly zapc format.
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
 
-#include <capnp/schema.capnp.h>
+#include <zap/schema.zap.h>
 #include "../serialize.h"
 #include <kj/debug.h>
 #include <kj/io.h>
@@ -38,7 +38,7 @@
 #include <kj/main.h>
 #include <algorithm>
 #include <map>
-#include <capnp/stream.capnp.h>
+#include <zap/stream.zap.h>
 
 #if HAVE_CONFIG_H
 #include "config.h"
@@ -48,7 +48,7 @@
 #define VERSION "(unknown)"
 #endif
 
-namespace capnp {
+namespace zap {
 namespace {
 
 bool hasDiscriminantValue(const schema::Field::Reader& reader) {
@@ -86,16 +86,16 @@ inline Indent KJ_STRINGIFY(const Indent& indent) {
 
 // =======================================================================================
 
-class CapnpcCapnpMain {
+class ZapcZapMain {
 public:
-  CapnpcCapnpMain(kj::ProcessContext& context): context(context) {}
+  ZapcZapMain(kj::ProcessContext& context): context(context) {}
 
   kj::MainFunc getMain() {
-    return kj::MainBuilder(context, "Cap'n Proto loopback plugin version " VERSION,
-          "This is a Cap'n Proto compiler plugin which \"de-compiles\" the schema back into "
-          "Cap'n Proto schema language format, with comments showing the offsets chosen by the "
-          "compiler.  This is meant to be run using the Cap'n Proto compiler, e.g.:\n"
-          "    capnp compile -ocapnp foo.capnp")
+    return kj::MainBuilder(context, "Zap loopback plugin version " VERSION,
+          "This is a Zap compiler plugin which \"de-compiles\" the schema back into "
+          "Zap schema language format, with comments showing the offsets chosen by the "
+          "compiler.  This is meant to be run using the Zap compiler, e.g.:\n"
+          "    zap compile -ozap foo.zap")
         .callAfterParsing(KJ_BIND_METHOD(*this, run))
         .build();
   }
@@ -681,6 +681,6 @@ private:
 };
 
 }  // namespace
-}  // namespace capnp
+}  // namespace zap
 
-KJ_MAIN(capnp::CapnpcCapnpMain);
+KJ_MAIN(zap::ZapcZapMain);

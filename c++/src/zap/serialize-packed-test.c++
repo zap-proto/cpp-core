@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include "test-util.h"
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -588,4 +588,4 @@ TEST(Packed, RoundTripHugeStringEvenSegmentCountLazy) {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

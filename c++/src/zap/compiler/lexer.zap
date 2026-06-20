@@ -21,9 +21,9 @@
 
 @0xa73956d2621fc3ee;
 
-using Cxx = import "/capnp/c++.capnp";
+using Cxx = import "/zap/c++.zap";
 
-$Cxx.namespace("capnp::compiler");
+$Cxx.namespace("zap::compiler");
 
 struct Token {
   union {

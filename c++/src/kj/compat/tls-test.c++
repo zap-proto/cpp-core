@@ -1256,19 +1256,19 @@ KJ_TEST("NetworkHttpClient connect with tlsStarter") {
 }
 
 #ifdef KJ_EXTERNAL_TESTS
-KJ_TEST("TLS to capnproto.org") {
+KJ_TEST("TLS to zap.org") {
   kj::AsyncIoContext io = setupAsyncIo();
   TlsContext tls;
 
   auto network = tls.wrapNetwork(io.provider->getNetwork());
-  auto addr = network->parseAddress("capnproto.org", 443).wait(io.waitScope);
+  auto addr = network->parseAddress("zap.org", 443).wait(io.waitScope);
   auto stream = addr->connect().wait(io.waitScope);
 
   kj::StringPtr request =
       "HEAD / HTTP/1.1\r\n"
-      "Host: capnproto.org\r\n"
+      "Host: zap.org\r\n"
       "Connection: close\r\n"
-      "User-Agent: capnp-test/0.6\r\n"
+      "User-Agent: zap-test/0.6\r\n"
       "\r\n";
 
   stream->write(request.begin(), request.size()).wait(io.waitScope);

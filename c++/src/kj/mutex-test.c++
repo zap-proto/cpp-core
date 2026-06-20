@@ -104,7 +104,7 @@ TEST(Mutex, MutexGuarded) {
 
     // HACK: As currently written, this test depends on timing, which makes it inherently flaky.
     // It'd be nice to make it impossible to flake, but in the meantime, adding more `delay()` calls
-    // here makes it less flaky. https://github.com/capnproto/capnproto/issues/2208
+    // here makes it less flaky. https://github.com/zap/zap/issues/2208
     for ([[maybe_unused]] auto i: zeroTo(4)) {
       delay();
     }

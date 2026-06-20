@@ -23,7 +23,7 @@
 #include <kj/parse/char.h>
 #include <kj/debug.h>
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 
 namespace p = kj::parse;
@@ -247,7 +247,7 @@ Lexer::Lexer(Orphanage orphanageParam, ErrorReporter& errorReporter)
                    sequence(p::exactChar<'\x00'>())),
           [&errorReporter](Location loc) -> kj::Maybe<Orphan<Token>> {
             errorReporter.addError(loc.begin(), loc.end(),
-                "Non-UTF-8 input detected. Cap'n Proto schema files must be UTF-8 text.");
+                "Non-UTF-8 input detected. Zap schema files must be UTF-8 text.");
             return kj::none;
           }), [](kj::Maybe<Orphan<Token>> param) { return param; })));
   parsers.tokenSequence = arena.copy(p::sequence(
@@ -311,4 +311,4 @@ Lexer::Lexer(Orphanage orphanageParam, ErrorReporter& errorReporter)
 Lexer::~Lexer() noexcept(false) {}
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap

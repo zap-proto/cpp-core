@@ -25,9 +25,9 @@
 #include "orphan.h"
 #include <initializer_list>
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 
 template <typename T>
@@ -47,7 +47,7 @@ private:
 };
 
 // By default this isn't compatible with STL algorithms. To add STL support either define
-// KJ_STD_COMPAT at the top of your compilation unit or include capnp/compat/std-iterator.h.
+// KJ_STD_COMPAT at the top of your compilation unit or include zap/compat/std-iterator.h.
 template <typename Container, typename Element>
 class IndexingIterator {
 public:
@@ -542,10 +542,10 @@ private:
   friend struct _::PointerHelpers;
 };
 
-}  // namespace capnp
+}  // namespace zap
 
 #ifdef KJ_STD_COMPAT
 #include "compat/std-iterator.h"
 #endif  // KJ_STD_COMPAT
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

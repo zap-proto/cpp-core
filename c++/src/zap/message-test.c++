@@ -26,7 +26,7 @@
 #include <kj/debug.h>
 #include <kj/compat/gtest.h>
 
-namespace capnp {
+namespace zap {
 namespace _ {  // private
 namespace {
 
@@ -176,7 +176,7 @@ KJ_TEST("clone()") {
   checkTestMessage(*copy);
 }
 
-#if !CAPNP_ALLOW_UNALIGNED
+#if !ZAP_ALLOW_UNALIGNED
 KJ_TEST("disallow unaligned") {
   union {
     char buffer[16];
@@ -193,7 +193,7 @@ KJ_TEST("disallow unaligned") {
 #endif
 
 KJ_TEST("MessageBuilder::sizeInWords()") {
-  capnp::MallocMessageBuilder builder;
+  zap::MallocMessageBuilder builder;
   auto root = builder.initRoot<TestAllTypes>();
   initTestMessage(root);
 
@@ -208,7 +208,7 @@ KJ_TEST("MessageBuilder::sizeInWords()") {
   }
   KJ_EXPECT(total == expected);
 
-  capnp::SegmentArrayMessageReader reader(segments);
+  zap::SegmentArrayMessageReader reader(segments);
   checkTestMessage(reader.getRoot<TestAllTypes>());
   KJ_EXPECT(reader.sizeInWords() == expected);
 }
@@ -217,4 +217,4 @@ KJ_TEST("MessageBuilder::sizeInWords()") {
 
 }  // namespace
 }  // namespace _ (private)
-}  // namespace capnp
+}  // namespace zap

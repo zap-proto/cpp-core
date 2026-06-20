@@ -23,9 +23,9 @@
 
 #include "layout.h"
 
-CAPNP_BEGIN_HEADER
+ZAP_BEGIN_HEADER
 
-namespace capnp {
+namespace zap {
 
 class StructSchema;
 class ListSchema;
@@ -125,10 +125,10 @@ public:
 
   Orphan<DynamicStruct> newOrphan(StructSchema schema) const;
   // Dynamically create an orphan struct with the given schema.  You must
-  // #include <capnp/dynamic.h> to use this.
+  // #include <zap/dynamic.h> to use this.
 
   Orphan<DynamicList> newOrphan(ListSchema schema, uint size) const;
-  // Dynamically create an orphan list with the given schema.  You must #include <capnp/dynamic.h>
+  // Dynamically create an orphan list with the given schema.  You must #include <zap/dynamic.h>
   // to use this.
 
   template <typename Reader>
@@ -161,10 +161,10 @@ public:
   //   these problems when using this optimization; if you can't, allocate a copy instead.
   // - `data.begin()` must be aligned to a machine word boundary (32-bit or 64-bit depending on
   //   the CPU).  Any pointer returned by malloc() as well as any data blob obtained from another
-  //   Cap'n Proto message satisfies this.
+  //   Zap message satisfies this.
   // - If `data.size()` is not a multiple of 8, extra bytes past data.end() up until the next 8-byte
   //   boundary will be visible in the raw message when it is written out.  Thus, there must be no
-  //   secrets in these bytes.  Data blobs obtained from other Cap'n Proto messages should be safe
+  //   secrets in these bytes.  Data blobs obtained from other Zap messages should be safe
   //   as these bytes should be zero (unless the sender had the same problem).
   //
   // The array will actually become one of the message's segments.  The data can thus be adopted
@@ -178,9 +178,9 @@ private:
   inline explicit Orphanage(_::BuilderArena* arena, _::CapTableBuilder* capTable)
       : arena(arena), capTable(capTable) {}
 
-  template <typename T, Kind = CAPNP_KIND(T)>
+  template <typename T, Kind = ZAP_KIND(T)>
   struct GetInnerBuilder;
-  template <typename T, Kind = CAPNP_KIND(T)>
+  template <typename T, Kind = ZAP_KIND(T)>
   struct GetInnerReader;
   template <typename T>
   struct NewOrphanListImpl;
@@ -194,7 +194,7 @@ private:
 
 namespace _ {  // private
 
-template <typename T, Kind = CAPNP_KIND(T)>
+template <typename T, Kind = ZAP_KIND(T)>
 struct OrphanGetImpl;
 
 template <typename T>
@@ -217,7 +217,7 @@ struct OrphanGetImpl<T, Kind::STRUCT> {
   }
 };
 
-#if !CAPNP_LITE
+#if !ZAP_LITE
 template <typename T>
 struct OrphanGetImpl<T, Kind::INTERFACE> {
   static inline typename T::Client apply(_::OrphanBuilder& builder) {
@@ -230,7 +230,7 @@ struct OrphanGetImpl<T, Kind::INTERFACE> {
     builder.truncate(size, ElementSize::POINTER);
   }
 };
-#endif  // !CAPNP_LITE
+#endif  // !ZAP_LITE
 
 template <typename T, Kind k>
 struct OrphanGetImpl<List<T, k>, Kind::LIST> {
@@ -431,6 +431,6 @@ inline Orphan<Data> Orphanage::referenceExternalData(Data::Reader data) const {
   return Orphan<Data>(_::OrphanBuilder::referenceExternalData(arena, data));
 }
 
-}  // namespace capnp
+}  // namespace zap
 
-CAPNP_END_HEADER
+ZAP_END_HEADER

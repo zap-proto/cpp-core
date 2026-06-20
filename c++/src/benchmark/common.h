@@ -21,7 +21,7 @@
 
 #pragma once
 
-#if defined(__GNUC__) && !defined(CAPNP_HEADER_WARNINGS)
+#if defined(__GNUC__) && !defined(ZAP_HEADER_WARNINGS)
 #pragma GCC system_header
 #endif
 
@@ -41,7 +41,7 @@
 #include <string>
 #include <vector>
 
-namespace capnp {
+namespace zap {
 namespace benchmark {
 
 // Use a 128-bit Xorshift algorithm.
@@ -290,5 +290,5 @@ int benchmarkMain(int argc, char* argv[]) {
   return 0;
 }
 
-}  // namespace capnp
+}  // namespace zap
 }  // namespace benchmark

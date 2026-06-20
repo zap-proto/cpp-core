@@ -20,15 +20,15 @@
 # THE SOFTWARE.
 
 @0xc56be168dcbbc3c6;
-# The structures in this file correspond to the AST of the Cap'n Proto schema language.
+# The structures in this file correspond to the AST of the Zap schema language.
 #
-# This file is intended to be used internally by capnpc.  Mostly, it is useful because it is more
+# This file is intended to be used internally by zapc.  Mostly, it is useful because it is more
 # convenient than defining data classes in C++, particularly where variant types (unions) are
 # needed.  Over time, this file may change in backwards-incompatible ways.
 
-using Cxx = import "/capnp/c++.capnp";
+using Cxx = import "/zap/c++.zap";
 
-$Cxx.namespace("capnp::compiler");
+$Cxx.namespace("zap::compiler");
 
 # TODO(someday):  Here's a case where parameterized types might be nice, but note that it would
 #   need to support primitive parameters...

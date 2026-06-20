@@ -92,7 +92,7 @@
 #else
 static void __lsan_ignore_object(const void* p) {}
 #endif
-// TODO(cleanup): Remove the LSAN stuff per https://github.com/capnproto/capnproto/pull/1255
+// TODO(cleanup): Remove the LSAN stuff per https://github.com/zap/zap/pull/1255
 // feedback.
 
 namespace {
@@ -100,7 +100,7 @@ template <typename T>
 inline T* lsanIgnoreObjectAndReturn(T* ptr) {
   // Defensively lsan_ignore_object since the documentation doesn't explicitly specify what happens
   // if you call this multiple times on the same object.
-  // TODO(cleanup): Remove this per https://github.com/capnproto/capnproto/pull/1255.
+  // TODO(cleanup): Remove this per https://github.com/zap/zap/pull/1255.
   __lsan_ignore_object(ptr);
   return ptr;
 }
@@ -1421,7 +1421,7 @@ ExceptionCallback& getExceptionCallback() {
   //    cost of 1 heap allocation is minimal.
   //
   // TODO(cleanup): Harris has an excellent suggestion in
-  //  https://github.com/capnproto/capnproto/pull/1255 that should ensure we initialize the root
+  //  https://github.com/zap/zap/pull/1255 that should ensure we initialize the root
   //  callback once on first use as a global & never destroy it.
 
   ExceptionCallback* scoped = threadLocalCallback;
