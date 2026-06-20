@@ -21,11 +21,12 @@
 
 #include "schema-parser.h"
 #include "message.h"
-#include <capnp/compiler/compiler.h>
-#include <capnp/compiler/lexer.capnp.h>
-#include <capnp/compiler/lexer.h>
-#include <capnp/compiler/grammar.capnp.h>
-#include <capnp/compiler/parser.h>
+#include <zap/compiler/compiler.h>
+#include <zap/compiler/lexer.zap.h>
+#include <zap/compiler/lexer.h>
+#include <zap/compiler/grammar.zap.h>
+#include <zap/compiler/parser.h>
+#include <zap/compiler/desugar.h>
 #include <unordered_map>
 #include <kj/mutex.h>
 #include <kj/vector.h>
@@ -33,7 +34,7 @@
 #include <kj/io.h>
 #include <map>
 
-namespace capnp {
+namespace zap {
 
 namespace {
 
@@ -70,7 +71,16 @@ public:
   }
 
   Orphan<compiler::ParsedFile> loadContent(Orphanage orphanage) override {
-    kj::Array<const char> content = file->readContent();
+    kj::Array<const char> mapped = file->readContent();
+
+    // Desugar whitespace-significant syntax to brace syntax before lexing (back-compat:
+    // pure brace files are returned byte-identical and bypass this). The desugared buffer
+    // is retained in `desugaredContent` so the line-break offsets index into it.
+    kj::ArrayPtr<const char> content = mapped;
+    if (compiler::isWhitespaceSchema(mapped)) {
+      desugaredContent = compiler::desugar(mapped);
+      content = KJ_ASSERT_NONNULL(desugaredContent);
+    }
 
     lineBreaks.get([&](kj::SpaceFor<kj::Vector<uint>>& space) {
       auto vec = space.construct(content.size() / 40);
@@ -137,6 +147,10 @@ public:
 private:
   const SchemaParser& parser;
   kj::Own<const SchemaFile> file;
+
+  kj::Maybe<kj::Array<const char>> desugaredContent;
+  // Holds desugared (whitespace->brace) source when the file uses whitespace syntax, so the
+  // line-break offsets and lexer/parser byte positions index into it.
 
   kj::Lazy<kj::Vector<uint>> lineBreaks;
   // Byte offsets of the first byte in each source line.  The first element is always zero.
@@ -450,4 +464,4 @@ kj::Own<SchemaFile> SchemaFile::newFromDirectory(
                                   kj::mv(displayNameOverride));
 }
 
-}  // namespace capnp
+}  // namespace zap

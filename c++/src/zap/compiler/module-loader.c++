@@ -23,15 +23,16 @@
 #include "compiler.h"
 #include "lexer.h"
 #include "parser.h"
+#include "desugar.h"
 #include <kj/filesystem.h>
 #include <kj/vector.h>
 #include <kj/mutex.h>
 #include <kj/debug.h>
 #include <kj/io.h>
-#include <capnp/message.h>
+#include <zap/message.h>
 #include <unordered_map>
 
-namespace capnp {
+namespace zap {
 namespace compiler {
 
 namespace {
@@ -167,7 +168,18 @@ public:
   }
 
   Orphan<ParsedFile> loadContent(Orphanage orphanage) override {
-    kj::Array<const char> content = file->mmap(0, file->stat().size).releaseAsChars();
+    kj::Array<const char> mapped = file->mmap(0, file->stat().size).releaseAsChars();
+
+    // Whitespace-significant syntax is desugared to brace syntax BEFORE lexing, so the
+    // proven brace front-end is untouched. Pure brace files bypass this entirely (the
+    // returned bytes are identical), preserving exact back-compat. The desugared buffer
+    // is held in `desugaredContent` so it outlives the line-break table (which indexes
+    // into it) and the lex/parse below.
+    kj::ArrayPtr<const char> content = mapped;
+    if (isWhitespaceSchema(mapped)) {
+      desugaredContent = desugar(mapped);
+      content = KJ_ASSERT_NONNULL(desugaredContent);
+    }
 
     lineBreaks = kj::none;  // In case loadContent() is called multiple times.
     lineBreaks = lineBreaksSpace.construct(content);
@@ -226,6 +238,9 @@ private:
 
   kj::SpaceFor<LineBreakTable> lineBreaksSpace;
   kj::Maybe<kj::Own<LineBreakTable>> lineBreaks;
+  kj::Maybe<kj::Array<const char>> desugaredContent;
+  // Holds the desugared (whitespace->brace) source when the file uses whitespace syntax,
+  // so byte offsets reported by the lexer/parser map into it for the lifetime of `lineBreaks`.
   kj::Vector<Resolution> resolutions;
 };
 
@@ -302,4 +317,4 @@ void ModuleLoader::setFileIdsRequired(bool value) {
 }
 
 }  // namespace compiler
-}  // namespace capnp
+}  // namespace zap
