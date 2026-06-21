@@ -1,0 +1,14 @@
+cpp-core — part of the ZAP Protocol (github.com/zap-proto)
+
+This product includes software developed by the Cap'n Proto project:
+  Cap'n Proto — https://github.com/capnproto/capnproto
+  Copyright (c) 2013-2017 Sandstorm Development Group, Inc.; Cloudflare, Inc.;
+  and other contributors. Each commit is copyright by its respective author or
+  author's employer. Original author: Kenton Varda.
+  Licensed under the MIT License (see LICENSE).
+
+ZAP is a derivative work: a brand-neutral fork of libcapnp that keeps the wire
+model and KJ support library while adding the whitespace-significant `.zap`
+schema grammar (the offside rule, no braces, auto-assigned field ordinals) and
+the `zap` schema compiler binary that every language plugin executes.
+Modifications Copyright (c) 2025 Lux Industries Inc.
