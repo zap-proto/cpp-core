@@ -86,3 +86,9 @@
 # bazel output
 /c++/MODULE.bazel.lock
 bazel-*
+
+# build artifacts (compiled libs, generated test codegen, afl binary)
+*.a
+/c++/zap-afl-testcase
+**/*-test.zap.c++
+**/*-test.zap.h
