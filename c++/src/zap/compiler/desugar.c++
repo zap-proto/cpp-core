@@ -259,6 +259,135 @@ void putUInt(kj::Vector<char>& out, uint32_t v) {
   while (n > 0) out.add(buf[--n]);
 }
 
+// Net bracket depth contributed by `s`, ignoring string literals. At file scope the newline
+// terminates a statement only once the brackets it opened are closed again, so a running sum
+// of this over consecutive lines says whether a statement is still open.
+int bracketDelta(kj::ArrayPtr<const char> s) {
+  int depth = 0;
+  bool inStr = false;
+  for (size_t i = 0; i < s.size(); ++i) {
+    char c = s[i];
+    if (inStr) {
+      if (c == '\\' && i + 1 < s.size()) { ++i; continue; }
+      if (c == '"') inStr = false;
+      continue;
+    }
+    switch (c) {
+      case '"': inStr = true; break;
+      case '(': case '[': case '{': ++depth; break;
+      case ')': case ']': case '}': --depth; break;
+      default: break;
+    }
+  }
+  return depth;
+}
+
+// Index of the first `c` at nesting depth 0 and outside a string literal, or s.size().
+size_t findTopLevel(kj::ArrayPtr<const char> s, char target) {
+  int depth = 0;
+  bool inStr = false;
+  for (size_t i = 0; i < s.size(); ++i) {
+    char c = s[i];
+    if (inStr) {
+      if (c == '\\' && i + 1 < s.size()) { ++i; continue; }
+      if (c == '"') inStr = false;
+      continue;
+    }
+    if (c == '"') { inStr = true; continue; }
+    if (c == '(' || c == '[') { ++depth; continue; }
+    if (c == ')' || c == ']') { --depth; continue; }
+    if (depth == 0 && c == target) return i;
+  }
+  return s.size();
+}
+
+// One member of a method parameter/result list: `name Type` -> `name :Type`. A member that
+// already names its type with ':' (`name :Type`, with or without a default) is left alone,
+// as is an empty member. This is the same rule emitField applies to struct fields; a method
+// list omits the ':' in the whitespace form for exactly the same reason.
+void emitParam(kj::Vector<char>& out, kj::ArrayPtr<const char> member) {
+  auto t = trim(member);
+  if (t.size() == 0) { put(out, member); return; }
+  if (findTopLevel(t, ':') < t.size()) { put(out, member); return; }  // already typed
+  size_t nameLen = identLen(t);
+  if (nameLen == 0) { put(out, member); return; }
+  auto rest = trim(t.slice(nameLen, t.size()));
+  if (rest.size() == 0) { put(out, member); return; }  // bare name: not `name Type`
+  // Preserve the member's original leading whitespace so list layout survives.
+  size_t lead = 0;
+  while (lead < member.size() && (member[lead] == ' ' || member[lead] == '\t')) ++lead;
+  put(out, member.first(lead));
+  put(out, t.first(nameLen));
+  put(out, " :");
+  put(out, rest);
+}
+
+// Rewrite every parenthesized list in a method signature, leaving everything between the
+// lists (the name, the `->`, spacing, comments) byte-identical.
+void emitParamLists(kj::Vector<char>& out, kj::ArrayPtr<const char> t) {
+  size_t i = 0;
+  bool inStr = false;
+  while (i < t.size()) {
+    char c = t[i];
+    if (inStr) {
+      out.add(c);
+      if (c == '\\' && i + 1 < t.size()) { out.add(t[i + 1]); i += 2; continue; }
+      if (c == '"') inStr = false;
+      ++i;
+      continue;
+    }
+    if (c == '"') { inStr = true; out.add(c); ++i; continue; }
+    if (c != '(') { out.add(c); ++i; continue; }
+    // Find the matching ')' (string-aware) and rewrite the members between them.
+    size_t j = i + 1;
+    int depth = 1;
+    bool s2 = false;
+    while (j < t.size() && depth > 0) {
+      char d = t[j];
+      if (s2) {
+        if (d == '\\' && j + 1 < t.size()) { ++j; }
+        else if (d == '"') s2 = false;
+      } else if (d == '"') { s2 = true; }
+      else if (d == '(') ++depth;
+      else if (d == ')') --depth;
+      ++j;
+    }
+    if (depth != 0) { out.add(c); ++i; continue; }  // unbalanced: leave untouched
+    auto inner = t.slice(i + 1, j - 1);
+    out.add('(');
+    size_t start = 0;
+    while (start <= inner.size()) {
+      auto rest = inner.slice(start, inner.size());
+      size_t comma = findTopLevel(rest, ',');
+      emitParam(out, rest.first(comma));
+      if (comma == rest.size()) break;
+      out.add(',');
+      start += comma + 1;
+    }
+    out.add(')');
+    i = j;
+  }
+}
+
+// True if the next line carrying structure (blank lines and full-line comments are
+// transparent) is indented deeper than `indentCols`, i.e. the line at `pos`'s predecessor
+// opens a block. `pos` is the offset just past that line. This is the offside rule itself,
+// and it is what separates a keyword-first named union/group header (`union content`, which
+// has a body) from a field whose name happens to be the keyword (`union Int8`, which does
+// not).
+bool hasIndentedBody(kj::ArrayPtr<const char> input, size_t pos, size_t indentCols) {
+  while (pos < input.size()) {
+    size_t nl = pos;
+    while (nl < input.size() && input[nl] != '\n') ++nl;
+    auto line = input.slice(pos, nl);
+    pos = (nl < input.size()) ? nl + 1 : input.size();
+    auto t = trim(line);
+    if (t.size() == 0 || t[0] == '#') continue;
+    return indentWidth(line) > indentCols;
+  }
+  return false;
+}
+
 // ---- header classification --------------------------------------------------
 
 enum class HeaderKind {
@@ -329,7 +458,7 @@ bool isNameWithOptionalParams(kj::ArrayPtr<const char> s) {
   return false;  // unbalanced
 }
 
-HeaderKind classifyHeader(kj::ArrayPtr<const char> t) {
+HeaderKind classifyHeader(kj::ArrayPtr<const char> t, bool hasBody) {
   // A braceless header is keyword + the keyword's own name shape + end-of-line — NOT a
   // `name type` field line whose name merely happens to be a keyword (e.g. `union Int8`,
   // a field named `union`, or `struct :group`, a field named `struct`). Strip any trailing
@@ -356,9 +485,20 @@ HeaderKind classifyHeader(kj::ArrayPtr<const char> t) {
     }
   }
 
-  // union/group: bare keyword (anonymous), nothing after. `union Int8` is a field, not a header.
+  // union/group: bare keyword (anonymous), nothing after.
   if (equals(w, "union") && rest.size() == 0) return HeaderKind::UNION;
   if (equals(w, "group") && rest.size() == 0) return HeaderKind::GROUP;
+
+  // Keyword-first named forms `union <name>` / `group <name>`. These are the whitespace
+  // spelling of `<name> :union` / `<name> :group`, and they collide with a field whose name
+  // is the keyword (`union Int8` is a field of type Int8). The offside rule decides: a
+  // header owns an indented body, a field does not. Without this, `union content` was
+  // silently read as a field named `union` of type `content` — a misparse, not an error,
+  // wherever a type of that name happened to exist.
+  if (hasBody && isIdent(rest)) {
+    if (equals(w, "union")) return HeaderKind::NAMED_UNION;
+    if (equals(w, "group")) return HeaderKind::NAMED_GROUP;
+  }
 
   // `name :union` / `name :group` (named, share the enclosing struct's ordinals).
   for (size_t i = 0; i < t.size(); ++i) {
@@ -373,6 +513,51 @@ HeaderKind classifyHeader(kj::ArrayPtr<const char> t) {
     }
   }
   return HeaderKind::NONE;
+}
+
+// Emit a block header's code in the brace grammar's spelling. Everything the two forms
+// already share is copied byte-for-byte; only the tokens the brace grammar requires are
+// added.
+//
+//   `union content`        -> `content :union`     (keyword-first named union/group)
+//   `interface G extends Z`-> `interface G extends(Z)`  (the brace form parenthesizes the
+//                                                        superclass list)
+//
+// Every other header kind is already spelled the same in both forms.
+void emitHeaderCode(kj::Vector<char>& out, kj::ArrayPtr<const char> code, HeaderKind hk) {
+  if (hk == HeaderKind::NAMED_UNION || hk == HeaderKind::NAMED_GROUP) {
+    auto w = firstWord(code);
+    auto name = restAfterFirstWord(code);
+    // Only the keyword-first spelling needs rewriting; `name :union` is already brace form.
+    if (equals(w, "union") || equals(w, "group")) {
+      put(out, name);
+      put(out, " :");
+      put(out, w);
+      return;
+    }
+    put(out, code);
+    return;
+  }
+
+  if (hk == HeaderKind::INTERFACE) {
+    // `extends A, B` -> `extends(A, B)`. An already-parenthesized clause is left alone.
+    auto rest = restAfterFirstWord(code);
+    auto afterName = trim(rest.slice(identLen(rest), rest.size()));
+    if (startsWith(afterName, "extends")) {
+      auto sup = trim(afterName.slice(7, afterName.size()));
+      if (sup.size() > 0 && sup[0] != '(') {
+        // Copy everything up to the `extends` keyword verbatim, then parenthesize.
+        size_t upto = (size_t)(afterName.begin() - code.begin()) + 7;
+        put(out, code.first(upto));
+        out.add('(');
+        put(out, sup);
+        out.add(')');
+        return;
+      }
+    }
+  }
+
+  put(out, code);
 }
 
 // ---- member transforms ------------------------------------------------------
@@ -430,7 +615,8 @@ void emitMethod(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& nex
   uint32_t explicitClamped;
   if (explicitOrdinal(t, explicitClamped)) {
     advanceNext(next, explicitClamped);
-    put(out, t);
+    // The ordinal was written out; the lists still need their ':' tokens.
+    emitParamLists(out, t);
     return;
   }
   size_t nameLen = identLen(t);
@@ -441,7 +627,9 @@ void emitMethod(kj::Vector<char>& out, kj::ArrayPtr<const char> t, uint32_t& nex
   put(out, name);
   put(out, " @");
   putUInt(out, n);
-  if (rest.size() > 0) { out.add(' '); put(out, rest); }
+  // The parameter and result lists omit the ':' before each member's type in the
+  // whitespace form, exactly as struct fields do: `foo (name Text) -> (id Text)`.
+  if (rest.size() > 0) { out.add(' '); emitParamLists(out, rest); }
 }
 
 // ---- frame stack ------------------------------------------------------------
@@ -481,7 +669,9 @@ bool isWhitespaceSchema(kj::ArrayPtr<const char> input) {
     if (t.size() == 0 || t[0] == '#') continue;
     if (verbatimDepth > 0) { verbatimDepth += braceDelta(t); continue; }
     if (containsBrace(t)) { verbatimDepth += braceDelta(t); continue; }
-    if (classifyHeader(t) != HeaderKind::NONE) return true;
+    if (classifyHeader(t, hasIndentedBody(input, pos, indentWidth(line))) != HeaderKind::NONE) {
+      return true;
+    }
   }
   return false;
 }
@@ -492,6 +682,7 @@ kj::Array<char> desugar(kj::ArrayPtr<const char> input) {
   kj::Vector<Frame> frames;
   frames.add(Frame { 0, 0, FrameKind::FILE, SIZE_MAX });
   int verbatimDepth = 0;
+  int openStatement = 0;  // bracket depth of the file-scope statement being read, if any
 
   // Transparent lines (blank / full-line comment) buffered since the last non-transparent
   // line. Flushed AFTER any dedent close-braces so a blank line between two top-level decls
@@ -574,7 +765,7 @@ kj::Array<char> desugar(kj::ArrayPtr<const char> input) {
     FrameKind parentKind = frames[frames.size() - 1].kind;
     size_t parentOrd = frames[frames.size() - 1].ord;
 
-    HeaderKind hk = classifyHeader(trimmed);
+    HeaderKind hk = classifyHeader(trimmed, hasIndentedBody(input, pos, indentCols));
     if (hk != HeaderKind::NONE) {
       // Open the block with '{' placed BEFORE any trailing comment, so the brace is not
       // swallowed into the comment (which would leave braces unbalanced). A commented
@@ -585,7 +776,7 @@ kj::Array<char> desugar(kj::ArrayPtr<const char> input) {
       auto gap = trimmed.slice(code.size(), ci);  // whitespace between code and '#'
       auto comment = trimmed.slice(ci, trimmed.size());
       put(out, leadingWs);
-      put(out, code);
+      emitHeaderCode(out, code, hk);
       put(out, " {");
       if (comment.size() > 0) { put(out, gap); put(out, comment); }
       if (eol.size() > 0) put(out, eol); else out.add('\n');
@@ -625,10 +816,19 @@ kj::Array<char> desugar(kj::ArrayPtr<const char> input) {
       auto gap = trimmed.slice(code.size(), ci);  // whitespace between code and '#'
       auto comment = trimmed.slice(ci, trimmed.size());
 
-      // Members inside struct/enum/interface scopes: the newline is the brace statement
-      // terminator, so emit a trailing ';' (unless one is already present). At file level,
-      // top-level decls (const/using/@id/annotation) carry their own terminator: pass through.
-      bool terminate = (parentKind != FrameKind::FILE);
+      // The newline is the whitespace form's statement terminator, so emit a trailing ';'
+      // (unless one is already present). This holds at file scope too: a top-level `using`,
+      // `const` or `annotation` written in the whitespace form ends at the newline just as a
+      // field does. Only a line whose brackets are still open is mid-statement — its
+      // continuation lines carry the terminator — so file scope requires balance first.
+      bool terminate;
+      if (parentKind == FrameKind::FILE) {
+        openStatement += bracketDelta(code);
+        if (openStatement < 0) openStatement = 0;
+        terminate = (openStatement == 0);
+      } else {
+        terminate = true;
+      }
       size_t before = out.size();
       // A nested declaration (`using`/`const`/`annotation`) inside a struct/interface body
       // is NOT a field: it carries no positional ordinal and its own ';' terminator, so it

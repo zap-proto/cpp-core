@@ -15,5 +15,5 @@ enum Color
   blue
 
 interface Greeter
-  hello (name :Text) -> (greeting :Text)
+  hello (name Text) -> (greeting Text)
   bye () -> ()

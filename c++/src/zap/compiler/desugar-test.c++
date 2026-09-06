@@ -417,6 +417,81 @@ KJ_TEST("desugar: out-of-range ordinal yields a clean parser diagnostic, not a c
   KJ_EXPECT(sawOrdinalError, firstError(errs));
 }
 
+// ===== constructs the canonical ZAP schema uses ==============================
+// spec/schema/zap.zap is written entirely in the whitespace form. These are the tokens it
+// omits that the brace grammar requires, and each was previously either a parse error or —
+// worse, for `union <name>` — a silent misparse into a differently-shaped schema.
+
+KJ_TEST("desugar: keyword-first named union carries its members, not a field named `union`") {
+  // `union content` is the whitespace spelling of `content :union`. Read as a field it became
+  // `union @0 :content` — no diagnostic wherever a type named `content` existed, just the
+  // wrong schema. The offside rule separates them: a header owns an indented body.
+  KJ_EXPECT(desugarStr("struct A\n  uri Text\n  union content\n    text Text\n    blob Data\n") ==
+            "struct A {\n  uri @0 :Text;\n  content :union {\n    text @1 :Text;\n"
+            "    blob @2 :Data;\n  }\n}\n");
+  KJ_EXPECT(desugarStr("struct A\n  group g\n    x Text\n") ==
+            "struct A {\n  g :group {\n    x @0 :Text;\n  }\n}\n");
+}
+
+KJ_TEST("desugar: a field named after a block keyword still has no body, so it stays a field") {
+  // The same two words with no indented body are a field whose name is the keyword. This is
+  // the discrimination the offside rule buys; neither spelling is ambiguous any more.
+  KJ_EXPECT(desugarStr("struct A\n  union Int8\n  other Text\n") ==
+            "struct A {\n  union @0 :Int8;\n  other @1 :Text;\n}\n");
+}
+
+KJ_TEST("desugar: method parameter and result lists get the ':' the brace grammar requires") {
+  // A method list omits ':' for the same reason a struct field does. Members already carrying
+  // a type, and defaults, are untouched; a generic type keeps its own parentheses.
+  KJ_EXPECT(desugarStr("interface G\n  add (name Text, url Text) -> (id Text)\n") ==
+            "interface G {\n  add @0 (name :Text, url :Text) -> (id :Text);\n}\n");
+  KJ_EXPECT(desugarStr("interface G\n  list () -> (servers List(Server))\n") ==
+            "interface G {\n  list @0 () -> (servers :List(Server));\n}\n");
+  KJ_EXPECT(desugarStr("interface G\n  mixed (a :Text, b Text) -> ()\n") ==
+            "interface G {\n  mixed @0 (a :Text, b :Text) -> ();\n}\n");
+  // An explicitly-numbered method needs the same treatment as an auto-numbered one.
+  KJ_EXPECT(desugarStr("interface G\n  add @0 (name Text) -> ()\n") ==
+            "interface G {\n  add @0 (name :Text) -> ();\n}\n");
+}
+
+KJ_TEST("desugar: a bare `extends` superclass list is parenthesized") {
+  KJ_EXPECT(desugarStr("interface G extends Z\n  hello () -> ()\n") ==
+            "interface G extends(Z) {\n  hello @0 () -> ();\n}\n");
+  // Already-parenthesized keeps its spelling.
+  KJ_EXPECT(desugarStr("interface G extends(Z)\n  hello () -> ()\n") ==
+            "interface G extends(Z) {\n  hello @0 () -> ();\n}\n");
+}
+
+KJ_TEST("desugar: a top-level declaration is terminated by its newline") {
+  // Inside a block the newline was already the terminator; at file scope it was not, so a
+  // whitespace-form `using`/`const` was a parse error.
+  KJ_EXPECT(desugarStr("using T = import \"t.zap\"\n\nstruct A\n  x Text\n") ==
+            "using T = import \"t.zap\";\n\nstruct A {\n  x @0 :Text;\n}\n");
+  KJ_EXPECT(desugarStr("const answer :UInt32 = 42\n\nstruct A\n  x Text\n") ==
+            "const answer :UInt32 = 42;\n\nstruct A {\n  x @0 :Text;\n}\n");
+  // A statement whose brackets are still open is mid-construct: the terminator lands on the
+  // line that closes them, not on every line it spans.
+  KJ_EXPECT(desugarStr("const xs :List(UInt8) = [1,\n2]\n\nstruct A\n  x Text\n") ==
+            "const xs :List(UInt8) = [1,\n2];\n\nstruct A {\n  x @0 :Text;\n}\n");
+}
+
+KJ_TEST("desugar: the canonical schema's constructs parse through the real lexer+parser") {
+  // The shapes spec/schema/zap.zap is built from, together in one file.
+  auto errs = parseErrorsThroughRealFrontEnd(
+      "@0xf36d7b330303c66e;\n"
+      "struct ResourceContent\n"
+      "  uri Text\n"
+      "  union content\n"
+      "    text Text\n"
+      "    blob Data\n"
+      "interface Zap\n"
+      "  ping () -> ()\n"
+      "interface Gateway extends Zap\n"
+      "  addServer (name Text, url Text) -> (id Text)\n"
+      "  listServers () -> (servers List(ResourceContent))\n");
+  KJ_EXPECT(errs.size() == 0, firstError(errs));
+}
+
 }  // namespace
 }  // namespace compiler
 }  // namespace zap
