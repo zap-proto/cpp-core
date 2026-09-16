@@ -1,0 +1,292 @@
+
+---
+events:
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/CMakeDetermineSystem.cmake:233 (message)"
+      - "CMakeLists.txt:4 (project)"
+    message: |
+      The system is: Linux - 6.17.0-1018-nvidia - aarch64
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "/usr/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "/usr/share/cmake-3.28/Modules/CMakeDetermineCXXCompiler.cmake:126 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:4 (project)"
+    message: |
+      Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+      Compiler: /usr/bin/clang++-21 
+      Build flags: -stdlib=libc++
+      Id flags:  
+      
+      The output was:
+      0
+      
+      
+      Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.out"
+      
+      The CXX compiler identification is Clang, found in:
+        /home/z/zap-cpp-core/c++/build/CMakeFiles/3.28.3/CompilerIdCXX/a.out
+      
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:57 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:4 (project)"
+    checks:
+      - "Detecting CXX compiler ABI info"
+    directories:
+      source: "/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-7L4O7L"
+      binary: "/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-7L4O7L"
+    cmakeVariables:
+      CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps-21"
+      CMAKE_CXX_FLAGS: "-stdlib=libc++"
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: "-stdlib=libc++"
+    buildResult:
+      variable: "CMAKE_CXX_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: '/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-7L4O7L'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_91535
+        [1/2] /usr/bin/clang++-21   -stdlib=libc++    -v -MD -MT CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp
+        Ubuntu clang version 21.1.8 (++20251221032922+2078da43e25a-1~exp1~20251221153059.70)
+        Target: aarch64-unknown-linux-gnu
+        Thread model: posix
+        InstalledDir: /usr/lib/llvm-21/bin
+        Found candidate GCC installation: /usr/lib/gcc/aarch64-linux-gnu/13
+        Selected GCC installation: /usr/lib/gcc/aarch64-linux-gnu/13
+        Candidate multilib: .;@m64
+        Selected multilib: .;@m64
+        Found CUDA installation: /usr/local/cuda, version 
+         (in-process)
+         "/usr/lib/llvm-21/bin/clang" -cc1 -triple aarch64-unknown-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=non-leaf -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -enable-tlsdesc -target-cpu generic -target-feature +v8a -target-feature +fp-armv8 -target-feature +neon -target-abi aapcs -debugger-tuning=gdb -fdebug-compilation-dir=/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-7L4O7L -v -fcoverage-compilation-dir=/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-7L4O7L -resource-dir /usr/lib/llvm-21/lib/clang/21 -dependency-file CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -internal-isystem /usr/lib/llvm-21/bin/../include/c++/v1 -internal-isystem /usr/lib/llvm-21/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/aarch64-linux-gnu/13/../../../../aarch64-linux-gnu/include -internal-externc-isystem /usr/include/aarch64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -fno-signed-char -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -target-feature +outline-atomics -target-feature -fmv -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o -x c++ /usr/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp
+        clang -cc1 version 21.1.8 based upon LLVM 21.1.8 default target aarch64-unknown-linux-gnu
+        ignoring nonexistent directory "/usr/lib/gcc/aarch64-linux-gnu/13/../../../../aarch64-linux-gnu/include"
+        ignoring nonexistent directory "/include"
+        #include "..." search starts here:
+        #include <...> search starts here:
+         /usr/lib/llvm-21/bin/../include/c++/v1
+         /usr/lib/llvm-21/lib/clang/21/include
+         /usr/local/include
+         /usr/include/aarch64-linux-gnu
+         /usr/include
+        End of search list.
+        [2/2] : && /usr/bin/clang++-21 -stdlib=libc++ -stdlib=libc++ -v CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_91535   && :
+        Ubuntu clang version 21.1.8 (++20251221032922+2078da43e25a-1~exp1~20251221153059.70)
+        Target: aarch64-unknown-linux-gnu
+        Thread model: posix
+        InstalledDir: /usr/lib/llvm-21/bin
+        Found candidate GCC installation: /usr/lib/gcc/aarch64-linux-gnu/13
+        Selected GCC installation: /usr/lib/gcc/aarch64-linux-gnu/13
+        Candidate multilib: .;@m64
+        Selected multilib: .;@m64
+        Found CUDA installation: /usr/local/cuda, version 
+         "/usr/bin/ld" -EL -z relro --hash-style=gnu --build-id --eh-frame-hdr -m aarch64linux -pie -dynamic-linker /lib/ld-linux-aarch64.so.1 -o cmTC_91535 /lib/aarch64-linux-gnu/Scrt1.o /lib/aarch64-linux-gnu/crti.o /usr/lib/gcc/aarch64-linux-gnu/13/crtbeginS.o -L/usr/lib/gcc/aarch64-linux-gnu/13 -L/lib/aarch64-linux-gnu -L/usr/lib/aarch64-linux-gnu -L/usr/lib/llvm-21/bin/../lib -L/lib -L/usr/lib CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o -lc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/aarch64-linux-gnu/13/crtendS.o /lib/aarch64-linux-gnu/crtn.o
+        
+      exitCode: 0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:127 (message)"
+      - "/usr/share/cmake-3.28/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:4 (project)"
+    message: |
+      Parsed CXX implicit include dir info: rv=done
+        found start of include info
+        found start of implicit include info
+          add: [/usr/lib/llvm-21/bin/../include/c++/v1]
+          add: [/usr/lib/llvm-21/lib/clang/21/include]
+          add: [/usr/local/include]
+          add: [/usr/include/aarch64-linux-gnu]
+          add: [/usr/include]
+        end of search list found
+        collapse include dir [/usr/lib/llvm-21/bin/../include/c++/v1] ==> [/usr/lib/llvm-21/include/c++/v1]
+        collapse include dir [/usr/lib/llvm-21/lib/clang/21/include] ==> [/usr/lib/llvm-21/lib/clang/21/include]
+        collapse include dir [/usr/local/include] ==> [/usr/local/include]
+        collapse include dir [/usr/include/aarch64-linux-gnu] ==> [/usr/include/aarch64-linux-gnu]
+        collapse include dir [/usr/include] ==> [/usr/include]
+        implicit include dirs: [/usr/lib/llvm-21/include/c++/v1;/usr/lib/llvm-21/lib/clang/21/include;/usr/local/include;/usr/include/aarch64-linux-gnu;/usr/include]
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:159 (message)"
+      - "/usr/share/cmake-3.28/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:4 (project)"
+    message: |
+      Parsed CXX implicit link information:
+        link line regex: [^( *|.*[/\\])(ld\\.lld-21|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        ignore line: [Change Dir: '/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-7L4O7L']
+        ignore line: []
+        ignore line: [Run Build Command(s): /usr/bin/ninja -v cmTC_91535]
+        ignore line: [[1/2] /usr/bin/clang++-21   -stdlib=libc++    -v -MD -MT CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o -MF CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o.d -o CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp]
+        ignore line: [Ubuntu clang version 21.1.8 (++20251221032922+2078da43e25a-1~exp1~20251221153059.70)]
+        ignore line: [Target: aarch64-unknown-linux-gnu]
+        ignore line: [Thread model: posix]
+        ignore line: [InstalledDir: /usr/lib/llvm-21/bin]
+        ignore line: [Found candidate GCC installation: /usr/lib/gcc/aarch64-linux-gnu/13]
+        ignore line: [Selected GCC installation: /usr/lib/gcc/aarch64-linux-gnu/13]
+        ignore line: [Candidate multilib: .]
+        ignore line: [@m64]
+        ignore line: [Selected multilib: .]
+        ignore line: [@m64]
+        ignore line: [Found CUDA installation: /usr/local/cuda  version ]
+        ignore line: [ (in-process)]
+        ignore line: [ "/usr/lib/llvm-21/bin/clang" -cc1 -triple aarch64-unknown-linux-gnu -emit-obj -disable-free -clear-ast-before-backend -disable-llvm-verifier -discard-value-names -main-file-name CMakeCXXCompilerABI.cpp -mrelocation-model pic -pic-level 2 -pic-is-pie -mframe-pointer=non-leaf -fmath-errno -ffp-contract=on -fno-rounding-math -mconstructor-aliases -funwind-tables=2 -enable-tlsdesc -target-cpu generic -target-feature +v8a -target-feature +fp-armv8 -target-feature +neon -target-abi aapcs -debugger-tuning=gdb -fdebug-compilation-dir=/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-7L4O7L -v -fcoverage-compilation-dir=/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-7L4O7L -resource-dir /usr/lib/llvm-21/lib/clang/21 -dependency-file CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o.d -MT CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o -sys-header-deps -internal-isystem /usr/lib/llvm-21/bin/../include/c++/v1 -internal-isystem /usr/lib/llvm-21/lib/clang/21/include -internal-isystem /usr/local/include -internal-isystem /usr/lib/gcc/aarch64-linux-gnu/13/../../../../aarch64-linux-gnu/include -internal-externc-isystem /usr/include/aarch64-linux-gnu -internal-externc-isystem /include -internal-externc-isystem /usr/include -fdeprecated-macro -ferror-limit 19 -fno-signed-char -fgnuc-version=4.2.1 -fskip-odr-check-in-gmf -fcxx-exceptions -fexceptions -target-feature +outline-atomics -target-feature -fmv -faddrsig -D__GCC_HAVE_DWARF2_CFI_ASM=1 -o CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o -x c++ /usr/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp]
+        ignore line: [clang -cc1 version 21.1.8 based upon LLVM 21.1.8 default target aarch64-unknown-linux-gnu]
+        ignore line: [ignoring nonexistent directory "/usr/lib/gcc/aarch64-linux-gnu/13/../../../../aarch64-linux-gnu/include"]
+        ignore line: [ignoring nonexistent directory "/include"]
+        ignore line: [#include "..." search starts here:]
+        ignore line: [#include <...> search starts here:]
+        ignore line: [ /usr/lib/llvm-21/bin/../include/c++/v1]
+        ignore line: [ /usr/lib/llvm-21/lib/clang/21/include]
+        ignore line: [ /usr/local/include]
+        ignore line: [ /usr/include/aarch64-linux-gnu]
+        ignore line: [ /usr/include]
+        ignore line: [End of search list.]
+        ignore line: [[2/2] : && /usr/bin/clang++-21 -stdlib=libc++ -stdlib=libc++ -v CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_91535   && :]
+        ignore line: [Ubuntu clang version 21.1.8 (++20251221032922+2078da43e25a-1~exp1~20251221153059.70)]
+        ignore line: [Target: aarch64-unknown-linux-gnu]
+        ignore line: [Thread model: posix]
+        ignore line: [InstalledDir: /usr/lib/llvm-21/bin]
+        ignore line: [Found candidate GCC installation: /usr/lib/gcc/aarch64-linux-gnu/13]
+        ignore line: [Selected GCC installation: /usr/lib/gcc/aarch64-linux-gnu/13]
+        ignore line: [Candidate multilib: .]
+        ignore line: [@m64]
+        ignore line: [Selected multilib: .]
+        ignore line: [@m64]
+        ignore line: [Found CUDA installation: /usr/local/cuda  version ]
+        link line: [ "/usr/bin/ld" -EL -z relro --hash-style=gnu --build-id --eh-frame-hdr -m aarch64linux -pie -dynamic-linker /lib/ld-linux-aarch64.so.1 -o cmTC_91535 /lib/aarch64-linux-gnu/Scrt1.o /lib/aarch64-linux-gnu/crti.o /usr/lib/gcc/aarch64-linux-gnu/13/crtbeginS.o -L/usr/lib/gcc/aarch64-linux-gnu/13 -L/lib/aarch64-linux-gnu -L/usr/lib/aarch64-linux-gnu -L/usr/lib/llvm-21/bin/../lib -L/lib -L/usr/lib CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o -lc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/aarch64-linux-gnu/13/crtendS.o /lib/aarch64-linux-gnu/crtn.o]
+          arg [/usr/bin/ld] ==> ignore
+          arg [-EL] ==> ignore
+          arg [-zrelro] ==> ignore
+          arg [--hash-style=gnu] ==> ignore
+          arg [--build-id] ==> ignore
+          arg [--eh-frame-hdr] ==> ignore
+          arg [-m] ==> ignore
+          arg [aarch64linux] ==> ignore
+          arg [-pie] ==> ignore
+          arg [-dynamic-linker] ==> ignore
+          arg [/lib/ld-linux-aarch64.so.1] ==> ignore
+          arg [-o] ==> ignore
+          arg [cmTC_91535] ==> ignore
+          arg [/lib/aarch64-linux-gnu/Scrt1.o] ==> obj [/lib/aarch64-linux-gnu/Scrt1.o]
+          arg [/lib/aarch64-linux-gnu/crti.o] ==> obj [/lib/aarch64-linux-gnu/crti.o]
+          arg [/usr/lib/gcc/aarch64-linux-gnu/13/crtbeginS.o] ==> obj [/usr/lib/gcc/aarch64-linux-gnu/13/crtbeginS.o]
+          arg [-L/usr/lib/gcc/aarch64-linux-gnu/13] ==> dir [/usr/lib/gcc/aarch64-linux-gnu/13]
+          arg [-L/lib/aarch64-linux-gnu] ==> dir [/lib/aarch64-linux-gnu]
+          arg [-L/usr/lib/aarch64-linux-gnu] ==> dir [/usr/lib/aarch64-linux-gnu]
+          arg [-L/usr/lib/llvm-21/bin/../lib] ==> dir [/usr/lib/llvm-21/bin/../lib]
+          arg [-L/lib] ==> dir [/lib]
+          arg [-L/usr/lib] ==> dir [/usr/lib]
+          arg [CMakeFiles/cmTC_91535.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+          arg [-lc++] ==> lib [c++]
+          arg [-lm] ==> lib [m]
+          arg [-lgcc_s] ==> lib [gcc_s]
+          arg [-lgcc] ==> lib [gcc]
+          arg [-lc] ==> lib [c]
+          arg [-lgcc_s] ==> lib [gcc_s]
+          arg [-lgcc] ==> lib [gcc]
+          arg [/usr/lib/gcc/aarch64-linux-gnu/13/crtendS.o] ==> obj [/usr/lib/gcc/aarch64-linux-gnu/13/crtendS.o]
+          arg [/lib/aarch64-linux-gnu/crtn.o] ==> obj [/lib/aarch64-linux-gnu/crtn.o]
+        collapse library dir [/usr/lib/gcc/aarch64-linux-gnu/13] ==> [/usr/lib/gcc/aarch64-linux-gnu/13]
+        collapse library dir [/lib/aarch64-linux-gnu] ==> [/lib/aarch64-linux-gnu]
+        collapse library dir [/usr/lib/aarch64-linux-gnu] ==> [/usr/lib/aarch64-linux-gnu]
+        collapse library dir [/usr/lib/llvm-21/bin/../lib] ==> [/usr/lib/llvm-21/lib]
+        collapse library dir [/lib] ==> [/lib]
+        collapse library dir [/usr/lib] ==> [/usr/lib]
+        implicit libs: [c++;m;gcc_s;gcc;c;gcc_s;gcc]
+        implicit objs: [/lib/aarch64-linux-gnu/Scrt1.o;/lib/aarch64-linux-gnu/crti.o;/usr/lib/gcc/aarch64-linux-gnu/13/crtbeginS.o;/usr/lib/gcc/aarch64-linux-gnu/13/crtendS.o;/lib/aarch64-linux-gnu/crtn.o]
+        implicit dirs: [/usr/lib/gcc/aarch64-linux-gnu/13;/lib/aarch64-linux-gnu;/usr/lib/aarch64-linux-gnu;/usr/lib/llvm-21/lib;/lib;/usr/lib]
+        implicit fwks: []
+      
+      
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/CheckIncludeFileCXX.cmake:89 (try_compile)"
+      - "CMakeLists.txt:18 (check_include_file_cxx)"
+    checks:
+      - "Looking for C++ include print"
+    directories:
+      source: "/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-BUaHQ9"
+      binary: "/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-BUaHQ9"
+    cmakeVariables:
+      CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps-21"
+      CMAKE_CXX_FLAGS: "-stdlib=libc++ -std=gnu++23"
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: "-stdlib=libc++"
+      CMAKE_MODULE_PATH: "/home/z/zap-cpp-core/c++/cmake"
+    buildResult:
+      variable: "HAS_CXX23"
+      cached: true
+      stdout: |
+        Change Dir: '/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-BUaHQ9'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_24b6b
+        [1/2] /usr/bin/clang++-21   -stdlib=libc++ -std=gnu++23 -MD -MT CMakeFiles/cmTC_24b6b.dir/CheckIncludeFile.cxx.o -MF CMakeFiles/cmTC_24b6b.dir/CheckIncludeFile.cxx.o.d -o CMakeFiles/cmTC_24b6b.dir/CheckIncludeFile.cxx.o -c /home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-BUaHQ9/CheckIncludeFile.cxx
+        [2/2] : && /usr/bin/clang++-21 -stdlib=libc++ -std=gnu++23 -stdlib=libc++ CMakeFiles/cmTC_24b6b.dir/CheckIncludeFile.cxx.o -o cmTC_24b6b   && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/CheckLibraryExists.cmake:69 (try_compile)"
+      - "CMakeLists.txt:111 (check_library_exists)"
+    checks:
+      - "Looking for makecontext in c"
+    directories:
+      source: "/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-hbWgnj"
+      binary: "/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-hbWgnj"
+    cmakeVariables:
+      CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps-21"
+      CMAKE_CXX_FLAGS: "-stdlib=libc++ -std=gnu++23"
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: "-stdlib=libc++"
+      CMAKE_MODULE_PATH: "/home/z/zap-cpp-core/c++/cmake"
+    buildResult:
+      variable: "HAVE_UCONTEXT_LIBC"
+      cached: true
+      stdout: |
+        Change Dir: '/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-hbWgnj'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_765ec
+        [1/2] /usr/bin/clang++-21   -stdlib=libc++ -std=gnu++23 -DCHECK_FUNCTION_EXISTS=makecontext -MD -MT CMakeFiles/cmTC_765ec.dir/CheckFunctionExists.cxx.o -MF CMakeFiles/cmTC_765ec.dir/CheckFunctionExists.cxx.o.d -o CMakeFiles/cmTC_765ec.dir/CheckFunctionExists.cxx.o -c /home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-hbWgnj/CheckFunctionExists.cxx
+        [2/2] : && /usr/bin/clang++-21 -stdlib=libc++ -std=gnu++23 -DCHECK_FUNCTION_EXISTS=makecontext -stdlib=libc++ CMakeFiles/cmTC_765ec.dir/CheckFunctionExists.cxx.o -o cmTC_765ec  -lc && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/Internal/CheckSourceCompiles.cmake:101 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/CheckCXXSourceCompiles.cmake:52 (cmake_check_source_compiles)"
+      - "src/kj/CMakeLists.txt:87 (check_cxx_source_compiles)"
+    checks:
+      - "Performing Test ZAP_BUILDS_WITHOUT_LIBATOMIC"
+    directories:
+      source: "/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-AI9yJF"
+      binary: "/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-AI9yJF"
+    cmakeVariables:
+      CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS: "/usr/bin/clang-scan-deps-21"
+      CMAKE_CXX_FLAGS: "-stdlib=libc++ -std=gnu++23"
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: "-stdlib=libc++"
+      CMAKE_MODULE_PATH: "/home/z/zap-cpp-core/c++/cmake"
+    buildResult:
+      variable: "ZAP_BUILDS_WITHOUT_LIBATOMIC"
+      cached: true
+      stdout: |
+        Change Dir: '/home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-AI9yJF'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_668d8
+        [1/2] /usr/bin/clang++-21 -DZAP_BUILDS_WITHOUT_LIBATOMIC  -stdlib=libc++ -std=gnu++23 -MD -MT CMakeFiles/cmTC_668d8.dir/src.cxx.o -MF CMakeFiles/cmTC_668d8.dir/src.cxx.o.d -o CMakeFiles/cmTC_668d8.dir/src.cxx.o -c /home/z/zap-cpp-core/c++/build/CMakeFiles/CMakeScratch/TryCompile-AI9yJF/src.cxx
+        [2/2] : && /usr/bin/clang++-21 -stdlib=libc++ -std=gnu++23 -stdlib=libc++ CMakeFiles/cmTC_668d8.dir/src.cxx.o -o cmTC_668d8   && :
+        
+      exitCode: 0
+...

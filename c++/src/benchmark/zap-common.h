@@ -44,9 +44,9 @@ public:
 
   uint64_t throughput;
 
-  void write(const void* buffer, size_t size) override {
-    FdOutputStream::write(buffer, size);
-    throughput += size;
+  void write(kj::ArrayPtr<const kj::byte> data) override {
+    FdOutputStream::write(data);
+    throughput += data.size();
   }
 
   void write(kj::ArrayPtr<const kj::ArrayPtr<const byte>> pieces) override {

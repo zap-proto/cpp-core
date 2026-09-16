@@ -1,0 +1,11 @@
+prefix=/usr/local
+exec_prefix=
+libdir=/usr/local/lib
+includedir=/usr/local/include
+
+Name: Zap WebSocket RPC
+Description: WebSocket MessageStream for Zap
+Version: 2.0-dev
+Libs: -L${libdir} -lzap-websocket
+Requires: zap = 2.0-dev zap-rpc = 2.0-dev kj = 2.0-dev kj-async = 2.0-dev kj-http = 2.0-dev
+Cflags: -I${includedir}

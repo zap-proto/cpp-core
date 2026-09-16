@@ -1,0 +1,11 @@
+prefix=/usr/local
+exec_prefix=
+libdir=/usr/local/lib
+includedir=/usr/local/include
+
+Name: Zap JSON
+Description: JSON encoder and decoder for Zap objects
+Version: 2.0-dev
+Libs: -L${libdir} -lzap-json
+Requires: zap = 2.0-dev kj = 2.0-dev
+Cflags: -I${includedir}
